@@ -16,15 +16,7 @@ Web Application — Core Features
 * Session Management: Display and manage sample session information.
 * Responsive Design: Support phone, tablet, and laptop screen sizes.
 * Form Feedback: Display validation errors, success messages, and unauthorized access messages.
-👨‍💻 Project Team
-Students
-* Jayesh Kumar
-* Amitoj Singh Arora
-Mentor / Reviewer
-* Madhushri Tangali
-📄 License
-This project was developed as an educational OJT demonstration. Add a license file to the repository if you intend to distribute or reuse the project under specific licensing terms.
-Tech stack
+* Tech stack
 ● Stack: HTML, CSS, JavaScript, Bootstrap 5; React Native (Expo Go).
 ● Framework: HTML, CSS and vanilla JavaScript for the web demo; Python basics/OOP for an
 optional CLI or supporting exercise.
@@ -35,3 +27,12 @@ forms, fetch, localStorage), Python basics & OOP, Git/GitHub.
 ● Deployment: GitHub Pages or Vercel, or a reproducible local or Python CLI demo. Implementation
 note: client-side hashing and localStorage do not make authentication secure. Real credential
 verification, session management, OTP checks and authorization belong on a trusted backend.
+👨‍💻 Project Team
+Students
+* Jayesh Kumar
+* Amitoj Singh Arora
+Mentor / Reviewer
+* Madhushri Tangali
+📄 License
+This project was developed as an educational OJT demonstration. Add a license file to the repository if you intend to distribute or reuse the project under specific licensing terms.
+
