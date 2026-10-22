@@ -27,6 +27,9 @@ forms, fetch, localStorage), Python basics & OOP, Git/GitHub.
 ● Deployment: GitHub Pages or Vercel, or a reproducible local or Python CLI demo. Implementation
 note: client-side hashing and localStorage do not make authentication secure. Real credential
 verification, session management, OTP checks and authorization belong on a trusted backend.
+
+
+
 👨‍💻 Project Team
 Students
 * Jayesh Kumar
