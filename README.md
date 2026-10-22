@@ -34,7 +34,6 @@ verification, session management, OTP checks and authorization belong on a trust
 Students
 * Jayesh Kumar
 * Amitoj Singh Arora
-Mentor / Reviewer
 * Madhushri Tangali
 📄 License
 This project was developed as an educational OJT demonstration. Add a license file to the repository if you intend to distribute or reuse the project under specific licensing terms.
