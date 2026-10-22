@@ -8,14 +8,12 @@ VaultAuth SSO is a **cybersecurity project** focused on authentication, access c
 - 🔢 **Mock OTP Verification** — A simulated second verification step.
 - 👥 **Role-Based Access Control (RBAC)** — Separate views for End Users and Enterprise Admins.
 - 🔒 **Session Management** — Login, logout, and demo session tracking.
-- 📱 **Mobile Companion App** — A digital employee ID card, active sessions list, and session revocation using React Native and Expo Go.
 - 🎨 **Responsive UI** — A clean interface for mobile and desktop.
 
 ## 🛠️ Tech Stack
 
 - HTML5, CSS3, JavaScript
 - Bootstrap 5
-- React Native & Expo Go (mobile extension)
 - Git & GitHub
 
 ## 🎯 Project Goal
