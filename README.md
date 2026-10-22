@@ -1,6 +1,6 @@
 # 🔐 VaultAuth SSO
 
-VaultAuth SSO is a **cybersecurity project** focused on authentication, access control, and session management. We are building a simple web application that demonstrates how users can securely navigate a sign-in flow and access role-specific features.
+VaultAuth SSO is a **cybersecurity project** focused on authentication, access control, and session management. We are building a simple web application that demonstrates how users can securely navigate a sign-in flow and access role-specific features..
 
 ## 🚀 What We're Building
 
