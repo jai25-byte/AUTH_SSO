@@ -330,8 +330,14 @@
   .my-\[16px\] {
     margin-block: 16px;
   }
-  .my-\[26px\] {
-    margin-block: 26px;
+  .my-\[20px\] {
+    margin-block: 20px;
+  }
+  .my-\[22px\] {
+    margin-block: 22px;
+  }
+  .-mt-1 {
+    margin-top: calc(var(--spacing) * -1);
   }
   .-mt-2 {
     margin-top: calc(var(--spacing) * -2);
@@ -354,6 +360,9 @@
   .mt-5 {
     margin-top: calc(var(--spacing) * 5);
   }
+  .mt-6 {
+    margin-top: calc(var(--spacing) * 6);
+  }
   .mt-8 {
     margin-top: calc(var(--spacing) * 8);
   }
@@ -365,6 +374,9 @@
   }
   .mb-3 {
     margin-bottom: calc(var(--spacing) * 3);
+  }
+  .mb-4 {
+    margin-bottom: calc(var(--spacing) * 4);
   }
   .mb-5 {
     margin-bottom: calc(var(--spacing) * 5);
@@ -407,6 +419,9 @@
   }
   .h-2 {
     height: calc(var(--spacing) * 2);
+  }
+  .h-3 {
+    height: calc(var(--spacing) * 3);
   }
   .h-4 {
     height: calc(var(--spacing) * 4);
@@ -458,6 +473,9 @@
   }
   .w-2 {
     width: calc(var(--spacing) * 2);
+  }
+  .w-3 {
+    width: calc(var(--spacing) * 3);
   }
   .w-4 {
     width: calc(var(--spacing) * 4);
@@ -642,6 +660,12 @@
       border-color: color-mix(in oklab, var(--color-amber-400) 50%, transparent);
     }
   }
+  .border-black\/40 {
+    border-color: color-mix(in srgb, #000 40%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--color-black) 40%, transparent);
+    }
+  }
   .border-blue-300 {
     border-color: var(--color-blue-300);
   }
@@ -705,6 +729,9 @@
       border-color: color-mix(in oklab, var(--color-white) 60%, transparent);
     }
   }
+  .border-t-black {
+    border-top-color: var(--color-black);
+  }
   .border-t-white {
     border-top-color: var(--color-white);
   }
@@ -739,12 +766,6 @@
     background-color: color-mix(in srgb, #000 50%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
       background-color: color-mix(in oklab, var(--color-black) 50%, transparent);
-    }
-  }
-  .bg-black\/80 {
-    background-color: color-mix(in srgb, #000 80%, transparent);
-    @supports (color: color-mix(in lab, red, red)) {
-      background-color: color-mix(in oklab, var(--color-black) 80%, transparent);
     }
   }
   .bg-black\/90 {
@@ -875,9 +896,6 @@
   }
   .px-5 {
     padding-inline: calc(var(--spacing) * 5);
-  }
-  .py-0\.5 {
-    padding-block: calc(var(--spacing) * 0.5);
   }
   .py-1 {
     padding-block: var(--spacing);
@@ -1050,9 +1068,6 @@
     @supports (color: color-mix(in lab, red, red)) {
       color: color-mix(in oklab, var(--color-black) 90%, transparent);
     }
-  }
-  .text-blue-500 {
-    color: var(--color-blue-500);
   }
   .text-blue-600 {
     color: var(--color-blue-600);
@@ -1239,30 +1254,19 @@
   .placeholder\:text-\[\#163b65\]\/90::placeholder {
     color: color-mix(in oklab, #163b65 90%, transparent);
   }
-  .placeholder\:text-black\/85::placeholder {
-    color: color-mix(in srgb, #000 85%, transparent);
+  .placeholder\:text-black\/75::placeholder {
+    color: color-mix(in srgb, #000 75%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
-      color: color-mix(in oklab, var(--color-black) 85%, transparent);
+      color: color-mix(in oklab, var(--color-black) 75%, transparent);
     }
   }
   @media (hover: hover) {
-    .hover\:bg-black:hover {
-      background-color: var(--color-black);
-    }
     .hover\:bg-white\/30:hover {
       background-color: color-mix(in srgb, #fff 30%, transparent);
     }
     @supports (color: color-mix(in lab, red, red)) {
       .hover\:bg-white\/30:hover {
         background-color: color-mix(in oklab, var(--color-white) 30%, transparent);
-      }
-    }
-    .hover\:bg-white\/40:hover {
-      background-color: color-mix(in srgb, #fff 40%, transparent);
-    }
-    @supports (color: color-mix(in lab, red, red)) {
-      .hover\:bg-white\/40:hover {
-        background-color: color-mix(in oklab, var(--color-white) 40%, transparent);
       }
     }
     .hover\:bg-white\/50:hover {
@@ -1296,6 +1300,9 @@
   }
   .disabled\:cursor-not-allowed:disabled {
     cursor: not-allowed;
+  }
+  .disabled\:opacity-50:disabled {
+    opacity: 50%;
   }
   .disabled\:opacity-60:disabled {
     opacity: 60%;
