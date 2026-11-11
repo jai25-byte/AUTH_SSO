@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VaultAuth — End User Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <div class="brand">
+        <div class="brand-icon">V</div>
+        <div class="brand-text">
+          <span class="brand-name">VaultAuth</span>
+          <span class="brand-sub">IDENTITY + ACCESS</span>
+        </div>
+      </div>
+
+      <p class="nav-label">WORKSPACE</p>
+      <nav class="nav">
+        <a href="#" class="nav-item active" data-page="overview">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          Overview
+        </a>
+        <a href="#" class="nav-item" data-page="profile">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          My profile
+        </a>
+        <a href="#" class="nav-item" data-page="apps">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>
+          Connected apps
+        </a>
+        <a href="#" class="nav-item" data-page="activity">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
+          Login activity
+        </a>
+      </nav>
+    </div>
+
+    <div class="sidebar-bottom">
+      <span>v1.0.0 • Secure workspace</span>
+    </div>
+  </aside>
+
+  <!-- ===== MOBILE HAMBURGER ===== -->
+  <button class="mobile-menu-btn" aria-label="Menu">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <div class="sidebar-overlay"></div>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <div class="main-wrapper">
+    <!-- Top bar -->
+    <header class="topbar">
+      <div class="search-box">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" placeholder="Search settings, apps, activity..." />
+      </div>
+
+      <div class="topbar-right">
+        <button class="icon-btn" aria-label="Notifications">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </button>
+        <div class="user-pill">
+          <div class="avatar">AM</div>
+          <div class="user-info">
+            <span class="user-name">Alex Morgan</span>
+            <span class="user-role">End user</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ============================================== -->
+    <!--          PAGE: OVERVIEW                         -->
+    <!-- ============================================== -->
+    <main class="content page" id="page-overview">
+      <section class="greeting">
+        <h1>Good morning, Alex 👋</h1>
+        <p>Here's your identity and security overview for today.</p>
+      </section>
+
+      <div class="section-heading">
+        <h2>Account overview</h2>
+        <span class="status-badge status-normal">
+          <span class="status-dot"></span>ALL SYSTEMS NORMAL
+        </span>
+      </div>
+
+      <div class="stat-cards">
+        <div class="stat-card">
+          <p class="stat-label">Active sessions</p>
+          <h3 class="stat-value">2 devices</h3>
+          <p class="stat-desc">You're signed in on 2 devices</p>
+          <div class="stat-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Security score</p>
+          <h3 class="stat-value">92 / 100</h3>
+          <p class="stat-desc">Your account is well protected</p>
+          <div class="stat-card-icon blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>
+          </div>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Connected apps</p>
+          <h3 class="stat-value">5 apps</h3>
+          <p class="stat-desc">Across your approved workspace</p>
+          <div class="stat-card-icon teal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-grid">
+        <!-- Recent login activity -->
+        <div class="card login-activity-card">
+          <div class="card-header">
+            <h2>Recent login activity</h2>
+            <a href="#" class="view-all" data-goto="activity">View all →</a>
+          </div>
+          <p class="card-subtitle">Monitor the latest sign-ins to your account.</p>
+
+          <div class="activity-list">
+            <div class="activity-item">
+              <div class="device-icon laptop">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
+              </div>
+              <div class="activity-details">
+                <span class="device-name">MacBook Pro 16"</span>
+                <span class="device-meta">Chrome • Bengaluru, India</span>
+              </div>
+              <div class="activity-time">
+                <span class="time-text">Today, 9:42 AM</span>
+                <span class="badge badge-success">Success</span>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="device-icon mobile">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+              </div>
+              <div class="activity-details">
+                <span class="device-name">Samsung Galaxy S25 Ultra</span>
+                <span class="device-meta">VaultAuth mobile • Bengaluru, India</span>
+              </div>
+              <div class="activity-time">
+                <span class="time-text">Today, 8:16 AM</span>
+                <span class="badge badge-success">Success</span>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="device-icon desktop">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              </div>
+              <div class="activity-details">
+                <span class="device-name">Chrome on Windows</span>
+                <span class="device-meta">Chrome • Bengaluru, India</span>
+              </div>
+              <div class="activity-time">
+                <span class="time-text">Yesterday, 6:32 PM</span>
+                <span class="badge badge-success">Success</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right column -->
+        <div class="right-column">
+          <div class="card security-card">
+            <div class="card-header">
+              <h2>Security checklist</h2>
+              <span class="badge badge-good">GOOD</span>
+            </div>
+            <ul class="checklist">
+              <li class="checklist-item">
+                <div class="check-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#16a34a"/><path d="M9 12l2 2 4-4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                <div>
+                  <span class="check-title">Multi-factor authentication</span>
+                  <span class="check-desc">Enabled for your account</span>
+                </div>
+              </li>
+              <li class="checklist-item">
+                <div class="check-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#16a34a"/><path d="M9 12l2 2 4-4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                <div>
+                  <span class="check-title">Recovery email</span>
+                  <span class="check-desc">Verified and up to date</span>
+                </div>
+              </li>
+              <li class="checklist-item">
+                <div class="check-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#16a34a"/><path d="M9 12l2 2 4-4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                <div>
+                  <span class="check-title">Password strength</span>
+                  <span class="check-desc">Strong password</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="card quick-actions-card">
+            <h2>Quick actions</h2>
+            <div class="action-list">
+              <a href="#" class="action-item" data-goto="apps">
+                <div class="action-icon purple">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>
+                </div>
+                <div>
+                  <span class="action-title">Manage connected apps</span>
+                  <span class="action-desc">Review access permissions</span>
+                </div>
+              </a>
+              <a href="#" class="action-item" data-goto="activity">
+                <div class="action-icon blue">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <div>
+                  <span class="action-title">Review active sessions</span>
+                  <span class="action-desc">Sign out of unused devices</span>
+                </div>
+              </a>
+              <a href="#" class="action-item" data-goto="profile">
+                <div class="action-icon green">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                </div>
+                <div>
+                  <span class="action-title">Update security settings</span>
+                  <span class="action-desc">Keep your account protected</span>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ============================================== -->
+    <!--          PAGE: MY PROFILE                       -->
+    <!-- ============================================== -->
+    <main class="content page" id="page-profile" style="display:none">
+      <section class="greeting">
+        <h1>My profile</h1>
+        <p>Manage your personal information and account settings.</p>
+      </section>
+
+      <div class="profile-grid">
+        <!-- Profile card -->
+        <div class="card profile-main-card">
+          <div class="profile-header">
+            <div class="profile-avatar-lg">AM</div>
+            <div>
+              <h2 class="profile-name-lg">Alex Morgan</h2>
+              <p class="profile-email">alex.morgan@company.com</p>
+              <span class="badge badge-success" style="margin-top:6px">Active</span>
+            </div>
+            <button class="btn btn-outline" style="margin-left:auto">Edit profile</button>
+          </div>
+
+          <div class="profile-fields">
+            <div class="field-row">
+              <div class="field">
+                <label>Full name</label>
+                <p>Alex Morgan</p>
+              </div>
+              <div class="field">
+                <label>Email address</label>
+                <p>alex.morgan@company.com</p>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Phone number</label>
+                <p>+91 98765 43210</p>
+              </div>
+              <div class="field">
+                <label>Department</label>
+                <p>Engineering</p>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Role</label>
+                <p>End user</p>
+              </div>
+              <div class="field">
+                <label>Joined</label>
+                <p>March 15, 2025</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Security settings -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Security settings</h2>
+          </div>
+
+          <div class="settings-list">
+            <div class="setting-item">
+              <div class="setting-info">
+                <div class="action-icon green">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </div>
+                <div>
+                  <span class="action-title">Password</span>
+                  <span class="action-desc">Last changed 30 days ago</span>
+                </div>
+              </div>
+              <button class="btn btn-outline btn-sm">Change</button>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <div class="action-icon blue">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                </div>
+                <div>
+                  <span class="action-title">Multi-factor authentication</span>
+                  <span class="action-desc">Authenticator app enabled</span>
+                </div>
+              </div>
+              <span class="badge badge-success">Enabled</span>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <div class="action-icon purple">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                </div>
+                <div>
+                  <span class="action-title">Recovery email</span>
+                  <span class="action-desc">alex.backup@gmail.com</span>
+                </div>
+              </div>
+              <button class="btn btn-outline btn-sm">Update</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ============================================== -->
+    <!--          PAGE: CONNECTED APPS                   -->
+    <!-- ============================================== -->
+    <main class="content page" id="page-apps" style="display:none">
+      <section class="greeting">
+        <h1>Connected apps</h1>
+        <p>Review and manage third-party applications with access to your account.</p>
+      </section>
+
+      <div class="section-heading">
+        <h2>5 apps connected</h2>
+        <span class="status-badge status-normal">
+          <span class="status-dot"></span>ALL VERIFIED
+        </span>
+      </div>
+
+      <div class="apps-grid">
+        <!-- App 1 -->
+        <div class="card app-card">
+          <div class="app-card-top">
+            <div class="app-logo" style="background:#4285F4;color:#fff">G</div>
+            <div>
+              <h3 class="app-name">Google Workspace</h3>
+              <p class="app-desc">Email, Calendar, Drive</p>
+            </div>
+            <span class="badge badge-success" style="margin-left:auto">Active</span>
+          </div>
+          <div class="app-permissions">
+            <p class="perm-label">Permissions</p>
+            <div class="perm-tags">
+              <span class="perm-tag">Read email</span>
+              <span class="perm-tag">Calendar access</span>
+              <span class="perm-tag">Drive read</span>
+            </div>
+          </div>
+          <div class="app-card-footer">
+            <span class="app-meta">Connected on Jan 10, 2025</span>
+            <button class="btn btn-danger-outline btn-sm">Revoke</button>
+          </div>
+        </div>
+
+        <!-- App 2 -->
+        <div class="card app-card">
+          <div class="app-card-top">
+            <div class="app-logo" style="background:#5865F2;color:#fff">S</div>
+            <div>
+              <h3 class="app-name">Slack</h3>
+              <p class="app-desc">Team messaging</p>
+            </div>
+            <span class="badge badge-success" style="margin-left:auto">Active</span>
+          </div>
+          <div class="app-permissions">
+            <p class="perm-label">Permissions</p>
+            <div class="perm-tags">
+              <span class="perm-tag">Send messages</span>
+              <span class="perm-tag">Read channels</span>
+            </div>
+          </div>
+          <div class="app-card-footer">
+            <span class="app-meta">Connected on Feb 02, 2025</span>
+            <button class="btn btn-danger-outline btn-sm">Revoke</button>
+          </div>
+        </div>
+
+        <!-- App 3 -->
+        <div class="card app-card">
+          <div class="app-card-top">
+            <div class="app-logo" style="background:#0052CC;color:#fff">J</div>
+            <div>
+              <h3 class="app-name">Jira</h3>
+              <p class="app-desc">Project management</p>
+            </div>
+            <span class="badge badge-success" style="margin-left:auto">Active</span>
+          </div>
+          <div class="app-permissions">
+            <p class="perm-label">Permissions</p>
+            <div class="perm-tags">
+              <span class="perm-tag">Read issues</span>
+              <span class="perm-tag">Create issues</span>
+              <span class="perm-tag">Assign</span>
+            </div>
+          </div>
+          <div class="app-card-footer">
+            <span class="app-meta">Connected on Mar 18, 2025</span>
+            <button class="btn btn-danger-outline btn-sm">Revoke</button>
+          </div>
+        </div>
+
+        <!-- App 4 -->
+        <div class="card app-card">
+          <div class="app-card-top">
+            <div class="app-logo" style="background:#FF9900;color:#fff">A</div>
+            <div>
+              <h3 class="app-name">AWS Console</h3>
+              <p class="app-desc">Cloud infrastructure</p>
+            </div>
+            <span class="badge badge-success" style="margin-left:auto">Active</span>
+          </div>
+          <div class="app-permissions">
+            <p class="perm-label">Permissions</p>
+            <div class="perm-tags">
+              <span class="perm-tag">Read-only</span>
+              <span class="perm-tag">IAM view</span>
+            </div>
+          </div>
+          <div class="app-card-footer">
+            <span class="app-meta">Connected on Apr 22, 2025</span>
+            <button class="btn btn-danger-outline btn-sm">Revoke</button>
+          </div>
+        </div>
+
+        <!-- App 5 -->
+        <div class="card app-card">
+          <div class="app-card-top">
+            <div class="app-logo" style="background:#171515;color:#fff">G</div>
+            <div>
+              <h3 class="app-name">GitHub</h3>
+              <p class="app-desc">Code repositories</p>
+            </div>
+            <span class="badge badge-success" style="margin-left:auto">Active</span>
+          </div>
+          <div class="app-permissions">
+            <p class="perm-label">Permissions</p>
+            <div class="perm-tags">
+              <span class="perm-tag">Repo read</span>
+              <span class="perm-tag">Repo write</span>
+              <span class="perm-tag">Webhooks</span>
+            </div>
+          </div>
+          <div class="app-card-footer">
+            <span class="app-meta">Connected on May 05, 2025</span>
+            <button class="btn btn-danger-outline btn-sm">Revoke</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ============================================== -->
+    <!--          PAGE: LOGIN ACTIVITY                   -->
+    <!-- ============================================== -->
+    <main class="content page" id="page-activity" style="display:none">
+      <section class="greeting">
+        <h1>Login activity</h1>
+        <p>Full history of sign-ins and authentication events for your account.</p>
+      </section>
+
+      <!-- Filters -->
+      <div class="activity-filters">
+        <button class="filter-btn active">All</button>
+        <button class="filter-btn">Successful</button>
+        <button class="filter-btn">Failed</button>
+        <button class="filter-btn">Blocked</button>
+      </div>
+
+      <div class="card" style="overflow: hidden;">
+        <table class="activity-table">
+          <thead>
+            <tr>
+              <th>Device</th>
+              <th>Browser / App</th>
+              <th>Location</th>
+              <th>Date &amp; Time</th>
+              <th>IP Address</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="table-device">
+                  <div class="device-icon laptop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>
+                  MacBook Pro 16"
+                </div>
+              </td>
+              <td>Chrome 131</td>
+              <td>Bengaluru, India</td>
+              <td>Today, 9:42 AM</td>
+              <td><code>103.21.58.xx</code></td>
+              <td><span class="badge badge-success">Success</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="table-device">
+                  <div class="device-icon mobile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
+                  Samsung Galaxy S25 Ultra
+                </div>
+              </td>
+              <td>VaultAuth mobile</td>
+              <td>Bengaluru, India</td>
+              <td>Today, 8:16 AM</td>
+              <td><code>103.21.58.xx</code></td>
+              <td><span class="badge badge-success">Success</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="table-device">
+                  <div class="device-icon desktop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+                  Chrome on Windows
+                </div>
+              </td>
+              <td>Chrome 131</td>
+              <td>Bengaluru, India</td>
+              <td>Yesterday, 6:32 PM</td>
+              <td><code>49.37.12.xx</code></td>
+              <td><span class="badge badge-success">Success</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="table-device">
+                  <div class="device-icon desktop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+                  Unknown Device
+                </div>
+              </td>
+              <td>Firefox 132</td>
+              <td>Mumbai, India</td>
+              <td>Nov 9, 4:15 PM</td>
+              <td><code>152.58.44.xx</code></td>
+              <td><span class="badge badge-failed">Failed</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="table-device">
+                  <div class="device-icon laptop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>
+                  MacBook Pro 16"
+                </div>
+              </td>
+              <td>Chrome 131</td>
+              <td>Bengaluru, India</td>
+              <td>Nov 9, 9:10 AM</td>
+              <td><code>103.21.58.xx</code></td>
+              <td><span class="badge badge-success">Success</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="table-device">
+                  <div class="device-icon mobile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
+                  Samsung Galaxy S25 Ultra
+                </div>
+              </td>
+              <td>VaultAuth mobile</td>
+              <td>Bengaluru, India</td>
+              <td>Nov 8, 7:30 PM</td>
+              <td><code>103.21.58.xx</code></td>
+              <td><span class="badge badge-success">Success</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="table-device">
+                  <div class="device-icon desktop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+                  Unknown Device
+                </div>
+              </td>
+              <td>Safari 18</td>
+              <td>New Delhi, India</td>
+              <td>Nov 7, 2:45 AM</td>
+              <td><code>203.122.1.xx</code></td>
+              <td><span class="badge badge-blocked">Blocked</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
