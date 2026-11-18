@@ -75,6 +75,7 @@ export default function RegisterCard({ onSwitchToLogin, onNotify }) {
     try {
       // Call backend API: POST /api/register
       await apiRegister({
+        fullName,
         username,
         email,
         password,

@@ -1,7 +1,7 @@
 import { watch } from "fs";
 import { join } from "path";
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 const subscribers = new Set();
 
 // Function to rebuild JS
@@ -193,6 +193,20 @@ const server = Bun.serve({
     let pathname = url.pathname;
     if (pathname === "/" || pathname === "/login" || pathname === "/register") {
       pathname = "/index.html";
+    }
+
+    // Serve DASHBOARD static assets if path starts with /DASHBOARD or /dashboard
+    if (pathname.startsWith("/DASHBOARD") || pathname.startsWith("/dashboard")) {
+      const dashboardRel = pathname.replace(/^\/DASHBOARD\/?/, "").replace(/^\/dashboard\/?/, "") || "index.html";
+      const dashFilePath = join(process.cwd(), "DASHBOARD", dashboardRel);
+      const dashFile = Bun.file(dashFilePath);
+      if (await dashFile.exists()) {
+        const ext = dashboardRel.substring(dashboardRel.lastIndexOf("."));
+        const contentType = MIME_TYPES[ext] || "text/html; charset=utf-8";
+        return new Response(dashFile, {
+          headers: { "Content-Type": contentType },
+        });
+      }
     }
 
     const publicFilePath = join(process.cwd(), "public", pathname);

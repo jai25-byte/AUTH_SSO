@@ -151,12 +151,17 @@ async function request(endpoint, options = {}) {
  * Register a new user
  * POST /api/register
  */
-export async function register({ username, password, email, uid }) {
+export async function register({ username, password, email, fullName, name, uid }) {
   const payload = {
     username: username?.trim(),
     password,
     email: email?.trim(),
   };
+
+  const nameVal = fullName || name;
+  if (nameVal && typeof nameVal === "string") {
+    payload.fullName = nameVal.trim();
+  }
 
   if (typeof uid === "number") {
     payload.uid = uid;

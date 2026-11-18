@@ -1,17 +1,31 @@
-import React, { useState } from "react";
-import { ShieldCheck, LogOut, ExternalLink, CheckCircle2, Lock, User, Clock, Key } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { ShieldCheck, LogOut, ExternalLink, ArrowRight, Lock, Clock, Key } from "lucide-react";
 
 export default function AuthenticatedCard({ user, onSignOut, onNotify }) {
-  const sessionToken = user?.token || "SSO-SEC-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+  const token = user?.token || localStorage.getItem("vault_auth_token") || "";
+  const sessionToken = token ? (token.length > 28 ? token.slice(0, 24) + "..." : token) : "SSO-SEC-" + Math.random().toString(36).substring(2, 8).toUpperCase();
   const [loginTime] = useState(() => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
 
-  const username = user?.username || "Authenticated User";
+  const username = user?.username || user?.identifier || "Authenticated User";
   const email = user?.email;
   const initial = username.charAt(0).toUpperCase();
 
   const handleLaunchApp = () => {
-    onNotify?.("Redirecting to your SSO connected enterprise dashboard...", "info");
+    onNotify?.("Launching your VaultAuth Dashboard...", "info");
+    const tokenToPass = token || localStorage.getItem("vault_auth_token") || "";
+    const tokenParam = tokenToPass ? `?token=${encodeURIComponent(tokenToPass)}` : "";
+    setTimeout(() => {
+      window.location.href = `/DASHBOARD/index.html${tokenParam}`;
+    }, 400);
   };
+
+  // Automatically transition to the dashboard after brief confirmation
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      handleLaunchApp();
+    }, 1400);
+    return () => clearTimeout(timer);
+  }, [user]);
 
   return (
     <div className="w-full max-w-[440px] mx-auto p-[34px_36px] text-black glass-card rounded-[24px] animate-fade-in-scale">
@@ -45,7 +59,7 @@ export default function AuthenticatedCard({ user, onSignOut, onNotify }) {
             )}
             <p className="text-xs text-black/70 flex items-center gap-1.5 mt-0.5">
               <span className="w-2 h-2 rounded-full bg-emerald-600 inline-block" />
-              Active SSO Session
+              Active SSO Session &bull; Redirecting...
             </p>
           </div>
         </div>
@@ -81,7 +95,7 @@ export default function AuthenticatedCard({ user, onSignOut, onNotify }) {
           className="w-full h-[46px] btn-primary rounded-[40px] text-[15px] font-semibold flex items-center justify-center gap-2 cursor-pointer shadow-md"
         >
           <span>Continue to Dashboard</span>
-          <ExternalLink size={16} />
+          <ArrowRight size={16} />
         </button>
 
         <button
@@ -96,4 +110,3 @@ export default function AuthenticatedCard({ user, onSignOut, onNotify }) {
     </div>
   );
 }
-

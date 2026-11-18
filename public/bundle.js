@@ -19399,12 +19399,16 @@ async function request(endpoint, options = {}) {
   }
   throw lastError || new Error("Unable to reach backend service.");
 }
-async function register({ username, password, email, uid }) {
+async function register({ username, password, email, fullName, name, uid }) {
   const payload = {
     username: username?.trim(),
     password,
     email: email?.trim()
   };
+  const nameVal = fullName || name;
+  if (nameVal && typeof nameVal === "string") {
+    payload.fullName = nameVal.trim();
+  }
   if (typeof uid === "number") {
     payload.uid = uid;
   }
@@ -19887,6 +19891,7 @@ function RegisterCard({ onSwitchToLogin, onNotify }) {
     setIsLoading(true);
     try {
       await register({
+        fullName,
         username,
         email,
         password
@@ -20442,7 +20447,18 @@ function AuthenticatedCard({ user, onSignOut, onNotify }) {
   const initial = username.charAt(0).toUpperCase();
   const handleLaunchApp = () => {
     onNotify?.("Redirecting to your SSO connected enterprise dashboard...", "info");
+    const tok = user?.token || localStorage.getItem("vault_auth_token") || "";
+    const param = tok ? "?token=" + encodeURIComponent(tok) : "";
+    setTimeout(() => {
+      window.location.href = "/DASHBOARD/index.html" + param;
+    }, 400);
   };
+  import_react7.useEffect(() => {
+    const t = setTimeout(() => {
+      handleLaunchApp();
+    }, 1200);
+    return () => clearTimeout(t);
+  }, []);
   return /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
     className: "w-full max-w-[440px] mx-auto p-[34px_36px] text-black glass-card rounded-[24px] animate-fade-in-scale",
     children: [
