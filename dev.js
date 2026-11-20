@@ -1,7 +1,7 @@
 import { watch } from "fs";
 import { join } from "path";
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 const subscribers = new Set();
 
 // Function to rebuild JS

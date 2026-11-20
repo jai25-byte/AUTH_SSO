@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sign in · VaultAuth SSO</title>
+  <meta name="description" content="Sign in to VaultAuth SSO, your unified identity and access management platform." />
+
+  <!-- Flask/Jinja: render a per-session CSRF token here if your backend uses one.
+       Example: <meta name="csrf-token" content="{{ csrf_token() }}" /> -->
+  <meta name="csrf-token" content="" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="login.css" />
+</head>
+<body>
+  <main class="shell">
+
+    <!-- ============ LEFT: BRANDING ============ -->
+    <aside class="brand" aria-label="About VaultAuth SSO">
+      <div class="brand__glow" aria-hidden="true"></div>
+
+      <a class="logo" href="/" aria-label="VaultAuth SSO home">
+        <svg class="logo__mark" viewBox="0 0 32 32" aria-hidden="true">
+          <defs>
+            <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#60a5fa" />
+              <stop offset="1" stop-color="#6366f1" />
+            </linearGradient>
+          </defs>
+          <path d="M16 2 28 6.5v8.2c0 7.4-4.8 12.6-12 15.3C8.8 27.300 4 22.100 4 14.700V6.500L16 2Z" fill="url(#lg)" />
+          <path d="m10.500 16 4 4 7.500-8" fill="none" stroke="#fff" stroke-width="2.400" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <span class="logo__text">VaultAuth <em>SSO</em></span>
+      </a>
+
+      <div class="brand__body">
+        <h1 class="brand__title">One Identity.<br /><span>Every Access.</span></h1>
+        <p class="brand__lead">
+          Securely access your digital workspace with a unified identity management platform.
+        </p>
+
+        <ul class="features">
+          <li>
+            <span class="features__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 3 4.500 6v5.500c0 4.600 3.100 7.900 7.500 9.500 4.400-1.600 7.500-4.900 7.500-9.500V6L12 3Z"/></svg>
+            </span>
+            <span>
+              <strong>Enterprise-grade Security</strong>
+              <small>Encrypted credentials and verified sessions.</small>
+            </span>
+          </li>
+          <li>
+            <span class="features__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.200"/><path d="M5 20c0-3.500 3.100-6 7-6s7 2.500 7 6"/></svg>
+            </span>
+            <span>
+              <strong>Centralized Identity Management</strong>
+              <small>Users, roles and access in one place.</small>
+            </span>
+          </li>
+          <li>
+            <span class="features__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+            </span>
+            <span>
+              <strong>Secure Single Sign-On</strong>
+              <small>One login for every connected application.</small>
+            </span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Abstract security graphic -->
+      <svg class="brand__art" viewBox="0 0 520 520" aria-hidden="true" focusable="false">
+        <defs>
+          <linearGradient id="art-fill" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#3b82f6" stop-opacity=".35" />
+            <stop offset="1" stop-color="#6366f1" stop-opacity=".12" />
+          </linearGradient>
+          <linearGradient id="art-stroke" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#93c5fd" />
+            <stop offset="1" stop-color="#818cf8" />
+          </linearGradient>
+        </defs>
+        <g fill="none" stroke="#fff" stroke-opacity=".07">
+          <circle cx="260" cy="260" r="110" />
+          <circle cx="260" cy="260" r="170" />
+          <circle cx="260" cy="260" r="230" />
+        </g>
+        <g stroke="url(#art-stroke)" stroke-opacity=".45" stroke-width="1.200" fill="none">
+          <path d="M260 260 120 140M260 260 410 120M260 260 440 330M260 260 150 420M260 260 260 40" />
+        </g>
+        <g fill="#818cf8">
+          <circle class="node" cx="120" cy="140" r="5" />
+          <circle class="node" cx="410" cy="120" r="5" />
+          <circle class="node" cx="440" cy="330" r="5" />
+          <circle class="node" cx="150" cy="420" r="5" />
+          <circle class="node" cx="260" cy="40" r="5" />
+        </g>
+        <path d="M260 180 332 208v62c0 44-30 76-72 92-42-16-72-48-72-92v-62l72-28Z"
+              fill="url(#art-fill)" stroke="url(#art-stroke)" stroke-width="2" />
+        <rect x="232" y="256" width="56" height="44" rx="8" fill="#0b1220" stroke="url(#art-stroke)" stroke-width="2" />
+        <path d="M242 256v-12a18 18 0 0 1 36 0v12" fill="none" stroke="url(#art-stroke)" stroke-width="2" />
+        <circle cx="260" cy="278" r="5" fill="#93c5fd" />
+      </svg>
+
+      <p class="brand__foot">&copy; <span id="year"></span> VaultAuth SSO. All rights reserved.</p>
+    </aside>
+
+    <!-- ============ RIGHT: LOGIN FORM ============ -->
+    <section class="panel" aria-labelledby="login-title">
+      <div class="card">
+        <header class="card__head">
+          <h2 id="login-title">Welcome back</h2>
+          <p>Sign in to your VaultAuth account.</p>
+        </header>
+
+        <form id="login-form" novalidate autocomplete="on">
+          <div class="field" data-field="email">
+            <label for="email">Email address</label>
+            <div class="control">
+              <svg class="control__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.500"/><path d="m4 7 8 6 8-6"/></svg>
+              <input id="email" name="email" type="email" inputmode="email"
+                     autocomplete="username" placeholder="you@company.com"
+                     aria-describedby="email-error" required />
+            </div>
+            <p class="error" id="email-error" role="alert"></p>
+          </div>
+
+          <div class="field" data-field="password">
+            <label for="password">Password</label>
+            <div class="control">
+              <svg class="control__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+              <input id="password" name="password" type="password"
+                     autocomplete="current-password" placeholder="Enter your password"
+                     aria-describedby="password-error" required />
+              <button type="button" class="toggle" id="toggle-password"
+                      aria-label="Show password" aria-pressed="false">
+                <svg class="eye" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.500-7 10-7 10 7 10 7-3.500 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="eye-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.600 6.100A9.700 9.700 0 0 1 12 5c6.500 0 10 7 10 7a17 17 0 0 1-3.200 4.100M6.500 6.600C3.700 8.500 2 12 2 12s3.500 7 10 7c1.700 0 3.200-.4 4.500-1"/><path d="M9.900 9.900a3 3 0 0 0 4.200 4.200"/></svg>
+              </button>
+            </div>
+            <p class="error" id="password-error" role="alert"></p>
+          </div>
+
+          <div class="row">
+            <label class="check">
+              <input type="checkbox" id="remember" name="remember" />
+              <span class="check__box" aria-hidden="true"></span>
+              <span>Remember me</span>
+            </label>
+            <a class="link" id="forgot-link" href="/forgot-password">Forgot password?</a>
+          </div>
+
+          <button type="submit" class="btn" id="submit-btn">
+            <span class="btn__label">Sign in</span>
+            <span class="btn__spinner" aria-hidden="true"></span>
+          </button>
+        </form>
+
+        <!-- Shown only when GOOGLE_SSO_ENABLED is true in login.js -->
+        <div id="social" hidden>
+          <div class="divider"><span>OR</span></div>
+          <a class="btn btn--ghost" id="google-btn" href="/auth/google">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#4285F4" d="M22.500 12.200c0-.8-.1-1.500-.2-2.200H12v4.200h5.900a5 5 0 0 1-2.200 3.300v2.700h3.500c2.100-1.900 3.300-4.700 3.300-8Z"/>
+              <path fill="#34A853" d="M12 23c3 0 5.400-1 7.200-2.700l-3.500-2.700c-1 .7-2.200 1.100-3.700 1.100-2.800 0-5.200-1.900-6-4.500H2.400v2.800A11 11 0 0 0 12 23Z"/>
+              <path fill="#FBBC05" d="M6 14.200a6.600 6.600 0 0 1 0-4.300V7.100H2.400a11 11 0 0 0 0 9.900L6 14.200Z"/>
+              <path fill="#EA4335" d="M12 5.400c1.600 0 3.100.6 4.200 1.600l3.100-3.100A11 11 0 0 0 2.400 7.100L6 9.900c.8-2.600 3.200-4.500 6-4.500Z"/>
+            </svg>
+            Continue with Google
+          </a>
+        </div>
+
+        <p class="switch">Don't have an account? <a class="link" id="register-link" href="/register">Create one</a></p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Toast notifications -->
+  <div class="toasts" id="toasts" aria-live="polite" aria-atomic="false"></div>
+
+  <script src="login.js" defer></script>
+</body>
+</html>

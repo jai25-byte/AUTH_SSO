@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { User, Mail, Key, Eye, EyeOff, Check, AlertCircle } from "lucide-react";
 import { register as apiRegister } from "../services/api.js";
 
 export default function RegisterCard({ onSwitchToLogin, onNotify }) {
@@ -9,22 +8,17 @@ export default function RegisterCard({ onSwitchToLogin, onNotify }) {
     username: "",
     password: "",
     confirmPassword: "",
-    agreeTerms: true,
   });
-
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  // Password strength calculation
   const getPasswordStrength = (pass) => {
     if (!pass) return 0;
     let score = 0;
@@ -37,173 +31,171 @@ export default function RegisterCard({ onSwitchToLogin, onNotify }) {
 
   const strength = getPasswordStrength(formData.password);
   const strengthLabels = ["Very Weak", "Weak", "Medium", "Strong", "Very Strong"];
-  const strengthColors = ["bg-red-500", "bg-orange-500", "bg-amber-500", "bg-blue-500", "bg-emerald-500"];
+  const strengthColors = ["#dc2626", "#f97316", "#f59e0b", "#3b82f6", "#16a34a"];
 
-  const passwordsMatch =
-    formData.confirmPassword.length > 0 &&
-    formData.password === formData.confirmPassword;
-  const passwordsMismatch =
-    formData.confirmPassword.length > 0 &&
-    formData.password !== formData.confirmPassword;
+  const passwordsMatch = formData.confirmPassword.length > 0 && formData.password === formData.confirmPassword;
+  const passwordsMismatch = formData.confirmPassword.length > 0 && formData.password !== formData.confirmPassword;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const { fullName, email, username, password, confirmPassword } = formData;
+    const newErrors = {};
 
-    const fullName = formData.fullName.trim();
-    const email = formData.email.trim();
-    const username = formData.username.trim();
-    const password = formData.password;
-    const confirmPassword = formData.confirmPassword;
+    if (!fullName.trim()) newErrors.fullName = "Full name is required.";
+    if (!email.trim()) newErrors.email = "Email address is required.";
+    if (!username.trim()) newErrors.username = "Username is required.";
+    if (!password) newErrors.password = "Password is required.";
+    else if (password.length < 6) newErrors.password = "Password must be at least 6 characters.";
+    if (!confirmPassword) newErrors.confirmPassword = "Please confirm your password.";
+    else if (password !== confirmPassword) newErrors.confirmPassword = "Passwords do not match.";
 
-    if (!fullName || !email || !username || !password || !confirmPassword) {
-      onNotify?.("Please fill in all required fields.", "error");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      onNotify?.("Passwords do not match. Please verify.", "error");
-      return;
-    }
-
-    if (password.length < 6) {
-      onNotify?.("Password must be at least 6 characters long.", "error");
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
     setIsLoading(true);
-
     try {
-      // Call backend API: POST /api/register
       await apiRegister({
-        fullName,
-        username,
-        email,
+        fullName: fullName.trim(),
+        username: username.trim(),
+        email: email.trim(),
         password,
       });
-
-      onNotify?.(`Account successfully created for ${username}! Redirecting to login...`, "success");
-      setTimeout(() => {
-        onSwitchToLogin();
-      }, 1000);
+      onNotify?.(`Account created for ${username.trim()}! Redirecting to sign in…`, "success");
+      setTimeout(() => onSwitchToLogin(), 1000);
     } catch (err) {
-      const errorMsg =
-        err.message ||
-        (err.status === 400
-          ? "Invalid registration data. Username or email may already be taken."
-          : "Registration failed. Please try again.");
-      onNotify?.(errorMsg, "error");
+      onNotify?.(err.message || "Registration failed. Please try again.", "error");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="w-full max-w-[430px] mx-auto p-[35px_35px_30px] text-[#001a35] glass-card rounded-[24px] animate-fade-in-scale">
+    <>
+      <header className="card__head">
+        <h2>Create account</h2>
+        <p>Join the VaultAuth SSO network.</p>
+      </header>
+
       <form onSubmit={handleSubmit} noValidate>
-        {/* Title */}
-        <div className="text-center mb-5">
-          <h1 className="text-[28px] sm:text-[30px] font-semibold text-[#001a35] tracking-tight">
-            Create Account
-          </h1>
-          <p className="text-xs text-[#001a35]/75 font-medium mt-1">
-            Join the Enterprise SSO Network
-          </p>
-        </div>
-
         {/* Full Name */}
-        <div className="relative w-full h-[48px] my-[16px]">
-          <input
-            id="register-fullname"
-            name="fullName"
-            type="text"
-            placeholder="Full Name"
-            required
-            autoComplete="name"
-            value={formData.fullName}
-            onChange={handleChange}
-            className="w-full h-full glass-input rounded-[30px] text-[14px] font-medium text-[#001a35] placeholder:text-[#163b65]/90 outline-none pl-5 pr-12"
-          />
-          <User
-            size={18}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-[#001a35] pointer-events-none"
-          />
+        <div className={`field ${errors.fullName ? "has-error" : ""}`}>
+          <label htmlFor="reg-name">Full name</label>
+          <div className="control">
+            <svg className="control__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="8" r="3.200" /><path d="M5 20c0-3.500 3.100-6 7-6s7 2.500 7 6" />
+            </svg>
+            <input
+              id="reg-name"
+              name="fullName"
+              type="text"
+              placeholder="Alex Morgan"
+              autoComplete="name"
+              required
+              value={formData.fullName}
+              onChange={handleChange}
+            />
+          </div>
+          {errors.fullName && <p className="error">{errors.fullName}</p>}
         </div>
 
-        {/* Email Address */}
-        <div className="relative w-full h-[48px] my-[16px]">
-          <input
-            id="register-email"
-            name="email"
-            type="email"
-            placeholder="Email Address"
-            required
-            autoComplete="email"
-            value={formData.email}
-            onChange={handleChange}
-            className="w-full h-full glass-input rounded-[30px] text-[14px] font-medium text-[#001a35] placeholder:text-[#163b65]/90 outline-none pl-5 pr-12"
-          />
-          <Mail
-            size={18}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-[#001a35] pointer-events-none"
-          />
+        {/* Email */}
+        <div className={`field ${errors.email ? "has-error" : ""}`}>
+          <label htmlFor="reg-email">Email address</label>
+          <div className="control">
+            <svg className="control__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="14" rx="2.500" /><path d="m4 7 8 6 8-6" />
+            </svg>
+            <input
+              id="reg-email"
+              name="email"
+              type="email"
+              placeholder="you@company.com"
+              autoComplete="email"
+              required
+              value={formData.email}
+              onChange={handleChange}
+            />
+          </div>
+          {errors.email && <p className="error">{errors.email}</p>}
         </div>
 
         {/* Username */}
-        <div className="relative w-full h-[48px] my-[16px]">
-          <input
-            id="register-username"
-            name="username"
-            type="text"
-            placeholder="Username"
-            required
-            autoComplete="username"
-            value={formData.username}
-            onChange={handleChange}
-            className="w-full h-full glass-input rounded-[30px] text-[14px] font-medium text-[#001a35] placeholder:text-[#163b65]/90 outline-none pl-5 pr-12"
-          />
-          <User
-            size={18}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-[#001a35] pointer-events-none"
-          />
+        <div className={`field ${errors.username ? "has-error" : ""}`}>
+          <label htmlFor="reg-username">Username</label>
+          <div className="control">
+            <svg className="control__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="8" r="3.200" /><path d="M5 20c0-3.500 3.100-6 7-6s7 2.500 7 6" />
+            </svg>
+            <input
+              id="reg-username"
+              name="username"
+              type="text"
+              placeholder="alexmorgan"
+              autoComplete="username"
+              required
+              value={formData.username}
+              onChange={handleChange}
+            />
+          </div>
+          {errors.username && <p className="error">{errors.username}</p>}
         </div>
 
         {/* Password */}
-        <div className="relative w-full h-[48px] my-[16px]">
-          <input
-            id="register-password"
-            name="password"
-            type={showPassword ? "text" : "password"}
-            placeholder="Password"
-            required
-            autoComplete="new-password"
-            value={formData.password}
-            onChange={handleChange}
-            className="w-full h-full glass-input rounded-[30px] text-[14px] font-medium text-[#001a35] placeholder:text-[#163b65]/90 outline-none pl-5 pr-12"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1.5 text-[#001a35] hover:text-black transition-colors cursor-pointer rounded-full"
-            title={showPassword ? "Hide password" : "Show password"}
-          >
-            {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-          </button>
+        <div className={`field ${errors.password ? "has-error" : ""}`}>
+          <label htmlFor="reg-password">Password</label>
+          <div className="control">
+            <svg className="control__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" />
+            </svg>
+            <input
+              id="reg-password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Create a strong password"
+              autoComplete="new-password"
+              required
+              value={formData.password}
+              onChange={handleChange}
+            />
+            <button
+              type="button"
+              className="toggle"
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-pressed={showPassword}
+            >
+              <svg className="eye" viewBox="0 0 24 24" aria-hidden="true" style={{ display: showPassword ? "none" : "block" }}>
+                <path d="M2 12s3.500-7 10-7 10 7 10 7-3.500 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" />
+              </svg>
+              <svg className="eye-off" viewBox="0 0 24 24" aria-hidden="true" style={{ display: showPassword ? "block" : "none" }}>
+                <path d="M3 3l18 18M10.600 6.100A9.700 9.700 0 0 1 12 5c6.500 0 10 7 10 7a17 17 0 0 1-3.200 4.100M6.500 6.600C3.700 8.500 2 12 2 12s3.500 7 10 7c1.700 0 3.200-.4 4.500-1" />
+                <path d="M9.900 9.900a3 3 0 0 0 4.200 4.200" />
+              </svg>
+            </button>
+          </div>
+          {errors.password && <p className="error">{errors.password}</p>}
         </div>
 
         {/* Password Strength Indicator */}
         {formData.password && (
-          <div className="px-2 -mt-2 mb-3">
-            <div className="flex items-center justify-between text-[11px] font-medium text-[#001a35]/80 mb-1">
+          <div style={{ padding: "0 2px", marginTop: "-10px", marginBottom: "14px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: ".78rem", fontWeight: 500, color: "var(--ink-600)", marginBottom: "4px" }}>
               <span>Password strength</span>
-              <span className="font-semibold">{strengthLabels[strength]}</span>
+              <span style={{ fontWeight: 700, color: strengthColors[strength] }}>{strengthLabels[strength]}</span>
             </div>
-            <div className="w-full h-1.5 bg-black/10 rounded-full overflow-hidden flex gap-1">
+            <div style={{ display: "flex", gap: "4px" }}>
               {[1, 2, 3, 4].map((step) => (
                 <div
                   key={step}
-                  className={`h-full flex-1 rounded-full transition-all duration-300 ${
-                    strength >= step ? strengthColors[strength] : "bg-white/40"
-                  }`}
+                  style={{
+                    flex: 1,
+                    height: "4px",
+                    borderRadius: "4px",
+                    background: strength >= step ? strengthColors[strength] : "var(--ink-200)",
+                    transition: "background .3s",
+                  }}
                 />
               ))}
             </div>
@@ -211,74 +203,55 @@ export default function RegisterCard({ onSwitchToLogin, onNotify }) {
         )}
 
         {/* Confirm Password */}
-        <div className="relative w-full h-[48px] my-[16px]">
-          <input
-            id="register-confirm-password"
-            name="confirmPassword"
-            type={showConfirmPassword ? "text" : "password"}
-            placeholder="Confirm Password"
-            required
-            autoComplete="new-password"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            className={`w-full h-full glass-input rounded-[30px] text-[14px] font-medium text-[#001a35] placeholder:text-[#163b65]/90 outline-none pl-5 pr-12 ${
-              passwordsMismatch ? "border-rose-400 bg-rose-50/20" : ""
-            } ${passwordsMatch ? "border-emerald-400" : ""}`}
-          />
-          <button
-            type="button"
-            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1.5 text-[#001a35] hover:text-black transition-colors cursor-pointer rounded-full"
-            title={showConfirmPassword ? "Hide password" : "Show password"}
-          >
-            {showConfirmPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-          </button>
+        <div className={`field ${errors.confirmPassword ? "has-error" : ""}`}>
+          <label htmlFor="reg-confirm">Confirm password</label>
+          <div className="control">
+            <svg className="control__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" />
+            </svg>
+            <input
+              id="reg-confirm"
+              name="confirmPassword"
+              type={showPassword ? "text" : "password"}
+              placeholder="Re-enter password"
+              autoComplete="new-password"
+              required
+              value={formData.confirmPassword}
+              onChange={handleChange}
+            />
+          </div>
+          {errors.confirmPassword && <p className="error">{errors.confirmPassword}</p>}
         </div>
 
-        {/* Match feedback */}
         {passwordsMatch && (
-          <div className="flex items-center gap-1.5 px-3 -mt-2 mb-3 text-[11.5px] font-medium text-emerald-800">
-            <Check size={14} className="text-emerald-700" />
-            <span>Passwords match</span>
-          </div>
+          <p style={{ fontSize: ".8rem", color: "var(--success)", fontWeight: 600, margin: "-10px 0 14px 2px" }}>
+            ✓ Passwords match
+          </p>
         )}
         {passwordsMismatch && (
-          <div className="flex items-center gap-1.5 px-3 -mt-2 mb-3 text-[11.5px] font-medium text-rose-800">
-            <AlertCircle size={14} className="text-rose-700" />
-            <span>Passwords do not match</span>
-          </div>
+          <p style={{ fontSize: ".8rem", color: "var(--danger)", fontWeight: 600, margin: "-10px 0 14px 2px" }}>
+            ✗ Passwords do not match
+          </p>
         )}
 
-        {/* Submit Button */}
+        {/* Submit */}
         <button
           type="submit"
+          className={`btn ${isLoading ? "is-loading" : ""}`}
           disabled={isLoading}
-          className="w-full h-[46px] mt-4 btn-primary rounded-[30px] text-[15px] font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-80"
+          style={{ marginTop: "8px" }}
         >
-          {isLoading ? (
-            <>
-              <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-              <span>Creating Account...</span>
-            </>
-          ) : (
-            <span>Register</span>
-          )}
+          <span className="btn__label">{isLoading ? "Creating account…" : "Create account"}</span>
+          <span className="btn__spinner" aria-hidden="true"></span>
         </button>
-
-        {/* Back to Login Switcher */}
-        <div className="text-[14px] text-center mt-5 mb-1">
-          <p className="text-[#001a35]/90">
-            Already have an account?{" "}
-            <button
-              type="button"
-              onClick={onSwitchToLogin}
-              className="text-[#001a35] font-semibold hover:underline cursor-pointer ml-1 inline-flex items-center gap-1"
-            >
-              Login &gt;
-            </button>
-          </p>
-        </div>
       </form>
-    </div>
+
+      <p className="switch">
+        Already have an account?{" "}
+        <button type="button" className="link" onClick={onSwitchToLogin}>
+          Sign in
+        </button>
+      </p>
+    </>
   );
 }

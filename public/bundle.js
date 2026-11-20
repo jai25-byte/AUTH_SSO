@@ -18764,535 +18764,15 @@ var require_jsx_dev_runtime = __commonJS(function(exports, module) {
 });
 
 // src/main.jsx
-var import_react12 = __toESM(require_react(), 1);
+var import_react9 = __toESM(require_react(), 1);
 var import_client = __toESM(require_client(), 1);
 
 // src/App.jsx
-var import_react11 = __toESM(require_react(), 1);
+var import_react8 = __toESM(require_react(), 1);
 
 // src/components/LoginCard.jsx
-var import_react4 = __toESM(require_react(), 1);
-// node_modules/lucide-react/dist/esm/createLucideIcon.mjs
-var import_react3 = __toESM(require_react(), 1);
-
-// node_modules/lucide-react/dist/esm/shared/src/utils/toKebabCase.mjs
-var toKebabCase = (string) => string?.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
-
-// node_modules/lucide-react/dist/esm/shared/src/utils/toLucideIconData.mjs
-function toLucideIconData(iconName, iconNode, aliases = []) {
-  if (iconNode == null) {
-    throw new Error("[lucide]: iconNode is required when icon name is used");
-  }
-  return {
-    name: toKebabCase(iconName),
-    size: 24,
-    node: iconNode,
-    ...aliases.length > 0 ? { aliases } : {}
-  };
-}
-
-// node_modules/lucide-react/dist/esm/shared/src/utils/toCamelCase.mjs
-var toCamelCase = (string) => {
-  let out = "";
-  let upperNext = false;
-  for (const ch of string) {
-    if (ch === "-" || ch === "_" || ch <= " ") {
-      upperNext = out.length > 0;
-      continue;
-    }
-    if (out.length === 0) {
-      out += ch.toLowerCase();
-    } else {
-      out += upperNext ? ch.toUpperCase() : ch;
-    }
-    upperNext = false;
-  }
-  return out;
-};
-
-// node_modules/lucide-react/dist/esm/shared/src/utils/toPascalCase.mjs
-var toPascalCase = (string) => {
-  const camelCase = toCamelCase(string);
-  return camelCase.charAt(0).toUpperCase() + camelCase.slice(1);
-};
-
-// node_modules/lucide-react/dist/esm/Icon.mjs
-var import_react2 = __toESM(require_react(), 1);
-
-// node_modules/lucide-react/dist/esm/shared/src/utils/mergeClasses.mjs
-var mergeClasses = (...classes) => classes.filter((className, index, array) => {
-  return Boolean(className) && className.trim() !== "" && array.indexOf(className) === index;
-}).join(" ").trim();
-
-// node_modules/lucide-react/dist/esm/shared/src/build/defaultAttributes.mjs
-var defaultAttributes = {
-  xmlns: "http://www.w3.org/2000/svg",
-  width: 24,
-  height: 24,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: "currentColor",
-  "stroke-width": 2,
-  "stroke-linecap": "round",
-  "stroke-linejoin": "round"
-};
-
-// node_modules/lucide-react/dist/esm/shared/src/build/buildLucideIconNode.mjs
-function isDefined(value) {
-  return value !== null && value !== undefined;
-}
-function buildLucideIconNode(icon, params = {}) {
-  const attributeNames = params.attributeNames ?? {};
-  const getAttributeName = (attributeName) => attributeNames[attributeName] ?? attributeName;
-  const viewBoxWidth = icon.size ?? icon.width ?? defaultAttributes["width"];
-  const viewBoxHeight = icon.size ?? icon.height ?? defaultAttributes["height"];
-  const aliasClassNames = icon.aliases?.filter((alias) => typeof alias === "string" && alias.trim() !== "").map((alias) => `lucide-${alias}`) ?? [];
-  const iconClassNames = [...icon.name ? [`lucide-${icon.name}`] : [], ...aliasClassNames];
-  const classNamesFromClassName = params.className?.split(" ").filter(Boolean) ?? [];
-  const className = params.includeDefaultClasses === false ? mergeClasses(...classNamesFromClassName) : mergeClasses("lucide", ...iconClassNames, ...classNamesFromClassName);
-  const calculatedStrokeWidth = params.absoluteStrokeWidth ? Number(params.strokeWidth ?? defaultAttributes["stroke-width"]) * Number(icon.size ?? icon.width ?? defaultAttributes["width"]) / Number(params.size ?? params.width ?? defaultAttributes["width"]) : params.strokeWidth ?? defaultAttributes["stroke-width"];
-  const attributes = {
-    ...Object.entries(defaultAttributes).reduce((attrs, [attrName, value]) => {
-      attrs[getAttributeName(attrName)] = value;
-      return attrs;
-    }, {}),
-    ..."color" in params && params.color && {
-      [getAttributeName("stroke")]: params.color
-    },
-    ..."size" in params && isDefined(params.size) && {
-      [getAttributeName("width")]: params.size,
-      [getAttributeName("height")]: params.size
-    },
-    ..."width" in params && isDefined(params.width) && {
-      [getAttributeName("width")]: params.width
-    },
-    ..."height" in params && isDefined(params.height) && {
-      [getAttributeName("height")]: params.height
-    },
-    [getAttributeName("stroke-width")]: calculatedStrokeWidth,
-    ...className && {
-      [getAttributeName("class")]: className
-    },
-    [getAttributeName("viewBox")]: `0 0 ${viewBoxWidth} ${viewBoxHeight}`,
-    ...params.hasA11yProp === false ? {
-      [getAttributeName("aria-hidden")]: "true"
-    } : {},
-    ..."attributes" in params && params.attributes
-  };
-  return [
-    "svg",
-    attributes,
-    icon.node.map((child) => {
-      const [name, attrs, children] = child;
-      const nextAttrs = params.nonScalingStroke ? { [getAttributeName("vector-effect")]: "non-scaling-stroke", ...attrs } : attrs;
-      return children ? [name, nextAttrs, children] : [name, nextAttrs];
-    })
-  ];
-}
-
-// node_modules/lucide-react/dist/esm/shared/src/build/buildLucideIconForReact.mjs
-function buildLucideIconForReact(icon, params = {}) {
-  return buildLucideIconNode(icon, {
-    ...params,
-    attributeNames: {
-      ...params.attributeNames,
-      class: "className",
-      "stroke-width": "strokeWidth",
-      "stroke-linecap": "strokeLinecap",
-      "stroke-linejoin": "strokeLinejoin",
-      "vector-effect": "vectorEffect"
-    }
-  });
-}
-
-// node_modules/lucide-react/dist/esm/shared/src/utils/hasA11yProp.mjs
-var hasA11yProp = (props) => {
-  for (const prop in props) {
-    if (prop.startsWith("aria-") || prop === "role" || prop === "title") {
-      return true;
-    }
-  }
-  return false;
-};
-
-// node_modules/lucide-react/dist/esm/context.mjs
 var import_react = __toESM(require_react(), 1);
-"use client";
-var LucideContext = import_react.createContext({});
-var useLucideContext = () => import_react.useContext(LucideContext);
 
-// node_modules/lucide-react/dist/esm/Icon.mjs
-"use client";
-var Icon = import_react2.forwardRef(({
-  color,
-  size,
-  width,
-  height,
-  strokeWidth,
-  absoluteStrokeWidth,
-  nonScalingStroke,
-  className = "",
-  children,
-  iconNode = [],
-  icon = {
-    node: iconNode,
-    aliases: [],
-    size: 24
-  },
-  ...rest
-}, ref) => {
-  const {
-    size: contextSize = 24,
-    strokeWidth: contextStrokeWidth = 2,
-    absoluteStrokeWidth: contextAbsoluteStrokeWidth = false,
-    nonScalingStroke: contextNonScalingStroke = false,
-    color: contextColor = "currentColor",
-    className: contextClass = ""
-  } = useLucideContext() ?? {};
-  const hasAccessibleProp = Boolean(children) || hasA11yProp(rest);
-  const [name, svgAttributes, builtIconNode = []] = buildLucideIconForReact(icon, {
-    color: color ?? contextColor,
-    width: width ?? size ?? contextSize,
-    height: height ?? size ?? contextSize,
-    strokeWidth: strokeWidth ?? contextStrokeWidth,
-    absoluteStrokeWidth: absoluteStrokeWidth ?? contextAbsoluteStrokeWidth,
-    nonScalingStroke: nonScalingStroke ?? contextNonScalingStroke,
-    className: mergeClasses(contextClass, className),
-    hasA11yProp: hasAccessibleProp,
-    attributes: rest
-  });
-  return import_react2.createElement(name, {
-    ref,
-    ...svgAttributes
-  }, [
-    ...builtIconNode.map(([tag, attrs]) => import_react2.createElement(tag, attrs)),
-    ...Array.isArray(children) ? children : [children]
-  ]);
-});
-
-// node_modules/lucide-react/dist/esm/createLucideIcon.mjs
-function createLucideIcon(iconDataOrName, iconNode = [], aliases = []) {
-  const iconData = typeof iconDataOrName === "string" ? toLucideIconData(iconDataOrName, iconNode, aliases) : iconDataOrName;
-  const Component = import_react3.forwardRef(({ className, ...props }, ref) => import_react3.createElement(Icon, {
-    ref,
-    icon: iconData,
-    className,
-    ...props
-  }));
-  if (iconData.name) {
-    Component.displayName = toPascalCase(iconData.name);
-  }
-  return Component;
-}
-
-// node_modules/lucide-react/dist/esm/icons/circle-alert.mjs
-var __iconData = {
-  name: "circle-alert",
-  size: 24,
-  node: [
-    ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-    ["line", { x1: "12", x2: "12", y1: "8", y2: "12", key: "1pkeuh" }],
-    ["line", { x1: "12", x2: "12.01", y1: "16", y2: "16", key: "4dfq90" }]
-  ],
-  aliases: ["alert-circle"]
-};
-__iconData.node;
-var CircleAlert = createLucideIcon(__iconData);
-// node_modules/lucide-react/dist/esm/icons/circle-check.mjs
-var __iconData2 = {
-  name: "circle-check",
-  size: 24,
-  node: [
-    ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-    ["path", { d: "m16 9-5.5 5.5L8 12", key: "xofnsj" }]
-  ],
-  aliases: ["check-circle-2"]
-};
-__iconData2.node;
-var CircleCheck = createLucideIcon(__iconData2);
-// node_modules/lucide-react/dist/esm/icons/arrow-left.mjs
-var __iconData3 = {
-  name: "arrow-left",
-  size: 24,
-  node: [
-    ["path", { d: "m12 19-7-7 7-7", key: "1l729n" }],
-    ["path", { d: "M19 12H5", key: "x3x0zl" }]
-  ]
-};
-__iconData3.node;
-var ArrowLeft = createLucideIcon(__iconData3);
-// node_modules/lucide-react/dist/esm/icons/check.mjs
-var __iconData4 = {
-  name: "check",
-  size: 24,
-  node: [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]]
-};
-__iconData4.node;
-var Check = createLucideIcon(__iconData4);
-// node_modules/lucide-react/dist/esm/icons/clock.mjs
-var __iconData5 = {
-  name: "clock",
-  size: 24,
-  node: [
-    ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-    ["path", { d: "M12 6v6l4 2", key: "mmk7yg" }]
-  ]
-};
-__iconData5.node;
-var Clock = createLucideIcon(__iconData5);
-// node_modules/lucide-react/dist/esm/icons/external-link.mjs
-var __iconData6 = {
-  name: "external-link",
-  size: 24,
-  node: [
-    ["path", { d: "M15 3h6v6", key: "1q9fwt" }],
-    ["path", { d: "M10 14 21 3", key: "gplh6r" }],
-    ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", key: "a6xqqp" }]
-  ]
-};
-__iconData6.node;
-var ExternalLink = createLucideIcon(__iconData6);
-// node_modules/lucide-react/dist/esm/icons/eye-off.mjs
-var __iconData7 = {
-  name: "eye-off",
-  size: 24,
-  node: [
-    [
-      "path",
-      {
-        d: "M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49",
-        key: "ct8e1f"
-      }
-    ],
-    ["path", { d: "M14.084 14.158a3 3 0 0 1-4.242-4.242", key: "151rxh" }],
-    [
-      "path",
-      {
-        d: "M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143",
-        key: "13bj9a"
-      }
-    ],
-    ["path", { d: "m2 2 20 20", key: "1ooewy" }]
-  ]
-};
-__iconData7.node;
-var EyeOff = createLucideIcon(__iconData7);
-// node_modules/lucide-react/dist/esm/icons/eye.mjs
-var __iconData8 = {
-  name: "eye",
-  size: 24,
-  node: [
-    [
-      "path",
-      {
-        d: "M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0",
-        key: "1nclc0"
-      }
-    ],
-    ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
-  ]
-};
-__iconData8.node;
-var Eye = createLucideIcon(__iconData8);
-// node_modules/lucide-react/dist/esm/icons/info.mjs
-var __iconData9 = {
-  name: "info",
-  size: 24,
-  node: [
-    ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-    ["path", { d: "M12 16v-4", key: "1dtifu" }],
-    ["path", { d: "M12 8h.01", key: "e9boi3" }]
-  ]
-};
-__iconData9.node;
-var Info = createLucideIcon(__iconData9);
-// node_modules/lucide-react/dist/esm/icons/key-round.mjs
-var __iconData10 = {
-  name: "key-round",
-  size: 24,
-  node: [
-    [
-      "path",
-      {
-        d: "M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z",
-        key: "1s6t7t"
-      }
-    ],
-    ["circle", { cx: "16.5", cy: "7.5", r: ".5", fill: "currentColor", key: "w0ekpg" }]
-  ]
-};
-__iconData10.node;
-var KeyRound = createLucideIcon(__iconData10);
-// node_modules/lucide-react/dist/esm/icons/key.mjs
-var __iconData11 = {
-  name: "key",
-  size: 24,
-  node: [
-    ["path", { d: "m2 21 9.6-9.6", key: "9l79m3" }],
-    [
-      "path",
-      { d: "m7.5 15.5 2.3 2.3a1 1 0 0 1 0 1.4l-2.1 2.1a1 1 0 0 1-1.4 0L4 19", key: "fw8biw" }
-    ],
-    ["circle", { cx: "15.5", cy: "7.5", r: "5.5", key: "4wxmhb" }]
-  ]
-};
-__iconData11.node;
-var Key = createLucideIcon(__iconData11);
-// node_modules/lucide-react/dist/esm/icons/lock.mjs
-var __iconData12 = {
-  name: "lock",
-  size: 24,
-  node: [
-    ["rect", { width: "18", height: "11", x: "3", y: "11", rx: "2", ry: "2", key: "1w4ew1" }],
-    ["path", { d: "M7 11V7a5 5 0 0 1 10 0v4", key: "fwvmzm" }]
-  ]
-};
-__iconData12.node;
-var Lock = createLucideIcon(__iconData12);
-// node_modules/lucide-react/dist/esm/icons/log-in.mjs
-var __iconData13 = {
-  name: "log-in",
-  size: 24,
-  node: [
-    ["path", { d: "m10 17 5-5-5-5", key: "1bsop3" }],
-    ["path", { d: "M15 12H3", key: "6jk70r" }],
-    ["path", { d: "M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4", key: "u53s6r" }]
-  ]
-};
-__iconData13.node;
-var LogIn = createLucideIcon(__iconData13);
-// node_modules/lucide-react/dist/esm/icons/log-out.mjs
-var __iconData14 = {
-  name: "log-out",
-  size: 24,
-  node: [
-    ["path", { d: "m16 17 5-5-5-5", key: "1bji2h" }],
-    ["path", { d: "M21 12H9", key: "dn1m92" }],
-    ["path", { d: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4", key: "1uf3rs" }]
-  ]
-};
-__iconData14.node;
-var LogOut = createLucideIcon(__iconData14);
-// node_modules/lucide-react/dist/esm/icons/mail.mjs
-var __iconData15 = {
-  name: "mail",
-  size: 24,
-  node: [
-    ["path", { d: "m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7", key: "132q7q" }],
-    ["rect", { x: "2", y: "4", width: "20", height: "16", rx: "2", key: "izxlao" }]
-  ]
-};
-__iconData15.node;
-var Mail = createLucideIcon(__iconData15);
-// node_modules/lucide-react/dist/esm/icons/refresh-cw.mjs
-var __iconData16 = {
-  name: "refresh-cw",
-  size: 24,
-  node: [
-    ["path", { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8", key: "v9h5vc" }],
-    ["path", { d: "M21 3v5h-5", key: "1q7to0" }],
-    ["path", { d: "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16", key: "3uifl3" }],
-    ["path", { d: "M8 16H3v5", key: "1cv678" }]
-  ]
-};
-__iconData16.node;
-var RefreshCw = createLucideIcon(__iconData16);
-// node_modules/lucide-react/dist/esm/icons/send.mjs
-var __iconData17 = {
-  name: "send",
-  size: 24,
-  node: [
-    [
-      "path",
-      {
-        d: "M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z",
-        key: "1ffxy3"
-      }
-    ],
-    ["path", { d: "m21.854 2.147-10.94 10.939", key: "12cjpa" }]
-  ]
-};
-__iconData17.node;
-var Send = createLucideIcon(__iconData17);
-// node_modules/lucide-react/dist/esm/icons/shield-check.mjs
-var __iconData18 = {
-  name: "shield-check",
-  size: 24,
-  node: [
-    [
-      "path",
-      {
-        d: "M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z",
-        key: "oel41y"
-      }
-    ],
-    ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
-  ]
-};
-__iconData18.node;
-var ShieldCheck = createLucideIcon(__iconData18);
-// node_modules/lucide-react/dist/esm/icons/shield.mjs
-var __iconData19 = {
-  name: "shield",
-  size: 24,
-  node: [
-    [
-      "path",
-      {
-        d: "M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z",
-        key: "oel41y"
-      }
-    ]
-  ]
-};
-__iconData19.node;
-var Shield = createLucideIcon(__iconData19);
-// node_modules/lucide-react/dist/esm/icons/smartphone.mjs
-var __iconData20 = {
-  name: "smartphone",
-  size: 24,
-  node: [
-    ["rect", { width: "14", height: "20", x: "5", y: "2", rx: "2", ry: "2", key: "1yt0o3" }],
-    ["path", { d: "M12 18h.01", key: "mhygvu" }]
-  ]
-};
-__iconData20.node;
-var Smartphone = createLucideIcon(__iconData20);
-// node_modules/lucide-react/dist/esm/icons/user-plus.mjs
-var __iconData21 = {
-  name: "user-plus",
-  size: 24,
-  node: [
-    ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
-    ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }],
-    ["line", { x1: "19", x2: "19", y1: "8", y2: "14", key: "1bvyxn" }],
-    ["line", { x1: "22", x2: "16", y1: "11", y2: "11", key: "1shjgl" }]
-  ]
-};
-__iconData21.node;
-var UserPlus = createLucideIcon(__iconData21);
-// node_modules/lucide-react/dist/esm/icons/user.mjs
-var __iconData22 = {
-  name: "user",
-  size: 24,
-  node: [
-    ["path", { d: "M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2", key: "975kel" }],
-    ["circle", { cx: "12", cy: "7", r: "4", key: "17ys0d" }]
-  ]
-};
-__iconData22.node;
-var User = createLucideIcon(__iconData22);
-// node_modules/lucide-react/dist/esm/icons/x.mjs
-var __iconData23 = {
-  name: "x",
-  size: 24,
-  node: [
-    ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
-    ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
-  ]
-};
-__iconData23.node;
-var X = createLucideIcon(__iconData23);
 // src/services/api.js
 var DEFAULT_SERVER = "http://127.0.0.1:5000";
 var detectedWorkingBase = null;
@@ -19433,11 +18913,6 @@ async function login({ login: loginIdentifier, username, password }) {
   }
   return response;
 }
-async function getUserByUsernameOrEmail(id) {
-  return await request(`/api/users/${encodeURIComponent(id)}`, {
-    method: "GET"
-  });
-}
 async function checkBackendHealth() {
   const candidates = [];
   if (typeof window !== "undefined" && window.__API_URL__) {
@@ -19493,276 +18968,265 @@ async function verifyOtp(identifier, otp) {
 // src/components/LoginCard.jsx
 var jsx_dev_runtime = __toESM(require_jsx_dev_runtime(), 1);
 function LoginCard({ onSwitchToRegister, onForgotPassword, onNotify, onLoginSuccess }) {
-  const [loginMethod, setLoginMethod] = import_react4.useState("otp");
-  const [email, setEmail] = import_react4.useState("");
-  const [formData, setFormData] = import_react4.useState({
-    username: "",
-    password: "",
-    rememberMe: false
-  });
-  const [showPassword, setShowPassword] = import_react4.useState(false);
-  const [isLoading, setIsLoading] = import_react4.useState(false);
-  const handlePasswordChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value
-    }));
+  const [email, setEmail] = import_react.useState("");
+  const [password, setPassword] = import_react.useState("");
+  const [remember, setRemember] = import_react.useState(false);
+  const [showPassword, setShowPassword] = import_react.useState(false);
+  const [isLoading, setIsLoading] = import_react.useState(false);
+  const [emailError, setEmailError] = import_react.useState("");
+  const [passwordError, setPasswordError] = import_react.useState("");
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  const validate = () => {
+    let valid = true;
+    const v = email.trim();
+    if (!v) {
+      setEmailError("Please enter your email address.");
+      valid = false;
+    } else if (!EMAIL_RE.test(v)) {
+      setEmailError("Enter a valid email address, like you@company.com.");
+      valid = false;
+    } else {
+      setEmailError("");
+    }
+    if (!password) {
+      setPasswordError("Please enter your password.");
+      valid = false;
+    } else {
+      setPasswordError("");
+    }
+    return valid;
   };
-  const handleOtpLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const cleanEmail = email.trim();
-    if (!cleanEmail) {
-      onNotify?.("Please enter your registered Gmail address.", "error");
+    if (!validate() || isLoading)
       return;
-    }
-    if (!cleanEmail.includes("@")) {
-      onNotify?.("Please enter a valid Gmail / email address.", "error");
-      return;
-    }
     setIsLoading(true);
-    try {
-      const res = await sendOtp(cleanEmail);
-      onNotify?.(res.message || "A 6-digit verification code has been sent to your Gmail address!", "success");
-      if (onLoginSuccess) {
-        onLoginSuccess({
-          email: cleanEmail,
-          username: res.identifier || cleanEmail,
-          email_masked: res.email_masked,
-          expires_in: res.expires_in || 300,
-          cooldown: res.cooldown || 60,
-          loginMethod: "otp"
-        });
-      }
-    } catch (err) {
-      let errorMsg = err.message || "Failed to send OTP.";
-      if (err.status === 404) {
-        errorMsg = "No active employee account found with this Gmail address. Please register first.";
-      } else if (err.status === 403) {
-        errorMsg = "Your employee account is deactivated. Please contact your administrator.";
-      } else if (err.status === 429) {
-        errorMsg = err.message || "Please wait before requesting another OTP.";
-      }
-      onNotify?.(errorMsg, "error");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  const handlePasswordSubmit = async (e) => {
-    e.preventDefault();
-    const username = formData.username.trim();
-    const password = formData.password;
-    if (!username || !password) {
-      onNotify?.("Please enter both username and password.", "error");
-      return;
-    }
-    setIsLoading(true);
+    const cleanEmail = email.trim().toLowerCase();
     try {
       const loginRes = await login({
-        login: username,
-        username,
+        login: cleanEmail,
+        username: cleanEmail,
         password
       });
-      let userEmail = username;
-      let userUid = null;
       try {
-        const userRes = await getUserByUsernameOrEmail(username);
-        const userObj = Array.isArray(userRes) ? userRes[0] : userRes;
-        if (userObj?.email)
-          userEmail = userObj.email;
-        if (userObj?.uid)
-          userUid = userObj.uid;
-      } catch {}
-      try {
-        const otpTarget = userEmail && userEmail.includes("@") ? userEmail : username;
-        const otpRes = await sendOtp(otpTarget);
-        onNotify?.(otpRes.message || "Password verified! A 6-digit OTP has been sent to your email.", "success");
+        const otpRes = await sendOtp(cleanEmail);
+        onNotify?.(otpRes.message || "Signed in! Verification code sent to your email.", "success");
         if (onLoginSuccess) {
           onLoginSuccess({
-            username,
-            email: userEmail,
-            uid: userUid,
+            email: cleanEmail,
+            username: cleanEmail,
             token: loginRes.token,
             email_masked: otpRes.email_masked,
             expires_in: otpRes.expires_in || 300,
             cooldown: otpRes.cooldown || 60,
-            rememberMe: formData.rememberMe,
-            loginMethod: "password"
+            rememberMe: remember
           });
         }
       } catch (otpErr) {
-        onNotify?.(loginRes.message || "Credentials verified successfully!", "success");
+        onNotify?.("Credentials verified! Please enter the 6-digit OTP.", "info");
         if (onLoginSuccess) {
           onLoginSuccess({
-            username,
-            email: userEmail,
-            uid: userUid,
+            email: cleanEmail,
+            username: cleanEmail,
             token: loginRes.token,
-            rememberMe: formData.rememberMe,
-            loginMethod: "password"
+            rememberMe: remember
           });
         }
       }
     } catch (err) {
-      const errorMsg = err.message || (err.status === 404 ? "Invalid credentials or user not found." : "Authentication failed. Please try again.");
-      onNotify?.(errorMsg, "error");
+      const msg = err.message || "Incorrect email or password.";
+      setPasswordError(msg);
+      onNotify?.(msg, "error");
     } finally {
       setIsLoading(false);
     }
   };
-  return /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-    className: "w-full max-w-[420px] mx-auto p-[30px_40px] text-black glass-card rounded-[22px] animate-fade-in-scale",
+  return /* @__PURE__ */ jsx_dev_runtime.jsxDEV(jsx_dev_runtime.Fragment, {
     children: [
-      /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-        className: "text-center mb-5",
+      /* @__PURE__ */ jsx_dev_runtime.jsxDEV("header", {
+        className: "card__head",
         children: [
-          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("h1", {
-            className: "text-[34px] sm:text-[36px] font-semibold text-black tracking-tight leading-tight",
-            children: "Login"
+          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("h2", {
+            id: "login-title",
+            children: "Welcome back"
           }, undefined, false, undefined, this),
           /* @__PURE__ */ jsx_dev_runtime.jsxDEV("p", {
-            className: "text-xs text-black/70 font-medium mt-1",
-            children: "Vault Auth Single Sign-On"
+            children: "Sign in to your VaultAuth account."
           }, undefined, false, undefined, this)
         ]
       }, undefined, true, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-        className: "flex p-1 bg-black/10 rounded-full mb-6",
-        children: [
-          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
-            type: "button",
-            onClick: () => setLoginMethod("otp"),
-            className: `flex-1 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer ${loginMethod === "otp" ? "bg-black text-white shadow-sm" : "text-black/75 hover:text-black"}`,
-            children: "Gmail OTP"
-          }, undefined, false, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
-            type: "button",
-            onClick: () => setLoginMethod("password"),
-            className: `flex-1 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer ${loginMethod === "password" ? "bg-black text-white shadow-sm" : "text-black/75 hover:text-black"}`,
-            children: "Password"
-          }, undefined, false, undefined, this)
-        ]
-      }, undefined, true, undefined, this),
-      loginMethod === "otp" && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("form", {
-        onSubmit: handleOtpLogin,
+      /* @__PURE__ */ jsx_dev_runtime.jsxDEV("form", {
+        id: "login-form",
+        onSubmit: handleSubmit,
         noValidate: true,
         children: [
           /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-            className: "text-center mb-4",
-            children: /* @__PURE__ */ jsx_dev_runtime.jsxDEV("p", {
-              className: "text-xs text-black/80 font-medium leading-relaxed",
-              children: "Enter your registered Gmail address. We'll send a real 6-digit verification code."
-            }, undefined, false, undefined, this)
-          }, undefined, false, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-            className: "relative w-full h-[50px] my-[22px]",
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("input", {
-                id: "login-gmail",
-                name: "email",
-                type: "email",
-                placeholder: "Registered Gmail Address",
-                required: true,
-                autoComplete: "email",
-                value: email,
-                onChange: (e) => setEmail(e.target.value),
-                className: "w-full h-full glass-input rounded-[40px] text-[15px] sm:text-[16px] text-black placeholder:text-black/75 outline-none pl-5 pr-12"
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime.jsxDEV(Mail, {
-                size: 18,
-                className: "absolute right-5 top-1/2 -translate-y-1/2 text-black pointer-events-none"
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
-            type: "submit",
-            disabled: isLoading || !email.trim(),
-            className: "w-full h-[46px] btn-primary rounded-[40px] text-[16px] font-semibold flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shadow-md transition-all",
-            children: isLoading ? /* @__PURE__ */ jsx_dev_runtime.jsxDEV(jsx_dev_runtime.Fragment, {
-              children: [
-                /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-                  className: "w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"
-                }, undefined, false, undefined, this),
-                /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-                  children: "Sending OTP..."
-                }, undefined, false, undefined, this)
-              ]
-            }, undefined, true, undefined, this) : /* @__PURE__ */ jsx_dev_runtime.jsxDEV(jsx_dev_runtime.Fragment, {
-              children: [
-                /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-                  children: "Send OTP"
-                }, undefined, false, undefined, this),
-                /* @__PURE__ */ jsx_dev_runtime.jsxDEV(Send, {
-                  size: 16
-                }, undefined, false, undefined, this)
-              ]
-            }, undefined, true, undefined, this)
-          }, undefined, false, undefined, this)
-        ]
-      }, undefined, true, undefined, this),
-      loginMethod === "password" && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("form", {
-        onSubmit: handlePasswordSubmit,
-        noValidate: true,
-        children: [
-          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-            className: "relative w-full h-[50px] my-[20px]",
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("input", {
-                id: "login-username",
-                name: "username",
-                type: "text",
-                placeholder: "Username or Email",
-                required: true,
-                autoComplete: "username",
-                value: formData.username,
-                onChange: handlePasswordChange,
-                className: "w-full h-full glass-input rounded-[40px] text-[15px] sm:text-[16px] text-black placeholder:text-black/75 outline-none pl-5 pr-12"
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime.jsxDEV(User, {
-                size: 18,
-                className: "absolute right-5 top-1/2 -translate-y-1/2 text-black pointer-events-none"
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-            className: "relative w-full h-[50px] my-[20px]",
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("input", {
-                id: "login-password",
-                name: "password",
-                type: showPassword ? "text" : "password",
-                placeholder: "Password",
-                required: true,
-                autoComplete: "current-password",
-                value: formData.password,
-                onChange: handlePasswordChange,
-                className: "w-full h-full glass-input rounded-[40px] text-[15px] sm:text-[16px] text-black placeholder:text-black/75 outline-none pl-5 pr-12"
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
-                type: "button",
-                onClick: () => setShowPassword(!showPassword),
-                className: "absolute right-4 top-1/2 -translate-y-1/2 p-1.5 text-black hover:text-black/70 transition-colors cursor-pointer rounded-full",
-                title: showPassword ? "Hide password" : "Show password",
-                children: showPassword ? /* @__PURE__ */ jsx_dev_runtime.jsxDEV(EyeOff, {
-                  size: 18
-                }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime.jsxDEV(Eye, {
-                  size: 18
-                }, undefined, false, undefined, this)
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-            className: "flex justify-between items-center text-[14px] text-black -mt-1 mb-5 select-none",
+            className: `field ${emailError ? "has-error" : ""}`,
+            "data-field": "email",
             children: [
               /* @__PURE__ */ jsx_dev_runtime.jsxDEV("label", {
-                className: "flex items-center gap-2 cursor-pointer font-medium hover:opacity-85 transition-opacity",
+                htmlFor: "email",
+                children: "Email address"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
+                className: "control",
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime.jsxDEV("svg", {
+                    className: "control__icon",
+                    viewBox: "0 0 24 24",
+                    "aria-hidden": "true",
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime.jsxDEV("rect", {
+                        x: "3",
+                        y: "5",
+                        width: "18",
+                        height: "14",
+                        rx: "2.500"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime.jsxDEV("path", {
+                        d: "m4 7 8 6 8-6"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime.jsxDEV("input", {
+                    id: "email",
+                    name: "email",
+                    type: "email",
+                    inputMode: "email",
+                    autoComplete: "username",
+                    placeholder: "you@company.com",
+                    required: true,
+                    value: email,
+                    onChange: (e) => {
+                      setEmail(e.target.value);
+                      if (emailError)
+                        setEmailError("");
+                    },
+                    onBlur: () => {
+                      if (email) {
+                        if (!EMAIL_RE.test(email.trim()))
+                          setEmailError("Enter a valid email address, like you@company.com.");
+                        else
+                          setEmailError("");
+                      }
+                    }
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              emailError && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("p", {
+                className: "error",
+                role: "alert",
+                children: emailError
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
+            className: `field ${passwordError ? "has-error" : ""}`,
+            "data-field": "password",
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("label", {
+                htmlFor: "password",
+                children: "Password"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
+                className: "control",
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime.jsxDEV("svg", {
+                    className: "control__icon",
+                    viewBox: "0 0 24 24",
+                    "aria-hidden": "true",
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime.jsxDEV("rect", {
+                        x: "5",
+                        y: "11",
+                        width: "14",
+                        height: "9",
+                        rx: "2"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime.jsxDEV("path", {
+                        d: "M8 11V8a4 4 0 0 1 8 0v3"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime.jsxDEV("input", {
+                    id: "password",
+                    name: "password",
+                    type: showPassword ? "text" : "password",
+                    autoComplete: "current-password",
+                    placeholder: "Enter your password",
+                    required: true,
+                    value: password,
+                    onChange: (e) => {
+                      setPassword(e.target.value);
+                      if (passwordError)
+                        setPasswordError("");
+                    }
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
+                    type: "button",
+                    className: "toggle",
+                    id: "toggle-password",
+                    onClick: () => setShowPassword(!showPassword),
+                    "aria-label": showPassword ? "Hide password" : "Show password",
+                    "aria-pressed": showPassword,
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime.jsxDEV("svg", {
+                        className: "eye",
+                        viewBox: "0 0 24 24",
+                        "aria-hidden": "true",
+                        style: { display: showPassword ? "none" : "block" },
+                        children: [
+                          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("path", {
+                            d: "M2 12s3.500-7 10-7 10 7 10 7-3.500 7-10 7S2 12 2 12Z"
+                          }, undefined, false, undefined, this),
+                          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("circle", {
+                            cx: "12",
+                            cy: "12",
+                            r: "3"
+                          }, undefined, false, undefined, this)
+                        ]
+                      }, undefined, true, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime.jsxDEV("svg", {
+                        className: "eye-off",
+                        viewBox: "0 0 24 24",
+                        "aria-hidden": "true",
+                        style: { display: showPassword ? "block" : "none" },
+                        children: [
+                          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("path", {
+                            d: "M3 3l18 18M10.600 6.100A9.700 9.700 0 0 1 12 5c6.500 0 10 7 10 7a17 17 0 0 1-3.200 4.100M6.500 6.600C3.700 8.500 2 12 2 12s3.500 7 10 7c1.700 0 3.200-.4 4.500-1"
+                          }, undefined, false, undefined, this),
+                          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("path", {
+                            d: "M9.900 9.900a3 3 0 0 0 4.200 4.200"
+                          }, undefined, false, undefined, this)
+                        ]
+                      }, undefined, true, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              passwordError && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("p", {
+                className: "error",
+                role: "alert",
+                children: passwordError
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
+            className: "row",
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("label", {
+                className: "check",
                 children: [
                   /* @__PURE__ */ jsx_dev_runtime.jsxDEV("input", {
                     type: "checkbox",
-                    name: "rememberMe",
-                    checked: formData.rememberMe,
-                    onChange: handlePasswordChange,
-                    className: "w-4 h-4 rounded accent-black cursor-pointer"
+                    id: "remember",
+                    name: "remember",
+                    checked: remember,
+                    onChange: (e) => setRemember(e.target.checked)
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
+                    className: "check__box",
+                    "aria-hidden": "true"
                   }, undefined, false, undefined, this),
                   /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
                     children: "Remember me"
@@ -19771,56 +19235,42 @@ function LoginCard({ onSwitchToRegister, onForgotPassword, onNotify, onLoginSucc
               }, undefined, true, undefined, this),
               /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
                 type: "button",
+                className: "link",
+                id: "forgot-link",
                 onClick: onForgotPassword,
-                className: "text-black font-medium hover:underline cursor-pointer",
                 children: "Forgot password?"
               }, undefined, false, undefined, this)
             ]
           }, undefined, true, undefined, this),
           /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
             type: "submit",
+            className: `btn ${isLoading ? "is-loading" : ""}`,
+            id: "submit-btn",
             disabled: isLoading,
-            className: "w-full h-[46px] btn-primary rounded-[40px] text-[16px] font-semibold flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-80",
-            children: isLoading ? /* @__PURE__ */ jsx_dev_runtime.jsxDEV(jsx_dev_runtime.Fragment, {
-              children: [
-                /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-                  className: "w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"
-                }, undefined, false, undefined, this),
-                /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-                  children: "Authenticating..."
-                }, undefined, false, undefined, this)
-              ]
-            }, undefined, true, undefined, this) : /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-              children: "Login"
-            }, undefined, false, undefined, this)
-          }, undefined, false, undefined, this)
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
+                className: "btn__label",
+                children: isLoading ? "Signing in…" : "Sign in"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
+                className: "btn__spinner",
+                "aria-hidden": "true"
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
         ]
       }, undefined, true, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-        className: "text-[14.5px] text-center mt-6 mb-2",
-        children: /* @__PURE__ */ jsx_dev_runtime.jsxDEV("p", {
-          className: "text-black/90",
-          children: [
-            "Don't have an account?",
-            " ",
-            /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
-              type: "button",
-              onClick: onSwitchToRegister,
-              className: "text-black font-semibold hover:underline cursor-pointer ml-1 inline-flex items-center gap-1",
-              children: "Register >"
-            }, undefined, false, undefined, this)
-          ]
-        }, undefined, true, undefined, this)
-      }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-        className: "mt-4 pt-3 border-t border-white/20 flex items-center justify-center gap-1.5 text-[11.5px] text-black/60 font-medium",
+      /* @__PURE__ */ jsx_dev_runtime.jsxDEV("p", {
+        className: "switch",
         children: [
-          /* @__PURE__ */ jsx_dev_runtime.jsxDEV(ShieldCheck, {
-            size: 14,
-            className: "text-black/70"
-          }, undefined, false, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-            children: "256-bit SSL Encrypted & SSO Protected"
+          "Don't have an account?",
+          " ",
+          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
+            type: "button",
+            className: "link",
+            id: "register-link",
+            onClick: onSwitchToRegister,
+            children: "Create one"
           }, undefined, false, undefined, this)
         ]
       }, undefined, true, undefined, this)
@@ -19829,26 +19279,23 @@ function LoginCard({ onSwitchToRegister, onForgotPassword, onNotify, onLoginSucc
 }
 
 // src/components/RegisterCard.jsx
-var import_react5 = __toESM(require_react(), 1);
+var import_react2 = __toESM(require_react(), 1);
 var jsx_dev_runtime2 = __toESM(require_jsx_dev_runtime(), 1);
 function RegisterCard({ onSwitchToLogin, onNotify }) {
-  const [formData, setFormData] = import_react5.useState({
+  const [formData, setFormData] = import_react2.useState({
     fullName: "",
     email: "",
     username: "",
     password: "",
-    confirmPassword: "",
-    agreeTerms: true
+    confirmPassword: ""
   });
-  const [showPassword, setShowPassword] = import_react5.useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = import_react5.useState(false);
-  const [isLoading, setIsLoading] = import_react5.useState(false);
+  const [showPassword, setShowPassword] = import_react2.useState(false);
+  const [isLoading, setIsLoading] = import_react2.useState(false);
+  const [errors, setErrors] = import_react2.useState({});
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value
-    }));
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: "" }));
   };
   const getPasswordStrength = (pass) => {
     if (!pass)
@@ -19866,293 +19313,417 @@ function RegisterCard({ onSwitchToLogin, onNotify }) {
   };
   const strength = getPasswordStrength(formData.password);
   const strengthLabels = ["Very Weak", "Weak", "Medium", "Strong", "Very Strong"];
-  const strengthColors = ["bg-red-500", "bg-orange-500", "bg-amber-500", "bg-blue-500", "bg-emerald-500"];
+  const strengthColors = ["#dc2626", "#f97316", "#f59e0b", "#3b82f6", "#16a34a"];
   const passwordsMatch = formData.confirmPassword.length > 0 && formData.password === formData.confirmPassword;
   const passwordsMismatch = formData.confirmPassword.length > 0 && formData.password !== formData.confirmPassword;
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const fullName = formData.fullName.trim();
-    const email = formData.email.trim();
-    const username = formData.username.trim();
-    const password = formData.password;
-    const confirmPassword = formData.confirmPassword;
-    if (!fullName || !email || !username || !password || !confirmPassword) {
-      onNotify?.("Please fill in all required fields.", "error");
-      return;
-    }
-    if (password !== confirmPassword) {
-      onNotify?.("Passwords do not match. Please verify.", "error");
-      return;
-    }
-    if (password.length < 6) {
-      onNotify?.("Password must be at least 6 characters long.", "error");
+    const { fullName, email, username, password, confirmPassword } = formData;
+    const newErrors = {};
+    if (!fullName.trim())
+      newErrors.fullName = "Full name is required.";
+    if (!email.trim())
+      newErrors.email = "Email address is required.";
+    if (!username.trim())
+      newErrors.username = "Username is required.";
+    if (!password)
+      newErrors.password = "Password is required.";
+    else if (password.length < 6)
+      newErrors.password = "Password must be at least 6 characters.";
+    if (!confirmPassword)
+      newErrors.confirmPassword = "Please confirm your password.";
+    else if (password !== confirmPassword)
+      newErrors.confirmPassword = "Passwords do not match.";
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
     setIsLoading(true);
     try {
       await register({
-        fullName,
-        username,
-        email,
+        fullName: fullName.trim(),
+        username: username.trim(),
+        email: email.trim(),
         password
       });
-      onNotify?.(`Account successfully created for ${username}! Redirecting to login...`, "success");
-      setTimeout(() => {
-        onSwitchToLogin();
-      }, 1000);
+      onNotify?.(`Account created for ${username.trim()}! Redirecting to sign in…`, "success");
+      setTimeout(() => onSwitchToLogin(), 1000);
     } catch (err) {
-      const errorMsg = err.message || (err.status === 400 ? "Invalid registration data. Username or email may already be taken." : "Registration failed. Please try again.");
-      onNotify?.(errorMsg, "error");
+      onNotify?.(err.message || "Registration failed. Please try again.", "error");
     } finally {
       setIsLoading(false);
     }
   };
-  return /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
-    className: "w-full max-w-[430px] mx-auto p-[35px_35px_30px] text-[#001a35] glass-card rounded-[24px] animate-fade-in-scale",
-    children: /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("form", {
-      onSubmit: handleSubmit,
-      noValidate: true,
-      children: [
-        /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
-          className: "text-center mb-5",
-          children: [
-            /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("h1", {
-              className: "text-[28px] sm:text-[30px] font-semibold text-[#001a35] tracking-tight",
-              children: "Create Account"
-            }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("p", {
-              className: "text-xs text-[#001a35]/75 font-medium mt-1",
-              children: "Join the Enterprise SSO Network"
-            }, undefined, false, undefined, this)
-          ]
-        }, undefined, true, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
-          className: "relative w-full h-[48px] my-[16px]",
-          children: [
-            /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("input", {
-              id: "register-fullname",
-              name: "fullName",
-              type: "text",
-              placeholder: "Full Name",
-              required: true,
-              autoComplete: "name",
-              value: formData.fullName,
-              onChange: handleChange,
-              className: "w-full h-full glass-input rounded-[30px] text-[14px] font-medium text-[#001a35] placeholder:text-[#163b65]/90 outline-none pl-5 pr-12"
-            }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime2.jsxDEV(User, {
-              size: 18,
-              className: "absolute right-4 top-1/2 -translate-y-1/2 text-[#001a35] pointer-events-none"
-            }, undefined, false, undefined, this)
-          ]
-        }, undefined, true, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
-          className: "relative w-full h-[48px] my-[16px]",
-          children: [
-            /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("input", {
-              id: "register-email",
-              name: "email",
-              type: "email",
-              placeholder: "Email Address",
-              required: true,
-              autoComplete: "email",
-              value: formData.email,
-              onChange: handleChange,
-              className: "w-full h-full glass-input rounded-[30px] text-[14px] font-medium text-[#001a35] placeholder:text-[#163b65]/90 outline-none pl-5 pr-12"
-            }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime2.jsxDEV(Mail, {
-              size: 18,
-              className: "absolute right-4 top-1/2 -translate-y-1/2 text-[#001a35] pointer-events-none"
-            }, undefined, false, undefined, this)
-          ]
-        }, undefined, true, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
-          className: "relative w-full h-[48px] my-[16px]",
-          children: [
-            /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("input", {
-              id: "register-username",
-              name: "username",
-              type: "text",
-              placeholder: "Username",
-              required: true,
-              autoComplete: "username",
-              value: formData.username,
-              onChange: handleChange,
-              className: "w-full h-full glass-input rounded-[30px] text-[14px] font-medium text-[#001a35] placeholder:text-[#163b65]/90 outline-none pl-5 pr-12"
-            }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime2.jsxDEV(User, {
-              size: 18,
-              className: "absolute right-4 top-1/2 -translate-y-1/2 text-[#001a35] pointer-events-none"
-            }, undefined, false, undefined, this)
-          ]
-        }, undefined, true, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
-          className: "relative w-full h-[48px] my-[16px]",
-          children: [
-            /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("input", {
-              id: "register-password",
-              name: "password",
-              type: showPassword ? "text" : "password",
-              placeholder: "Password",
-              required: true,
-              autoComplete: "new-password",
-              value: formData.password,
-              onChange: handleChange,
-              className: "w-full h-full glass-input rounded-[30px] text-[14px] font-medium text-[#001a35] placeholder:text-[#163b65]/90 outline-none pl-5 pr-12"
-            }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("button", {
-              type: "button",
-              onClick: () => setShowPassword(!showPassword),
-              className: "absolute right-3.5 top-1/2 -translate-y-1/2 p-1.5 text-[#001a35] hover:text-black transition-colors cursor-pointer rounded-full",
-              title: showPassword ? "Hide password" : "Show password",
-              children: showPassword ? /* @__PURE__ */ jsx_dev_runtime2.jsxDEV(EyeOff, {
-                size: 17
-              }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime2.jsxDEV(Eye, {
-                size: 17
-              }, undefined, false, undefined, this)
-            }, undefined, false, undefined, this)
-          ]
-        }, undefined, true, undefined, this),
-        formData.password && /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
-          className: "px-2 -mt-2 mb-3",
-          children: [
-            /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
-              className: "flex items-center justify-between text-[11px] font-medium text-[#001a35]/80 mb-1",
-              children: [
-                /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("span", {
-                  children: "Password strength"
-                }, undefined, false, undefined, this),
-                /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("span", {
-                  className: "font-semibold",
-                  children: strengthLabels[strength]
-                }, undefined, false, undefined, this)
-              ]
-            }, undefined, true, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
-              className: "w-full h-1.5 bg-black/10 rounded-full overflow-hidden flex gap-1",
-              children: [1, 2, 3, 4].map((step) => /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
-                className: `h-full flex-1 rounded-full transition-all duration-300 ${strength >= step ? strengthColors[strength] : "bg-white/40"}`
-              }, step, false, undefined, this))
-            }, undefined, false, undefined, this)
-          ]
-        }, undefined, true, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
-          className: "relative w-full h-[48px] my-[16px]",
-          children: [
-            /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("input", {
-              id: "register-confirm-password",
-              name: "confirmPassword",
-              type: showConfirmPassword ? "text" : "password",
-              placeholder: "Confirm Password",
-              required: true,
-              autoComplete: "new-password",
-              value: formData.confirmPassword,
-              onChange: handleChange,
-              className: `w-full h-full glass-input rounded-[30px] text-[14px] font-medium text-[#001a35] placeholder:text-[#163b65]/90 outline-none pl-5 pr-12 ${passwordsMismatch ? "border-rose-400 bg-rose-50/20" : ""} ${passwordsMatch ? "border-emerald-400" : ""}`
-            }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("button", {
-              type: "button",
-              onClick: () => setShowConfirmPassword(!showConfirmPassword),
-              className: "absolute right-3.5 top-1/2 -translate-y-1/2 p-1.5 text-[#001a35] hover:text-black transition-colors cursor-pointer rounded-full",
-              title: showConfirmPassword ? "Hide password" : "Show password",
-              children: showConfirmPassword ? /* @__PURE__ */ jsx_dev_runtime2.jsxDEV(EyeOff, {
-                size: 17
-              }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime2.jsxDEV(Eye, {
-                size: 17
-              }, undefined, false, undefined, this)
-            }, undefined, false, undefined, this)
-          ]
-        }, undefined, true, undefined, this),
-        passwordsMatch && /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
-          className: "flex items-center gap-1.5 px-3 -mt-2 mb-3 text-[11.5px] font-medium text-emerald-800",
-          children: [
-            /* @__PURE__ */ jsx_dev_runtime2.jsxDEV(Check, {
-              size: 14,
-              className: "text-emerald-700"
-            }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("span", {
-              children: "Passwords match"
-            }, undefined, false, undefined, this)
-          ]
-        }, undefined, true, undefined, this),
-        passwordsMismatch && /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
-          className: "flex items-center gap-1.5 px-3 -mt-2 mb-3 text-[11.5px] font-medium text-rose-800",
-          children: [
-            /* @__PURE__ */ jsx_dev_runtime2.jsxDEV(CircleAlert, {
-              size: 14,
-              className: "text-rose-700"
-            }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("span", {
-              children: "Passwords do not match"
-            }, undefined, false, undefined, this)
-          ]
-        }, undefined, true, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("button", {
-          type: "submit",
-          disabled: isLoading,
-          className: "w-full h-[46px] mt-4 btn-primary rounded-[30px] text-[15px] font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-80",
-          children: isLoading ? /* @__PURE__ */ jsx_dev_runtime2.jsxDEV(jsx_dev_runtime2.Fragment, {
+  return /* @__PURE__ */ jsx_dev_runtime2.jsxDEV(jsx_dev_runtime2.Fragment, {
+    children: [
+      /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("header", {
+        className: "card__head",
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("h2", {
+            children: "Create account"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("p", {
+            children: "Join the VaultAuth SSO network."
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("form", {
+        onSubmit: handleSubmit,
+        noValidate: true,
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
+            className: `field ${errors.fullName ? "has-error" : ""}`,
             children: [
-              /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("span", {
-                className: "w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"
+              /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("label", {
+                htmlFor: "reg-name",
+                children: "Full name"
               }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("span", {
-                children: "Creating Account..."
+              /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
+                className: "control",
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("svg", {
+                    className: "control__icon",
+                    viewBox: "0 0 24 24",
+                    "aria-hidden": "true",
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("circle", {
+                        cx: "12",
+                        cy: "8",
+                        r: "3.200"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("path", {
+                        d: "M5 20c0-3.500 3.100-6 7-6s7 2.500 7 6"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("input", {
+                    id: "reg-name",
+                    name: "fullName",
+                    type: "text",
+                    placeholder: "Alex Morgan",
+                    autoComplete: "name",
+                    required: true,
+                    value: formData.fullName,
+                    onChange: handleChange
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              errors.fullName && /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("p", {
+                className: "error",
+                children: errors.fullName
               }, undefined, false, undefined, this)
             ]
-          }, undefined, true, undefined, this) : /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("span", {
-            children: "Register"
-          }, undefined, false, undefined, this)
-        }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
-          className: "text-[14px] text-center mt-5 mb-1",
-          children: /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("p", {
-            className: "text-[#001a35]/90",
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
+            className: `field ${errors.email ? "has-error" : ""}`,
             children: [
-              "Already have an account?",
-              " ",
-              /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("button", {
-                type: "button",
-                onClick: onSwitchToLogin,
-                className: "text-[#001a35] font-semibold hover:underline cursor-pointer ml-1 inline-flex items-center gap-1",
-                children: "Login >"
+              /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("label", {
+                htmlFor: "reg-email",
+                children: "Email address"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
+                className: "control",
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("svg", {
+                    className: "control__icon",
+                    viewBox: "0 0 24 24",
+                    "aria-hidden": "true",
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("rect", {
+                        x: "3",
+                        y: "5",
+                        width: "18",
+                        height: "14",
+                        rx: "2.500"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("path", {
+                        d: "m4 7 8 6 8-6"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("input", {
+                    id: "reg-email",
+                    name: "email",
+                    type: "email",
+                    placeholder: "you@company.com",
+                    autoComplete: "email",
+                    required: true,
+                    value: formData.email,
+                    onChange: handleChange
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              errors.email && /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("p", {
+                className: "error",
+                children: errors.email
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
+            className: `field ${errors.username ? "has-error" : ""}`,
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("label", {
+                htmlFor: "reg-username",
+                children: "Username"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
+                className: "control",
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("svg", {
+                    className: "control__icon",
+                    viewBox: "0 0 24 24",
+                    "aria-hidden": "true",
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("circle", {
+                        cx: "12",
+                        cy: "8",
+                        r: "3.200"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("path", {
+                        d: "M5 20c0-3.500 3.100-6 7-6s7 2.500 7 6"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("input", {
+                    id: "reg-username",
+                    name: "username",
+                    type: "text",
+                    placeholder: "alexmorgan",
+                    autoComplete: "username",
+                    required: true,
+                    value: formData.username,
+                    onChange: handleChange
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              errors.username && /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("p", {
+                className: "error",
+                children: errors.username
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
+            className: `field ${errors.password ? "has-error" : ""}`,
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("label", {
+                htmlFor: "reg-password",
+                children: "Password"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
+                className: "control",
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("svg", {
+                    className: "control__icon",
+                    viewBox: "0 0 24 24",
+                    "aria-hidden": "true",
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("rect", {
+                        x: "5",
+                        y: "11",
+                        width: "14",
+                        height: "9",
+                        rx: "2"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("path", {
+                        d: "M8 11V8a4 4 0 0 1 8 0v3"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("input", {
+                    id: "reg-password",
+                    name: "password",
+                    type: showPassword ? "text" : "password",
+                    placeholder: "Create a strong password",
+                    autoComplete: "new-password",
+                    required: true,
+                    value: formData.password,
+                    onChange: handleChange
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("button", {
+                    type: "button",
+                    className: "toggle",
+                    onClick: () => setShowPassword(!showPassword),
+                    "aria-label": showPassword ? "Hide password" : "Show password",
+                    "aria-pressed": showPassword,
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("svg", {
+                        className: "eye",
+                        viewBox: "0 0 24 24",
+                        "aria-hidden": "true",
+                        style: { display: showPassword ? "none" : "block" },
+                        children: [
+                          /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("path", {
+                            d: "M2 12s3.500-7 10-7 10 7 10 7-3.500 7-10 7S2 12 2 12Z"
+                          }, undefined, false, undefined, this),
+                          /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("circle", {
+                            cx: "12",
+                            cy: "12",
+                            r: "3"
+                          }, undefined, false, undefined, this)
+                        ]
+                      }, undefined, true, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("svg", {
+                        className: "eye-off",
+                        viewBox: "0 0 24 24",
+                        "aria-hidden": "true",
+                        style: { display: showPassword ? "block" : "none" },
+                        children: [
+                          /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("path", {
+                            d: "M3 3l18 18M10.600 6.100A9.700 9.700 0 0 1 12 5c6.500 0 10 7 10 7a17 17 0 0 1-3.200 4.100M6.500 6.600C3.700 8.500 2 12 2 12s3.500 7 10 7c1.700 0 3.200-.4 4.500-1"
+                          }, undefined, false, undefined, this),
+                          /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("path", {
+                            d: "M9.900 9.900a3 3 0 0 0 4.200 4.200"
+                          }, undefined, false, undefined, this)
+                        ]
+                      }, undefined, true, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              errors.password && /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("p", {
+                className: "error",
+                children: errors.password
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          formData.password && /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
+            style: { padding: "0 2px", marginTop: "-10px", marginBottom: "14px" },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
+                style: { display: "flex", justifyContent: "space-between", fontSize: ".78rem", fontWeight: 500, color: "var(--ink-600)", marginBottom: "4px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("span", {
+                    children: "Password strength"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("span", {
+                    style: { fontWeight: 700, color: strengthColors[strength] },
+                    children: strengthLabels[strength]
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
+                style: { display: "flex", gap: "4px" },
+                children: [1, 2, 3, 4].map((step) => /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
+                  style: {
+                    flex: 1,
+                    height: "4px",
+                    borderRadius: "4px",
+                    background: strength >= step ? strengthColors[strength] : "var(--ink-200)",
+                    transition: "background .3s"
+                  }
+                }, step, false, undefined, this))
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
+            className: `field ${errors.confirmPassword ? "has-error" : ""}`,
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("label", {
+                htmlFor: "reg-confirm",
+                children: "Confirm password"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
+                className: "control",
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("svg", {
+                    className: "control__icon",
+                    viewBox: "0 0 24 24",
+                    "aria-hidden": "true",
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("rect", {
+                        x: "5",
+                        y: "11",
+                        width: "14",
+                        height: "9",
+                        rx: "2"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("path", {
+                        d: "M8 11V8a4 4 0 0 1 8 0v3"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("input", {
+                    id: "reg-confirm",
+                    name: "confirmPassword",
+                    type: showPassword ? "text" : "password",
+                    placeholder: "Re-enter password",
+                    autoComplete: "new-password",
+                    required: true,
+                    value: formData.confirmPassword,
+                    onChange: handleChange
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              errors.confirmPassword && /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("p", {
+                className: "error",
+                children: errors.confirmPassword
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          passwordsMatch && /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("p", {
+            style: { fontSize: ".8rem", color: "var(--success)", fontWeight: 600, margin: "-10px 0 14px 2px" },
+            children: "✓ Passwords match"
+          }, undefined, false, undefined, this),
+          passwordsMismatch && /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("p", {
+            style: { fontSize: ".8rem", color: "var(--danger)", fontWeight: 600, margin: "-10px 0 14px 2px" },
+            children: "✗ Passwords do not match"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("button", {
+            type: "submit",
+            className: `btn ${isLoading ? "is-loading" : ""}`,
+            disabled: isLoading,
+            style: { marginTop: "8px" },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("span", {
+                className: "btn__label",
+                children: isLoading ? "Creating account…" : "Create account"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("span", {
+                className: "btn__spinner",
+                "aria-hidden": "true"
               }, undefined, false, undefined, this)
             ]
           }, undefined, true, undefined, this)
-        }, undefined, false, undefined, this)
-      ]
-    }, undefined, true, undefined, this)
-  }, undefined, false, undefined, this);
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("p", {
+        className: "switch",
+        children: [
+          "Already have an account?",
+          " ",
+          /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("button", {
+            type: "button",
+            className: "link",
+            onClick: onSwitchToLogin,
+            children: "Sign in"
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this)
+    ]
+  }, undefined, true, undefined, this);
 }
 
 // src/components/OtpVerificationCard.jsx
-var import_react6 = __toESM(require_react(), 1);
+var import_react3 = __toESM(require_react(), 1);
 var jsx_dev_runtime3 = __toESM(require_jsx_dev_runtime(), 1);
-function OtpVerificationCard({
-  user,
-  onVerifySuccess,
-  onBackToLogin,
-  onNotify
-}) {
-  const [otp, setOtp] = import_react6.useState(["", "", "", "", "", ""]);
-  const [isVerifying, setIsVerifying] = import_react6.useState(false);
-  const [isResending, setIsResending] = import_react6.useState(false);
-  const [isError, setIsError] = import_react6.useState(false);
-  const [errorMessage, setErrorMessage] = import_react6.useState("");
-  const [timer, setTimer] = import_react6.useState(() => user?.cooldown || 60);
-  const inputRefs = import_react6.useRef([]);
-  import_react6.useEffect(() => {
+function OtpVerificationCard({ user, onVerifySuccess, onBackToLogin, onNotify }) {
+  const [otp, setOtp] = import_react3.useState(["", "", "", "", "", ""]);
+  const [isVerifying, setIsVerifying] = import_react3.useState(false);
+  const [isResending, setIsResending] = import_react3.useState(false);
+  const [isError, setIsError] = import_react3.useState(false);
+  const [errorMessage, setErrorMessage] = import_react3.useState("");
+  const [timer, setTimer] = import_react3.useState(() => user?.cooldown || 60);
+  const inputRefs = import_react3.useRef([]);
+  import_react3.useEffect(() => {
     inputRefs.current[0]?.focus();
   }, []);
-  import_react6.useEffect(() => {
+  import_react3.useEffect(() => {
     if (timer <= 0)
       return;
-    const interval = setInterval(() => {
-      setTimer((prev) => prev - 1);
-    }, 1000);
+    const interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
     return () => clearInterval(interval);
   }, [timer]);
-  const displayEmail = user?.email_masked || user?.email || user?.username || "your registered Gmail";
+  const displayEmail = user?.email_masked || user?.email || user?.username || "your registered email";
   const handleChange = (index, value) => {
     const cleanValue = value.replace(/\D/g, "");
     if (!cleanValue && value !== "")
@@ -20163,9 +19734,8 @@ function OtpVerificationCard({
     setOtp(newOtp);
     setIsError(false);
     setErrorMessage("");
-    if (char && index < 5) {
+    if (char && index < 5)
       inputRefs.current[index + 1]?.focus();
-    }
   };
   const handleKeyDown = (index, e) => {
     if (e.key === "Backspace") {
@@ -20193,24 +19763,21 @@ function OtpVerificationCard({
     if (!pasteData)
       return;
     const newOtp = [...otp];
-    for (let i = 0;i < pasteData.length; i++) {
+    for (let i = 0;i < pasteData.length; i++)
       newOtp[i] = pasteData[i];
-    }
     setOtp(newOtp);
     setIsError(false);
     setErrorMessage("");
     const nextIndex = Math.min(pasteData.length, 5);
     inputRefs.current[nextIndex]?.focus();
-    if (pasteData.length === 6) {
+    if (pasteData.length === 6)
       verifyCode(pasteData);
-    }
   };
   const verifyCode = async (codeToVerify) => {
     const code = codeToVerify || otp.join("");
     if (code.length < 6) {
       setIsError(true);
-      setErrorMessage("Please enter the complete 6-digit verification code.");
-      onNotify?.("Please enter the complete 6-digit verification code.", "error");
+      setErrorMessage("Please enter the complete 6-digit code.");
       return;
     }
     setIsVerifying(true);
@@ -20219,17 +19786,13 @@ function OtpVerificationCard({
     try {
       const identifier = user?.email || user?.username || user?.identifier;
       const res = await verifyOtp(identifier, code);
-      onNotify?.(res.message || "OTP verified successfully! Authenticating session...", "success");
+      onNotify?.(res.message || "OTP verified successfully!", "success");
       setTimeout(() => {
-        onVerifySuccess?.({
-          ...user,
-          ...res.user || {},
-          token: res.token
-        });
+        onVerifySuccess?.({ ...user, ...res.user || {}, token: res.token });
       }, 400);
     } catch (err) {
       setIsError(true);
-      const msg = err.message || (err.status === 401 ? "Invalid or expired verification code. Please check your Gmail." : err.status === 403 ? "Account is deactivated. Please contact your administrator." : "OTP verification failed. Please try again.");
+      const msg = err.message || "Invalid or expired verification code.";
       setErrorMessage(msg);
       onNotify?.(msg, "error");
       inputRefs.current[0]?.focus();
@@ -20249,40 +19812,27 @@ function OtpVerificationCard({
       setTimer(res.cooldown || 60);
       setOtp(["", "", "", "", "", ""]);
       inputRefs.current[0]?.focus();
-      onNotify?.(res.message || "A new 6-digit verification code has been sent to your Gmail!", "info");
+      onNotify?.(res.message || "A new code has been sent!", "info");
     } catch (err) {
-      const msg = err.message || "Failed to resend verification code.";
-      onNotify?.(msg, "error");
-      if (err.data?.retry_after) {
+      onNotify?.(err.message || "Failed to resend code.", "error");
+      if (err.data?.retry_after)
         setTimer(err.data.retry_after);
-      }
     } finally {
       setIsResending(false);
     }
   };
-  return /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("div", {
-    className: "w-full max-w-[440px] mx-auto p-[32px_36px] text-black glass-card rounded-[24px] animate-fade-in-scale",
+  return /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(jsx_dev_runtime3.Fragment, {
     children: [
-      /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("div", {
-        className: "flex flex-col items-center text-center mb-6",
+      /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("header", {
+        className: "card__head",
         children: [
-          /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("div", {
-            className: "w-14 h-14 rounded-2xl bg-black/10 border border-white/60 flex items-center justify-center mb-3 shadow-inner",
-            children: /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(Smartphone, {
-              className: "w-7 h-7 text-black"
-            }, undefined, false, undefined, this)
-          }, undefined, false, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("h1", {
-            className: "text-[28px] sm:text-[30px] font-semibold text-black tracking-tight leading-tight",
-            children: "Gmail Verification"
+          /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("h2", {
+            children: "Enter verification code"
           }, undefined, false, undefined, this),
           /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("p", {
-            className: "text-xs text-black/75 font-medium mt-1.5 max-w-xs leading-relaxed",
             children: [
-              "We've sent a 6-digit one-time passcode to",
-              /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("br", {}, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
-                className: "font-semibold text-black",
+              "We've sent a 6-digit code to ",
+              /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("strong", {
                 children: displayEmail
               }, undefined, false, undefined, this)
             ]
@@ -20290,38 +19840,9 @@ function OtpVerificationCard({
         ]
       }, undefined, true, undefined, this),
       /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("div", {
-        className: "mb-5 p-2.5 rounded-xl bg-white/30 border border-white/50 backdrop-blur-md flex items-center justify-between text-xs text-black/85",
         children: [
           /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("div", {
-            className: "flex items-center gap-1.5",
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(Mail, {
-                size: 14,
-                className: "text-black/70 flex-shrink-0"
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
-                children: "Real Gmail OTP Delivery"
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("div", {
-            className: "flex items-center gap-1 text-[11px] text-black/70 font-medium",
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(Clock, {
-                size: 12
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
-                children: "Expires in 5m"
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this)
-        ]
-      }, undefined, true, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("div", {
-        className: `mb-5 ${isError ? "animate-shake" : ""}`,
-        children: [
-          /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("div", {
-            className: "flex justify-between gap-1.5 sm:gap-2",
+            className: `otp-inputs ${isError ? "animate-shake" : ""}`,
             onPaste: handlePaste,
             children: otp.map((digit, index) => /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("input", {
               ref: (el) => inputRefs.current[index] = el,
@@ -20331,325 +19852,237 @@ function OtpVerificationCard({
               value: digit,
               onChange: (e) => handleChange(index, e.target.value),
               onKeyDown: (e) => handleKeyDown(index, e),
-              className: `w-11 h-14 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-bold rounded-2xl outline-none transition-all duration-200 glass-input ${isError ? "border-rose-500 bg-rose-50/30 text-rose-900 shadow-rose-500/20 shadow-md" : digit ? "border-white bg-white/40 shadow-sm" : ""}`
+              className: `otp-box ${isError ? "has-error" : ""}`,
+              style: digit ? { borderColor: "var(--blue-500)", background: "#f0f7ff" } : {}
             }, index, false, undefined, this))
           }, undefined, false, undefined, this),
-          isError && /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("div", {
-            className: "flex items-center justify-center gap-1.5 text-xs font-medium text-rose-800 mt-2.5 text-center",
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(CircleAlert, {
-                size: 14,
-                className: "flex-shrink-0"
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
-                children: errorMessage || "Invalid code. Please check your Gmail or resend."
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this)
-        ]
-      }, undefined, true, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("button", {
-        type: "button",
-        onClick: () => verifyCode(),
-        disabled: isVerifying || otp.join("").length < 6,
-        className: "w-full h-[46px] btn-primary rounded-[40px] text-[15px] font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shadow-md",
-        children: isVerifying ? /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(jsx_dev_runtime3.Fragment, {
-          children: [
-            /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
-              className: "w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"
-            }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
-              children: "Verifying Code..."
-            }, undefined, false, undefined, this)
-          ]
-        }, undefined, true, undefined, this) : /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(jsx_dev_runtime3.Fragment, {
-          children: [
-            /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(ShieldCheck, {
-              size: 18
-            }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
-              children: "Verify OTP"
-            }, undefined, false, undefined, this)
-          ]
-        }, undefined, true, undefined, this)
-      }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("div", {
-        className: "text-center mt-5 text-xs text-black/80 font-medium",
-        children: timer > 0 ? /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("p", {
-          className: "flex items-center justify-center gap-1.5",
-          children: [
-            /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
-              children: "Resend code in"
-            }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
-              className: "font-mono font-bold text-black",
-              children: [
-                "0:",
-                timer < 10 ? `0${timer}` : timer
-              ]
-            }, undefined, true, undefined, this)
-          ]
-        }, undefined, true, undefined, this) : /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("button", {
-          type: "button",
-          onClick: handleResend,
-          disabled: isResending,
-          className: "inline-flex items-center gap-1.5 font-semibold text-black hover:underline cursor-pointer disabled:opacity-50",
-          children: isResending ? /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(jsx_dev_runtime3.Fragment, {
+          isError && /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("p", {
+            style: { fontSize: ".82rem", color: "var(--danger)", marginTop: "-12px", marginBottom: "16px", textAlign: "center" },
+            children: errorMessage || "Invalid code. Check your email or resend."
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("button", {
+            type: "button",
+            className: `btn ${isVerifying ? "is-loading" : ""}`,
+            disabled: isVerifying || otp.join("").length < 6,
+            onClick: () => verifyCode(),
             children: [
               /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
-                className: "w-3 h-3 border-2 border-black/40 border-t-black rounded-full animate-spin"
+                className: "btn__label",
+                children: isVerifying ? "Verifying…" : "Verify code"
               }, undefined, false, undefined, this),
               /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
-                children: "Sending new code..."
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this) : /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(jsx_dev_runtime3.Fragment, {
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(RefreshCw, {
-                size: 13,
-                className: "text-black"
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
-                children: "Didn't receive code? Resend OTP"
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this)
-        }, undefined, false, undefined, this)
-      }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("div", {
-        className: "mt-5 pt-4 border-t border-white/20 text-center",
-        children: /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("button", {
-          type: "button",
-          onClick: onBackToLogin,
-          className: "inline-flex items-center gap-1.5 text-xs font-semibold text-black/80 hover:text-black hover:underline cursor-pointer transition-colors",
-          children: [
-            /* @__PURE__ */ jsx_dev_runtime3.jsxDEV(ArrowLeft, {
-              size: 14
-            }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
-              children: "Back to Login"
-            }, undefined, false, undefined, this)
-          ]
-        }, undefined, true, undefined, this)
-      }, undefined, false, undefined, this)
-    ]
-  }, undefined, true, undefined, this);
-}
-
-// src/components/AuthenticatedCard.jsx
-var import_react7 = __toESM(require_react(), 1);
-var jsx_dev_runtime4 = __toESM(require_jsx_dev_runtime(), 1);
-function AuthenticatedCard({ user, onSignOut, onNotify }) {
-  const sessionToken = user?.token || "SSO-SEC-" + Math.random().toString(36).substring(2, 8).toUpperCase();
-  const [loginTime] = import_react7.useState(() => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
-  const username = user?.username || "Authenticated User";
-  const email = user?.email;
-  const initial = username.charAt(0).toUpperCase();
-  const handleLaunchApp = () => {
-    onNotify?.("Redirecting to your SSO connected enterprise dashboard...", "info");
-    const tok = user?.token || localStorage.getItem("vault_auth_token") || "";
-    const param = tok ? "?token=" + encodeURIComponent(tok) : "";
-    setTimeout(() => {
-      window.location.href = "/DASHBOARD/index.html" + param;
-    }, 400);
-  };
-  import_react7.useEffect(() => {
-    const t = setTimeout(() => {
-      handleLaunchApp();
-    }, 1200);
-    return () => clearTimeout(t);
-  }, []);
-  return /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
-    className: "w-full max-w-[440px] mx-auto p-[34px_36px] text-black glass-card rounded-[24px] animate-fade-in-scale",
-    children: [
-      /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
-        className: "flex flex-col items-center text-center mb-6",
-        children: [
-          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
-            className: "relative mb-3",
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
-                className: "w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-400/60 flex items-center justify-center shadow-lg",
-                children: /* @__PURE__ */ jsx_dev_runtime4.jsxDEV(ShieldCheck, {
-                  className: "w-9 h-9 text-emerald-800"
-                }, undefined, false, undefined, this)
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
-                className: "absolute bottom-0 right-0 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white animate-pulse"
+                className: "btn__spinner",
+                "aria-hidden": "true"
               }, undefined, false, undefined, this)
             ]
           }, undefined, true, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("h1", {
-            className: "text-[26px] sm:text-[28px] font-bold text-black tracking-tight",
-            children: "Authenticated!"
-          }, undefined, false, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("p", {
-            className: "text-xs text-black/75 font-medium mt-1",
-            children: "Identity verified with 2-Factor Authentication (OTP)"
-          }, undefined, false, undefined, this)
-        ]
-      }, undefined, true, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
-        className: "mb-5 p-3.5 rounded-2xl bg-white/35 border border-white/60 backdrop-blur-md",
-        children: /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
-          className: "flex items-center gap-3",
-          children: [
-            /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
-              className: "w-11 h-11 rounded-full bg-black text-white font-bold text-lg flex items-center justify-center shadow-sm",
-              children: initial
-            }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
-              className: "flex-1 min-w-0",
+          /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("div", {
+            style: { textAlign: "center", marginTop: "20px", fontSize: ".88rem", color: "var(--ink-500)" },
+            children: timer > 0 ? /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
               children: [
-                /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("h3", {
-                  className: "text-sm font-semibold text-black truncate",
-                  children: username
-                }, undefined, false, undefined, this),
-                email && email !== username && /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("p", {
-                  className: "text-xs text-black/80 truncate font-medium",
-                  children: email
-                }, undefined, false, undefined, this),
-                /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("p", {
-                  className: "text-xs text-black/70 flex items-center gap-1.5 mt-0.5",
+                "Resend code in ",
+                /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("strong", {
+                  style: { fontFamily: "monospace", color: "var(--ink-900)" },
                   children: [
-                    /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
-                      className: "w-2 h-2 rounded-full bg-emerald-600 inline-block"
-                    }, undefined, false, undefined, this),
-                    "Active SSO Session"
+                    "0:",
+                    timer < 10 ? `0${timer}` : timer
                   ]
                 }, undefined, true, undefined, this)
               ]
-            }, undefined, true, undefined, this)
-          ]
-        }, undefined, true, undefined, this)
-      }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
-        className: "space-y-2 mb-6 text-xs text-black/85",
-        children: [
-          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
-            className: "flex justify-between items-center py-1.5 px-3 rounded-lg bg-black/5",
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
-                className: "flex items-center gap-1.5 text-black/70",
-                children: [
-                  /* @__PURE__ */ jsx_dev_runtime4.jsxDEV(Key, {
-                    size: 13
-                  }, undefined, false, undefined, this),
-                  " Session Token"
-                ]
-              }, undefined, true, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
-                className: "font-mono font-semibold text-black",
-                children: sessionToken
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
-            className: "flex justify-between items-center py-1.5 px-3 rounded-lg bg-black/5",
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
-                className: "flex items-center gap-1.5 text-black/70",
-                children: [
-                  /* @__PURE__ */ jsx_dev_runtime4.jsxDEV(Clock, {
-                    size: 13
-                  }, undefined, false, undefined, this),
-                  " Verified At"
-                ]
-              }, undefined, true, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
-                className: "font-semibold text-black",
-                children: loginTime
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
-            className: "flex justify-between items-center py-1.5 px-3 rounded-lg bg-black/5",
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
-                className: "flex items-center gap-1.5 text-black/70",
-                children: [
-                  /* @__PURE__ */ jsx_dev_runtime4.jsxDEV(Lock, {
-                    size: 13
-                  }, undefined, false, undefined, this),
-                  " Encryption"
-                ]
-              }, undefined, true, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
-                className: "font-semibold text-emerald-800",
-                children: "256-bit SSL / SAML 2.0"
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this)
-        ]
-      }, undefined, true, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
-        className: "space-y-2.5",
-        children: [
-          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("button", {
-            type: "button",
-            onClick: handleLaunchApp,
-            className: "w-full h-[46px] btn-primary rounded-[40px] text-[15px] font-semibold flex items-center justify-center gap-2 cursor-pointer shadow-md",
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
-                children: "Continue to Dashboard"
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime4.jsxDEV(ExternalLink, {
-                size: 16
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("button", {
-            type: "button",
-            onClick: onSignOut,
-            className: "w-full h-[44px] rounded-[40px] bg-white/30 hover:bg-white/50 border border-white/60 text-black text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer transition-all",
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime4.jsxDEV(LogOut, {
-                size: 16
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
-                children: "Sign Out"
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this)
+            }, undefined, true, undefined, this) : /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("button", {
+              type: "button",
+              className: "link",
+              onClick: handleResend,
+              disabled: isResending,
+              style: { fontSize: ".88rem" },
+              children: isResending ? "Sending…" : "Didn't receive code? Resend"
+            }, undefined, false, undefined, this)
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("p", {
+            className: "switch",
+            style: { borderTop: "1px solid var(--ink-200)", paddingTop: "18px", marginTop: "20px" },
+            children: /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("button", {
+              type: "button",
+              className: "link",
+              onClick: onBackToLogin,
+              children: "← Back to sign in"
+            }, undefined, false, undefined, this)
+          }, undefined, false, undefined, this)
         ]
       }, undefined, true, undefined, this)
     ]
   }, undefined, true, undefined, this);
 }
 
-// src/components/TabSwitch.jsx
-var import_react8 = __toESM(require_react(), 1);
-var jsx_dev_runtime5 = __toESM(require_jsx_dev_runtime(), 1);
-function TabSwitch({ activeTab, onTabChange }) {
-  return /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("div", {
-    className: "relative flex p-1.5 mb-6 bg-white/20 backdrop-blur-md border border-white/40 rounded-full shadow-inner max-w-xs mx-auto",
+// src/components/AuthenticatedCard.jsx
+var import_react4 = __toESM(require_react(), 1);
+var jsx_dev_runtime4 = __toESM(require_jsx_dev_runtime(), 1);
+function AuthenticatedCard({ user, onSignOut, onNotify }) {
+  const token = user?.token || localStorage.getItem("vault_auth_token") || "";
+  const sessionToken = token ? token.length > 28 ? token.slice(0, 24) + "…" : token : "SSO-SEC-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+  const [loginTime] = import_react4.useState(() => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+  const username = user?.username || user?.identifier || "Authenticated User";
+  const email = user?.email;
+  const initial = username.charAt(0).toUpperCase();
+  const handleLaunchApp = () => {
+    onNotify?.("Launching your VaultAuth Dashboard…", "info");
+    const tokenToPass = token || localStorage.getItem("vault_auth_token") || "";
+    const tokenParam = tokenToPass ? `?token=${encodeURIComponent(tokenToPass)}` : "";
+    setTimeout(() => {
+      window.location.href = `/DASHBOARD/index.html${tokenParam}`;
+    }, 400);
+  };
+  import_react4.useEffect(() => {
+    const timer = setTimeout(() => handleLaunchApp(), 1400);
+    return () => clearTimeout(timer);
+  }, [user]);
+  return /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
     children: [
-      /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("div", {
-        className: `absolute top-1.5 bottom-1.5 w-[calc(50%-6px)] bg-black/90 rounded-full shadow-md transition-all duration-300 ease-out ${activeTab === "login" ? "left-1.5" : "left-[calc(50%+3px)]"}`
-      }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("button", {
-        type: "button",
-        onClick: () => onTabChange("login"),
-        className: `relative z-10 flex-1 flex items-center justify-center gap-2 py-2 text-sm font-semibold transition-colors duration-200 cursor-pointer ${activeTab === "login" ? "text-white" : "text-black/80 hover:text-black"}`,
+      /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
+        style: { textAlign: "center", marginBottom: "24px" },
         children: [
-          /* @__PURE__ */ jsx_dev_runtime5.jsxDEV(LogIn, {
-            size: 16
+          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
+            style: {
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "56px",
+              height: "56px",
+              borderRadius: "50%",
+              background: "rgba(22,163,74,.12)",
+              border: "2px solid rgba(22,163,74,.3)",
+              marginBottom: "12px"
+            },
+            children: /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("svg", {
+              viewBox: "0 0 24 24",
+              style: { width: 28, height: 28, fill: "none", stroke: "#16a34a", strokeWidth: 2.5, strokeLinecap: "round", strokeLinejoin: "round" },
+              children: [
+                /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("path", {
+                  d: "M12 3 4.5 6v5.5c0 4.6 3.1 7.9 7.5 9.5 4.4-1.6 7.5-4.9 7.5-9.5V6L12 3Z"
+                }, undefined, false, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("path", {
+                  d: "m9 12 2 2 4-4"
+                }, undefined, false, undefined, this)
+              ]
+            }, undefined, true, undefined, this)
           }, undefined, false, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("span", {
-            children: "Login"
+          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("h3", {
+            style: { margin: 0, fontSize: "1.15rem", fontWeight: 700, color: "var(--ink-900)" },
+            children: "Identity verified"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("p", {
+            style: { margin: "4px 0 0", fontSize: ".88rem", color: "var(--ink-500)" },
+            children: "Redirecting to your dashboard…"
           }, undefined, false, undefined, this)
         ]
       }, undefined, true, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("button", {
-        type: "button",
-        onClick: () => onTabChange("register"),
-        className: `relative z-10 flex-1 flex items-center justify-center gap-2 py-2 text-sm font-semibold transition-colors duration-200 cursor-pointer ${activeTab === "register" ? "text-white" : "text-black/80 hover:text-black"}`,
+      /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          padding: "14px 16px",
+          background: "var(--ink-100)",
+          borderRadius: "12px",
+          marginBottom: "20px"
+        },
         children: [
-          /* @__PURE__ */ jsx_dev_runtime5.jsxDEV(UserPlus, {
-            size: 16
+          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
+            style: {
+              width: "40px",
+              height: "40px",
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, var(--blue-500), var(--indigo-500))",
+              color: "#fff",
+              fontWeight: 700,
+              fontSize: "1rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center"
+            },
+            children: initial
           }, undefined, false, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("span", {
-            children: "Register"
+          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
+            style: { flex: 1, minWidth: 0 },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
+                style: { fontSize: ".92rem", fontWeight: 600, color: "var(--ink-900)" },
+                children: email || username
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
+                style: { fontSize: ".8rem", color: "var(--ink-500)", display: "flex", alignItems: "center", gap: "6px", marginTop: "2px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
+                    style: { width: "6px", height: "6px", borderRadius: "50%", background: "#16a34a" }
+                  }, undefined, false, undefined, this),
+                  "Active SSO Session"
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
+        style: { marginBottom: "24px" },
+        children: [
+          { label: "Session Token", value: sessionToken },
+          { label: "Verified At", value: loginTime },
+          { label: "Encryption", value: "256-bit SSL / SAML 2.0", color: "#16a34a" }
+        ].map((item) => /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
+          style: {
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "8px 12px",
+            fontSize: ".82rem",
+            marginBottom: "4px",
+            background: "var(--ink-100)",
+            borderRadius: "8px"
+          },
+          children: [
+            /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
+              style: { color: "var(--ink-500)" },
+              children: item.label
+            }, undefined, false, undefined, this),
+            /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
+              style: { fontWeight: 600, color: item.color || "var(--ink-900)", fontFamily: item.label === "Session Token" ? "monospace" : "inherit" },
+              children: item.value
+            }, undefined, false, undefined, this)
+          ]
+        }, item.label, true, undefined, this))
+      }, undefined, false, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("button", {
+        type: "button",
+        className: "btn",
+        onClick: handleLaunchApp,
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
+            children: "Continue to Dashboard"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("svg", {
+            viewBox: "0 0 24 24",
+            style: { width: 18, height: 18, fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" },
+            children: /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("path", {
+              d: "M5 12h14M12 5l7 7-7 7"
+            }, undefined, false, undefined, this)
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("button", {
+        type: "button",
+        className: "btn btn--ghost",
+        onClick: onSignOut,
+        style: { marginTop: "8px" },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("svg", {
+            viewBox: "0 0 24 24",
+            style: { width: 18, height: 18, fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" },
+            children: /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("path", {
+              d: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"
+            }, undefined, false, undefined, this)
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
+            children: "Sign out"
           }, undefined, false, undefined, this)
         ]
       }, undefined, true, undefined, this)
@@ -20658,52 +20091,34 @@ function TabSwitch({ activeTab, onTabChange }) {
 }
 
 // src/components/Toast.jsx
-var import_react9 = __toESM(require_react(), 1);
-var jsx_dev_runtime6 = __toESM(require_jsx_dev_runtime(), 1);
-function Toast({ message, type = "success", onClose, duration = 4000 }) {
-  import_react9.useEffect(() => {
+var import_react5 = __toESM(require_react(), 1);
+var jsx_dev_runtime5 = __toESM(require_jsx_dev_runtime(), 1);
+function Toast({ message, type = "info", onClose, duration = 5000 }) {
+  import_react5.useEffect(() => {
     if (!message)
       return;
-    const timer = setTimeout(() => {
-      onClose();
-    }, duration);
+    const timer = setTimeout(() => onClose(), duration);
     return () => clearTimeout(timer);
   }, [message, duration, onClose]);
   if (!message)
     return null;
-  const icons = {
-    success: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(CircleCheck, {
-      className: "w-5 h-5 text-emerald-600 flex-shrink-0"
-    }, undefined, false, undefined, this),
-    error: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(CircleAlert, {
-      className: "w-5 h-5 text-rose-600 flex-shrink-0"
-    }, undefined, false, undefined, this),
-    info: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Info, {
-      className: "w-5 h-5 text-blue-600 flex-shrink-0"
-    }, undefined, false, undefined, this)
-  };
-  const borderColors = {
-    success: "border-emerald-300 bg-white/90 shadow-emerald-500/10",
-    error: "border-rose-300 bg-white/90 shadow-rose-500/10",
-    info: "border-blue-300 bg-white/90 shadow-blue-500/10"
-  };
-  return /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
-    className: "fixed top-6 right-6 z-50 animate-fade-in-scale",
-    children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
-      className: `flex items-center gap-3 px-4 py-3 rounded-2xl border backdrop-blur-xl shadow-xl max-w-md ${borderColors[type] || borderColors.info}`,
+  const borderColor = type === "success" ? "var(--success)" : type === "error" ? "var(--danger)" : "var(--blue-500)";
+  return /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("div", {
+    className: "toasts-container",
+    children: /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("div", {
+      className: "toast",
+      style: { borderLeftColor: borderColor },
       children: [
-        icons[type] || icons.info,
-        /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
-          className: "text-sm font-medium text-slate-800 leading-snug",
+        /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("span", {
+          className: "toast__msg",
           children: message
         }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("button", {
-          onClick: onClose,
+        /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("button", {
           type: "button",
-          className: "ml-2 text-slate-400 hover:text-slate-600 transition-colors p-1",
-          children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(X, {
-            size: 15
-          }, undefined, false, undefined, this)
+          className: "toast__close",
+          onClick: onClose,
+          "aria-label": "Dismiss",
+          children: "×"
         }, undefined, false, undefined, this)
       ]
     }, undefined, true, undefined, this)
@@ -20711,12 +20126,12 @@ function Toast({ message, type = "success", onClose, duration = 4000 }) {
 }
 
 // src/components/ForgotPasswordModal.jsx
-var import_react10 = __toESM(require_react(), 1);
-var jsx_dev_runtime7 = __toESM(require_jsx_dev_runtime(), 1);
+var import_react6 = __toESM(require_react(), 1);
+var jsx_dev_runtime6 = __toESM(require_jsx_dev_runtime(), 1);
 function ForgotPasswordModal({ isOpen, onClose, onNotify }) {
-  const [email, setEmail] = import_react10.useState("");
-  const [isSubmitted, setIsSubmitted] = import_react10.useState(false);
-  const [isLoading, setIsLoading] = import_react10.useState(false);
+  const [email, setEmail] = import_react6.useState("");
+  const [isSubmitted, setIsSubmitted] = import_react6.useState(false);
+  const [isLoading, setIsLoading] = import_react6.useState(false);
   if (!isOpen)
     return null;
   const handleSubmit = (e) => {
@@ -20735,109 +20150,180 @@ function ForgotPasswordModal({ isOpen, onClose, onNotify }) {
     setIsSubmitted(false);
     onClose();
   };
-  return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
-    className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in-scale",
-    children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
-      className: "relative w-full max-w-md p-7 rounded-3xl glass-card text-slate-900 border border-white/60 shadow-2xl",
+  return /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+    style: {
+      position: "fixed",
+      inset: 0,
+      zIndex: 50,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "16px",
+      background: "rgba(0,0,0,.5)",
+      backdropFilter: "blur(4px)"
+    },
+    children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+      className: "card",
+      style: { position: "relative", maxWidth: "420px" },
       children: [
-        /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
+        /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("button", {
           onClick: handleReset,
-          className: "absolute top-5 right-5 p-1.5 text-slate-600 hover:text-black rounded-full hover:bg-white/30 transition-colors",
           type: "button",
-          children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(X, {
-            size: 18
-          }, undefined, false, undefined, this)
+          style: {
+            position: "absolute",
+            top: "16px",
+            right: "16px",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: "var(--ink-500)",
+            fontSize: "1.2rem",
+            padding: "4px"
+          },
+          children: "×"
         }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
-          className: "text-center mb-6",
+        /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+          style: { textAlign: "center", marginBottom: "24px" },
           children: [
-            /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
-              className: "inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-black/10 text-black mb-3 border border-white/50",
-              children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(KeyRound, {
-                size: 26
-              }, undefined, false, undefined, this)
+            /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+              style: {
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "48px",
+                height: "48px",
+                borderRadius: "12px",
+                background: "var(--ink-100)",
+                marginBottom: "12px"
+              },
+              children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("svg", {
+                viewBox: "0 0 24 24",
+                style: { width: 24, height: 24, fill: "none", stroke: "var(--ink-900)", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("rect", {
+                    x: "5",
+                    y: "11",
+                    width: "14",
+                    height: "9",
+                    rx: "2"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("path", {
+                    d: "M8 11V8a4 4 0 0 1 8 0v3"
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
             }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("h2", {
-              className: "text-2xl font-bold text-[#001a35]",
-              children: "Forgot Password?"
+            /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("h2", {
+              style: { margin: "0 0 6px", fontSize: "1.4rem", fontWeight: 700, color: "var(--ink-900)" },
+              children: "Forgot password?"
             }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("p", {
-              className: "text-xs text-slate-700 mt-1 max-w-xs mx-auto",
-              children: "No worries! Enter your registered email address and we'll send you secure recovery instructions."
+            /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("p", {
+              style: { margin: 0, fontSize: ".88rem", color: "var(--ink-500)" },
+              children: "Enter your email and we'll send recovery instructions."
             }, undefined, false, undefined, this)
           ]
         }, undefined, true, undefined, this),
-        isSubmitted ? /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
-          className: "text-center py-4 space-y-4",
+        isSubmitted ? /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+          style: { textAlign: "center" },
           children: [
-            /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
-              className: "flex justify-center text-emerald-600",
-              children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(CircleCheck, {
-                size: 44
-              }, undefined, false, undefined, this)
+            /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+              style: { color: "var(--success)", marginBottom: "12px" },
+              children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("svg", {
+                viewBox: "0 0 24 24",
+                style: { width: 44, height: 44, margin: "0 auto", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("circle", {
+                    cx: "12",
+                    cy: "12",
+                    r: "10"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("path", {
+                    d: "m9 12 2 2 4-4"
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
             }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("p", {
-              className: "text-sm font-medium text-slate-800",
+            /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("p", {
+              style: { fontSize: ".92rem", color: "var(--ink-900)", marginBottom: "16px" },
               children: [
-                "Check your inbox! We've sent a recovery link to:",
-                /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("br", {}, undefined, false, undefined, this),
-                /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("strong", {
-                  className: "text-black font-semibold",
+                "Check your inbox! Reset link sent to ",
+                /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("strong", {
                   children: email
                 }, undefined, false, undefined, this)
               ]
             }, undefined, true, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
+            /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("button", {
               type: "button",
+              className: "btn",
               onClick: handleReset,
-              className: "w-full h-11 btn-primary rounded-full font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer",
-              children: [
-                /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(ArrowLeft, {
-                  size: 16
-                }, undefined, false, undefined, this),
-                " Return to Login"
-              ]
-            }, undefined, true, undefined, this)
+              children: "Return to login"
+            }, undefined, false, undefined, this)
           ]
-        }, undefined, true, undefined, this) : /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("form", {
+        }, undefined, true, undefined, this) : /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("form", {
           onSubmit: handleSubmit,
-          className: "space-y-4",
           children: [
-            /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
-              className: "relative w-full h-12",
+            /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+              className: "field",
               children: [
-                /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("input", {
-                  type: "email",
-                  placeholder: "Enter your email address",
-                  required: true,
-                  value: email,
-                  onChange: (e) => setEmail(e.target.value),
-                  className: "w-full h-full glass-input rounded-full px-5 pr-12 text-sm font-medium outline-none"
+                /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("label", {
+                  htmlFor: "forgot-email",
+                  children: "Email address"
                 }, undefined, false, undefined, this),
-                /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Mail, {
-                  size: 18,
-                  className: "absolute right-4 top-1/2 -translate-y-1/2 text-slate-700 pointer-events-none"
+                /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+                  className: "control",
+                  children: [
+                    /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("svg", {
+                      className: "control__icon",
+                      viewBox: "0 0 24 24",
+                      "aria-hidden": "true",
+                      children: [
+                        /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("rect", {
+                          x: "3",
+                          y: "5",
+                          width: "18",
+                          height: "14",
+                          rx: "2.500"
+                        }, undefined, false, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("path", {
+                          d: "m4 7 8 6 8-6"
+                        }, undefined, false, undefined, this)
+                      ]
+                    }, undefined, true, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("input", {
+                      id: "forgot-email",
+                      type: "email",
+                      placeholder: "you@company.com",
+                      required: true,
+                      value: email,
+                      onChange: (e) => setEmail(e.target.value)
+                    }, undefined, false, undefined, this)
+                  ]
+                }, undefined, true, undefined, this)
+              ]
+            }, undefined, true, undefined, this),
+            /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("button", {
+              type: "submit",
+              className: "btn",
+              disabled: isLoading,
+              children: [
+                isLoading && /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
+                  className: "btn__spinner",
+                  style: { display: "inline-block" }
+                }, undefined, false, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
+                  children: isLoading ? "Sending…" : "Send reset link"
                 }, undefined, false, undefined, this)
               ]
             }, undefined, true, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
-              type: "submit",
-              disabled: isLoading,
-              className: "w-full h-11 btn-primary rounded-full font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75",
-              children: isLoading ? /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(jsx_dev_runtime7.Fragment, {
-                children: [
-                  /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
-                    className: "w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"
-                  }, undefined, false, undefined, this),
-                  "Sending Link..."
-                ]
-              }, undefined, true, undefined, this) : "Send Reset Link"
-            }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
-              type: "button",
-              onClick: handleReset,
-              className: "w-full text-center text-xs font-semibold text-slate-800 hover:underline pt-1 cursor-pointer",
-              children: "Cancel and back to login"
+            /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("p", {
+              style: { textAlign: "center", marginTop: "12px" },
+              children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("button", {
+                type: "button",
+                className: "link",
+                onClick: handleReset,
+                style: { fontSize: ".85rem" },
+                children: "Cancel"
+              }, undefined, false, undefined, this)
             }, undefined, false, undefined, this)
           ]
         }, undefined, true, undefined, this)
@@ -20846,22 +20332,384 @@ function ForgotPasswordModal({ isOpen, onClose, onNotify }) {
   }, undefined, false, undefined, this);
 }
 
+// src/components/BrandingSidebar.jsx
+var import_react7 = __toESM(require_react(), 1);
+var jsx_dev_runtime7 = __toESM(require_jsx_dev_runtime(), 1);
+function BrandingSidebar({ backendStatus }) {
+  const year = new Date().getFullYear();
+  return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("aside", {
+    className: "brand",
+    "aria-label": "About VaultAuth SSO",
+    children: [
+      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+        className: "brand__glow",
+        "aria-hidden": "true"
+      }, undefined, false, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("a", {
+        className: "logo",
+        href: "/",
+        "aria-label": "VaultAuth SSO home",
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("svg", {
+            className: "logo__mark",
+            viewBox: "0 0 32 32",
+            "aria-hidden": "true",
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("defs", {
+                children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("linearGradient", {
+                  id: "lg",
+                  x1: "0",
+                  y1: "0",
+                  x2: "1",
+                  y2: "1",
+                  children: [
+                    /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("stop", {
+                      offset: "0",
+                      stopColor: "#60a5fa"
+                    }, undefined, false, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("stop", {
+                      offset: "1",
+                      stopColor: "#6366f1"
+                    }, undefined, false, undefined, this)
+                  ]
+                }, undefined, true, undefined, this)
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("path", {
+                d: "M16 2 28 6.5v8.2c0 7.4-4.8 12.6-12 15.3C8.8 27.300 4 22.100 4 14.700V6.500L16 2Z",
+                fill: "url(#lg)"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("path", {
+                d: "m10.500 16 4 4 7.500-8",
+                fill: "none",
+                stroke: "#fff",
+                strokeWidth: "2.400",
+                strokeLinecap: "round",
+                strokeLinejoin: "round"
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+            className: "logo__text",
+            children: [
+              "VaultAuth ",
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("em", {
+                children: "SSO"
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+        className: "brand__body",
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("h1", {
+            className: "brand__title",
+            children: [
+              "One Identity.",
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("br", {}, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+                children: "Every Access."
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("p", {
+            className: "brand__lead",
+            children: "Securely access your digital workspace with a unified identity management platform."
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("ul", {
+            className: "features",
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("li", {
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+                    className: "features__icon",
+                    "aria-hidden": "true",
+                    children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("svg", {
+                      viewBox: "0 0 24 24",
+                      children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("path", {
+                        d: "M12 3 4.500 6v5.500c0 4.600 3.100 7.900 7.500 9.500 4.400-1.600 7.500-4.900 7.500-9.500V6L12 3Z"
+                      }, undefined, false, undefined, this)
+                    }, undefined, false, undefined, this)
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("strong", {
+                        children: "Enterprise-grade Security"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("small", {
+                        children: "Encrypted credentials and verified sessions."
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("li", {
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+                    className: "features__icon",
+                    "aria-hidden": "true",
+                    children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("svg", {
+                      viewBox: "0 0 24 24",
+                      children: [
+                        /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("circle", {
+                          cx: "12",
+                          cy: "8",
+                          r: "3.200"
+                        }, undefined, false, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("path", {
+                          d: "M5 20c0-3.500 3.100-6 7-6s7 2.500 7 6"
+                        }, undefined, false, undefined, this)
+                      ]
+                    }, undefined, true, undefined, this)
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("strong", {
+                        children: "Centralized Identity Management"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("small", {
+                        children: "Users, roles and access in one place."
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("li", {
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+                    className: "features__icon",
+                    "aria-hidden": "true",
+                    children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("svg", {
+                      viewBox: "0 0 24 24",
+                      children: [
+                        /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("rect", {
+                          x: "5",
+                          y: "11",
+                          width: "14",
+                          height: "9",
+                          rx: "2"
+                        }, undefined, false, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("path", {
+                          d: "M8 11V8a4 4 0 0 1 8 0v3"
+                        }, undefined, false, undefined, this)
+                      ]
+                    }, undefined, true, undefined, this)
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("strong", {
+                        children: "Secure Single Sign-On"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("small", {
+                        children: "One login for every connected application."
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("svg", {
+        className: "brand__art",
+        viewBox: "0 0 520 520",
+        "aria-hidden": "true",
+        focusable: "false",
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("defs", {
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("linearGradient", {
+                id: "art-fill",
+                x1: "0",
+                y1: "0",
+                x2: "1",
+                y2: "1",
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("stop", {
+                    offset: "0",
+                    stopColor: "#3b82f6",
+                    stopOpacity: ".35"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("stop", {
+                    offset: "1",
+                    stopColor: "#6366f1",
+                    stopOpacity: ".12"
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("linearGradient", {
+                id: "art-stroke",
+                x1: "0",
+                y1: "0",
+                x2: "1",
+                y2: "1",
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("stop", {
+                    offset: "0",
+                    stopColor: "#93c5fd"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("stop", {
+                    offset: "1",
+                    stopColor: "#818cf8"
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("g", {
+            fill: "none",
+            stroke: "#fff",
+            strokeOpacity: ".07",
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("circle", {
+                cx: "260",
+                cy: "260",
+                r: "110"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("circle", {
+                cx: "260",
+                cy: "260",
+                r: "170"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("circle", {
+                cx: "260",
+                cy: "260",
+                r: "230"
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("g", {
+            stroke: "url(#art-stroke)",
+            strokeOpacity: ".45",
+            strokeWidth: "1.200",
+            fill: "none",
+            children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("path", {
+              d: "M260 260 120 140M260 260 410 120M260 260 440 330M260 260 150 420M260 260 260 40"
+            }, undefined, false, undefined, this)
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("g", {
+            fill: "#818cf8",
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("circle", {
+                className: "node",
+                cx: "120",
+                cy: "140",
+                r: "5"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("circle", {
+                className: "node",
+                cx: "410",
+                cy: "120",
+                r: "5"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("circle", {
+                className: "node",
+                cx: "440",
+                cy: "330",
+                r: "5"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("circle", {
+                className: "node",
+                cx: "150",
+                cy: "420",
+                r: "5"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("circle", {
+                className: "node",
+                cx: "260",
+                cy: "40",
+                r: "5"
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("path", {
+            d: "M260 180 332 208v62c0 44-30 76-72 92-42-16-72-48-72-92v-62l72-28Z",
+            fill: "url(#art-fill)",
+            stroke: "url(#art-stroke)",
+            strokeWidth: "2"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("rect", {
+            x: "232",
+            y: "256",
+            width: "56",
+            height: "44",
+            rx: "8",
+            fill: "#0b1220",
+            stroke: "url(#art-stroke)",
+            strokeWidth: "2"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("path", {
+            d: "M242 256v-12a18 18 0 0 1 36 0v12",
+            fill: "none",
+            stroke: "url(#art-stroke)",
+            strokeWidth: "2"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("circle", {
+            cx: "260",
+            cy: "278",
+            r: "5",
+            fill: "#93c5fd"
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      backendStatus && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+        style: {
+          position: "absolute",
+          top: "20px",
+          right: "20px",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "6px",
+          padding: "4px 12px",
+          borderRadius: "20px",
+          fontSize: ".75rem",
+          fontWeight: 600,
+          background: backendStatus === "connected" ? "rgba(34,197,94,.15)" : "rgba(251,191,36,.15)",
+          border: backendStatus === "connected" ? "1px solid rgba(34,197,94,.3)" : "1px solid rgba(251,191,36,.3)",
+          color: backendStatus === "connected" ? "#86efac" : "#fcd34d",
+          zIndex: 10
+        },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+            style: {
+              width: "6px",
+              height: "6px",
+              borderRadius: "50%",
+              background: backendStatus === "connected" ? "#22c55e" : "#f59e0b"
+            }
+          }, undefined, false, undefined, this),
+          backendStatus === "connected" ? "API Online" : backendStatus === "offline" ? "API Offline" : "Connecting…"
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("p", {
+        className: "brand__foot",
+        children: [
+          "© ",
+          year,
+          " VaultAuth SSO. All rights reserved."
+        ]
+      }, undefined, true, undefined, this)
+    ]
+  }, undefined, true, undefined, this);
+}
+
 // src/App.jsx
 var jsx_dev_runtime8 = __toESM(require_jsx_dev_runtime(), 1);
 function App() {
-  const [authStep, setAuthStep] = import_react11.useState("credentials");
-  const [activeTab, setActiveTab] = import_react11.useState("login");
-  const [toast, setToast] = import_react11.useState({ message: "", type: "info" });
-  const [isForgotModalOpen, setIsForgotModalOpen] = import_react11.useState(false);
-  const [pendingUser, setPendingUser] = import_react11.useState(null);
-  const [backendStatus, setBackendStatus] = import_react11.useState("checking");
+  const [authStep, setAuthStep] = import_react8.useState("credentials");
+  const [activeTab, setActiveTab] = import_react8.useState("login");
+  const [toast, setToast] = import_react8.useState({ message: "", type: "info" });
+  const [isForgotModalOpen, setIsForgotModalOpen] = import_react8.useState(false);
+  const [pendingUser, setPendingUser] = import_react8.useState(null);
+  const [backendStatus, setBackendStatus] = import_react8.useState("checking");
   const notify = (message, type = "info") => {
     setToast({ message, type });
   };
   const closeToast = () => {
     setToast({ message: "", type: "info" });
   };
-  import_react11.useEffect(() => {
+  import_react8.useEffect(() => {
     let isMounted = true;
     const verifyHealth = () => {
       checkBackendHealth().then((res) => {
@@ -20896,120 +20744,40 @@ function App() {
     setPendingUser(null);
     notify("You have signed out successfully.", "info");
   };
-  return /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
-    className: "relative min-h-screen w-full flex flex-col justify-center items-center p-4 sm:p-6 overflow-hidden auth-bg select-none",
+  return /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("main", {
+    className: "shell",
     children: [
-      /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
-        className: "absolute top-1/4 -left-20 w-80 h-80 rounded-full bg-blue-500/20 blur-3xl pointer-events-none animate-pulse-glow"
+      /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(BrandingSidebar, {
+        backendStatus
       }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
-        className: "absolute bottom-1/4 -right-20 w-96 h-96 rounded-full bg-cyan-400/20 blur-3xl pointer-events-none animate-pulse-glow"
-      }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("header", {
-        className: "relative z-10 flex flex-col items-center mb-5 text-center",
+      /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("section", {
+        className: "panel",
+        "aria-labelledby": "form-title",
         children: /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
-          className: "flex flex-wrap items-center justify-center gap-2 mb-3",
+          className: "card",
           children: [
-            /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
-              className: "inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/40 shadow-sm",
-              children: [
-                /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(Shield, {
-                  size: 15,
-                  className: "text-black"
-                }, undefined, false, undefined, this),
-                /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("span", {
-                  className: "text-xs font-semibold tracking-wider uppercase text-black",
-                  children: "Vault Auth Gateway"
-                }, undefined, false, undefined, this)
-              ]
-            }, undefined, true, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
-              className: `inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium backdrop-blur-md border transition-all ${backendStatus === "connected" ? "bg-emerald-500/20 border-emerald-400/50 text-emerald-950" : backendStatus === "offline" ? "bg-amber-500/20 border-amber-400/50 text-amber-950" : "bg-white/20 border-white/40 text-black/70"}`,
-              title: backendStatus === "connected" ? "Vault Auth backend connected at 127.0.0.1:5000" : "Vault Auth backend not detected at 127.0.0.1:5000",
-              children: [
-                /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("span", {
-                  className: `w-2 h-2 rounded-full ${backendStatus === "connected" ? "bg-emerald-600 animate-pulse" : backendStatus === "offline" ? "bg-amber-600" : "bg-slate-400 animate-ping"}`
-                }, undefined, false, undefined, this),
-                /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("span", {
-                  children: backendStatus === "connected" ? "API Online" : backendStatus === "offline" ? "API Offline (127.0.0.1:5000)" : "Connecting..."
-                }, undefined, false, undefined, this)
-              ]
-            }, undefined, true, undefined, this)
-          ]
-        }, undefined, true, undefined, this)
-      }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("main", {
-        className: "relative z-10 w-full max-w-md",
-        children: [
-          authStep === "credentials" && /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(TabSwitch, {
-            activeTab,
-            onTabChange: setActiveTab
-          }, undefined, false, undefined, this),
-          authStep === "otp" && /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
-            className: "flex items-center justify-center mb-6",
-            children: /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
-              className: "inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/40 text-xs font-semibold text-black/85 shadow-inner",
-              children: [
-                /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(Lock, {
-                  size: 13,
-                  className: "text-black"
-                }, undefined, false, undefined, this),
-                /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("span", {
-                  children: "Step 2 of 2: Multi-Factor Authentication"
-                }, undefined, false, undefined, this)
-              ]
-            }, undefined, true, undefined, this)
-          }, undefined, false, undefined, this),
-          authStep === "authenticated" && /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
-            className: "flex items-center justify-center mb-6",
-            children: /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
-              className: "inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-400/40 text-xs font-semibold text-emerald-950 shadow-inner",
-              children: [
-                /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("span", {
-                  className: "w-2 h-2 rounded-full bg-emerald-600 animate-pulse"
-                }, undefined, false, undefined, this),
-                /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("span", {
-                  children: "Verified SSO Session Active"
-                }, undefined, false, undefined, this)
-              ]
-            }, undefined, true, undefined, this)
-          }, undefined, false, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
-            className: "transition-all duration-300",
-            children: [
-              authStep === "credentials" && /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(jsx_dev_runtime8.Fragment, {
-                children: activeTab === "login" ? /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(LoginCard, {
-                  onSwitchToRegister: () => setActiveTab("register"),
-                  onForgotPassword: () => setIsForgotModalOpen(true),
-                  onLoginSuccess: handleLoginSuccess,
-                  onNotify: notify
-                }, "login", false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(RegisterCard, {
-                  onSwitchToLogin: () => setActiveTab("login"),
-                  onNotify: notify
-                }, "register", false, undefined, this)
-              }, undefined, false, undefined, this),
-              authStep === "otp" && /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(OtpVerificationCard, {
-                user: pendingUser,
-                onVerifySuccess: handleOtpVerifySuccess,
-                onBackToLogin: handleBackToLogin,
+            authStep === "credentials" && /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(jsx_dev_runtime8.Fragment, {
+              children: activeTab === "login" ? /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(LoginCard, {
+                onSwitchToRegister: () => setActiveTab("register"),
+                onForgotPassword: () => setIsForgotModalOpen(true),
+                onLoginSuccess: handleLoginSuccess,
                 onNotify: notify
-              }, "otp", false, undefined, this),
-              authStep === "authenticated" && /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(AuthenticatedCard, {
-                user: pendingUser,
-                onSignOut: handleSignOut,
+              }, "login", false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(RegisterCard, {
+                onSwitchToLogin: () => setActiveTab("login"),
                 onNotify: notify
-              }, "authenticated", false, undefined, this)
-            ]
-          }, undefined, true, undefined, this)
-        ]
-      }, undefined, true, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("footer", {
-        className: "relative z-10 mt-8 text-center text-xs text-white/80 font-medium",
-        children: /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("p", {
-          children: [
-            "© ",
-            new Date().getFullYear(),
-            " SSO Authentication System • All Rights Reserved"
+              }, "register", false, undefined, this)
+            }, undefined, false, undefined, this),
+            authStep === "otp" && /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(OtpVerificationCard, {
+              user: pendingUser,
+              onVerifySuccess: handleOtpVerifySuccess,
+              onBackToLogin: handleBackToLogin,
+              onNotify: notify
+            }, "otp", false, undefined, this),
+            authStep === "authenticated" && /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(AuthenticatedCard, {
+              user: pendingUser,
+              onSignOut: handleSignOut,
+              onNotify: notify
+            }, "authenticated", false, undefined, this)
           ]
         }, undefined, true, undefined, this)
       }, undefined, false, undefined, this),
@@ -21032,7 +20800,7 @@ var jsx_dev_runtime9 = __toESM(require_jsx_dev_runtime(), 1);
 var container = document.getElementById("root");
 if (container) {
   const root = import_client.createRoot(container);
-  root.render(/* @__PURE__ */ jsx_dev_runtime9.jsxDEV(import_react12.default.StrictMode, {
+  root.render(/* @__PURE__ */ jsx_dev_runtime9.jsxDEV(import_react9.default.StrictMode, {
     children: /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(App, {}, undefined, false, undefined, this)
   }, undefined, false, undefined, this));
 }
