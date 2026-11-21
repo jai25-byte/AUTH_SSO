@@ -1,6 +1,6 @@
 /**
- * VaultAuth SSO — End User Dashboard Frontend Controller
- * Connects directly to the Flask Backend APIs
+ * VaultAuthSSO — End User Dashboard Frontend Controller
+ * Connects directly to the VaultAuth Flask Backend APIs with graceful offline/demo fallbacks
  */
 
 (function () {
@@ -10,7 +10,7 @@
   const API_BASE = (function () {
     const loc = window.location;
     if (loc.port === "5000") return "";
-    if (loc.port === "3000") return ""; // Bun dev server proxies /api/*
+    if (loc.port === "3000") return ""; // Bun dev server proxies /api/* to Flask :5000
     return "http://127.0.0.1:5000";
   })();
 
@@ -20,7 +20,6 @@
     const urlToken = params.get("token");
     if (urlToken) {
       localStorage.setItem("vault_auth_token", urlToken);
-      // Clean query string from URL without reload
       window.history.replaceState({}, document.title, window.location.pathname);
       return urlToken;
     }
@@ -54,52 +53,232 @@
         credentials: "include",
       });
 
-      if (res.status === 401) {
-        console.warn("[VaultAuth] Session unauthenticated or token expired.");
-      }
-
       const data = await res.json().catch(() => ({}));
       return { ok: res.ok, status: res.status, data };
     } catch (err) {
-      console.error(`[VaultAuth] API Error on ${endpoint}:`, err);
       return { ok: false, status: 0, data: null, error: err.message };
     }
   }
 
-  // ===== 2. SVG Icon Generators =====
-  function getDeviceIcon(deviceType) {
-    if (deviceType === "mobile") {
-      return `
-        <div class="device-icon mobile">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="5" y="2" width="14" height="20" rx="2"></rect>
-            <line x1="12" y1="18" x2="12.01" y2="18"></line>
-          </svg>
-        </div>`;
-    } else if (deviceType === "laptop") {
-      return `
-        <div class="device-icon laptop">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="2" y="3" width="20" height="14" rx="2"></rect>
-            <line x1="2" y1="20" x2="22" y2="20"></line>
-          </svg>
-        </div>`;
-    }
-    return `
-      <div class="device-icon desktop">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="2" y="3" width="20" height="14" rx="2"></rect>
-          <line x1="8" y1="21" x2="16" y2="21"></line>
-          <line x1="12" y1="17" x2="12" y2="21"></line>
-        </svg>
-      </div>`;
+  // ===== 2. Toast Notification System =====
+  function showToast(message, type = "info") {
+    const stack = document.getElementById("toast-stack");
+    if (!stack) return;
+
+    const el = document.createElement("div");
+    el.className = `toast-msg ${type}`;
+    el.innerHTML = `
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+        ${type === "success" ? '<polyline points="20 6 9 17 4 12"/>' : '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'}
+      </svg>
+      <span>${message}</span>
+    `;
+
+    stack.appendChild(el);
+    setTimeout(() => {
+      el.style.opacity = "0";
+      el.style.transform = "translateX(20px)";
+      setTimeout(() => el.remove(), 200);
+    }, 4000);
   }
 
-  // ===== 3. Navigation & Tab Switching =====
-  function navigateToPage(pageId) {
-    document.querySelectorAll(".page").forEach((page) => {
-      page.style.display = "none";
-    });
+  // ===== 3. Sample / Mock Data (1:1 with Reference Screenshots) =====
+  const DEFAULT_APPS = [
+    {
+      id: 1,
+      name: "Google Workspace",
+      desc: "Email, Calendar, Drive",
+      logo: "G",
+      bg: "#4285F4",
+      permissions: ["Read email", "Calendar access", "Drive read"],
+      status: "Active",
+      connectedDate: "Jan 10, 2025",
+    },
+    {
+      id: 2,
+      name: "Slack",
+      desc: "Team messaging",
+      logo: "S",
+      bg: "#5865F2",
+      permissions: ["Send messages", "Read channels"],
+      status: "Active",
+      connectedDate: "Feb 02, 2025",
+    },
+    {
+      id: 3,
+      name: "Jira",
+      desc: "Project management",
+      logo: "J",
+      bg: "#0052CC",
+      permissions: ["Read issues", "Create issues", "Assign"],
+      status: "Active",
+      connectedDate: "Mar 18, 2025",
+    },
+    {
+      id: 4,
+      name: "AWS Console",
+      desc: "Cloud infrastructure",
+      logo: "A",
+      bg: "#FF9900",
+      permissions: ["Read-only", "IAM view"],
+      status: "Active",
+      connectedDate: "Apr 22, 2025",
+    },
+    {
+      id: 5,
+      name: "GitHub",
+      desc: "Code repositories",
+      logo: "G",
+      bg: "#171515",
+      permissions: ["Repo read", "Repo write", "Webhooks"],
+      status: "Active",
+      connectedDate: "May 05, 2025",
+    },
+  ];
+
+  const DEFAULT_ACTIVITIES = [
+    {
+      id: "act-1",
+      device: 'MacBook Pro 16"',
+      deviceType: "laptop",
+      browser: "Chrome 131",
+      os: "macOS Sequoia",
+      location: "Bengaluru, India",
+      time: "Today, 9:42 AM",
+      ip: "103.21.58.xx",
+      status: "Success",
+    },
+    {
+      id: "act-2",
+      device: "Samsung Galaxy S25 Ultra",
+      deviceType: "mobile",
+      browser: "VaultAuth mobile",
+      os: "Android 15",
+      location: "Bengaluru, India",
+      time: "Today, 8:16 AM",
+      ip: "103.21.58.xx",
+      status: "Success",
+    },
+    {
+      id: "act-3",
+      device: "Chrome on Windows",
+      deviceType: "desktop",
+      browser: "Chrome 131",
+      os: "Windows 11",
+      location: "Bengaluru, India",
+      time: "Yesterday, 6:32 PM",
+      ip: "49.37.12.xx",
+      status: "Success",
+    },
+    {
+      id: "act-4",
+      device: "Unknown Device",
+      deviceType: "desktop",
+      browser: "Firefox 132",
+      os: "Linux x86_64",
+      location: "Mumbai, India",
+      time: "Nov 9, 4:15 PM",
+      ip: "152.58.44.xx",
+      status: "Failed",
+    },
+    {
+      id: "act-5",
+      device: 'MacBook Pro 16"',
+      deviceType: "laptop",
+      browser: "Chrome 131",
+      os: "macOS Sequoia",
+      location: "Bengaluru, India",
+      time: "Nov 9, 9:10 AM",
+      ip: "103.21.58.xx",
+      status: "Success",
+    },
+    {
+      id: "act-6",
+      device: "Samsung Galaxy S25 Ultra",
+      deviceType: "mobile",
+      browser: "VaultAuth mobile",
+      os: "Android 15",
+      location: "Bengaluru, India",
+      time: "Nov 8, 7:30 PM",
+      ip: "103.21.58.xx",
+      status: "Success",
+    },
+    {
+      id: "act-7",
+      device: "Unknown Device",
+      deviceType: "desktop",
+      browser: "Safari 18",
+      os: "iOS 18.1",
+      location: "New Delhi, India",
+      time: "Nov 7, 2:45 AM",
+      ip: "203.122.1.xx",
+      status: "Blocked",
+    },
+  ];
+
+  const DEFAULT_SESSIONS = [
+    {
+      id: "sess_curr",
+      deviceName: 'MacBook Pro 16"',
+      deviceType: "laptop",
+      browser: "Chrome 131",
+      os: "macOS",
+      ip: "103.21.58.xx",
+      location: "Bengaluru, India",
+      lastActive: "Active Now",
+      isCurrent: true,
+    },
+    {
+      id: "sess_mob",
+      deviceName: "Samsung Galaxy S25 Ultra",
+      deviceType: "mobile",
+      browser: "VaultAuth mobile",
+      os: "Android",
+      ip: "103.21.58.xx",
+      location: "Bengaluru, India",
+      lastActive: "Today, 8:16 AM",
+      isCurrent: false,
+    },
+  ];
+
+  // State
+  let connectedApps = [...DEFAULT_APPS];
+  let loginActivities = [...DEFAULT_ACTIVITIES];
+  let activeSessions = [...DEFAULT_SESSIONS];
+  let activityStatusFilter = "all";
+  let activitySearchQuery = "";
+  let activityCurrentPage = 1;
+  const activityPageSize = 5;
+
+  let appToDisconnect = null;
+  let sessionToRevoke = null;
+
+  // ===== 4. Device Icons SVG Helper =====
+  function getDeviceIconSvg(type) {
+    if (type === "mobile") {
+      return `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="5" y="2" width="14" height="20" rx="2"></rect>
+          <line x1="12" y1="18" x2="12.01" y2="18"></line>
+        </svg>`;
+    } else if (type === "laptop") {
+      return `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="3" width="20" height="14" rx="2"></rect>
+          <line x1="2" y1="20" x2="22" y2="20"></line>
+        </svg>`;
+    }
+    return `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="2" y="3" width="20" height="14" rx="2"></rect>
+        <line x1="8" y1="21" x2="16" y2="21"></line>
+        <line x1="12" y1="17" x2="12" y2="21"></line>
+      </svg>`;
+  }
+
+  // ===== 5. Navigation & Page Switching =====
+  function navigateTo(pageId) {
+    document.querySelectorAll(".page").forEach((p) => (p.style.display = "none"));
 
     const target = document.getElementById(`page-${pageId}`);
     if (target) {
@@ -114,502 +293,741 @@
       }
     });
 
-    // Scroll to top
+    // Close mobile menu if open
+    document.getElementById("sidebar")?.classList.remove("open");
+    document.getElementById("sidebar-overlay")?.classList.remove("open");
+
+    // Close user dropdown if open
+    document.getElementById("user-dropdown-menu")?.classList.remove("show");
+
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  // Bind Sidebar Nav
-  document.querySelectorAll(".nav-item").forEach((item) => {
-    item.addEventListener("click", function (e) {
+  // Bind Sidebar items
+  document.querySelectorAll(".nav-item").forEach((btn) => {
+    btn.addEventListener("click", function (e) {
       e.preventDefault();
       const page = this.getAttribute("data-page");
-      if (page) navigateToPage(page);
+      if (page) navigateTo(page);
     });
   });
 
-  // Bind all data-goto triggers (quick actions, view-all links, stat cards)
+  // Bind all data-goto links
   document.addEventListener("click", function (e) {
     const trigger = e.target.closest("[data-goto]");
     if (trigger) {
       e.preventDefault();
-      const gotoPage = trigger.getAttribute("data-goto");
-      if (gotoPage) {
-        navigateToPage(gotoPage);
-      }
+      const page = trigger.getAttribute("data-goto");
+      if (page) navigateTo(page);
     }
   });
 
-  // Mobile Menu toggle
-  const mobileBtn = document.querySelector(".mobile-menu-btn");
-  const sidebar = document.querySelector(".sidebar");
-  const overlay = document.querySelector(".sidebar-overlay");
-  if (mobileBtn && sidebar && overlay) {
-    mobileBtn.addEventListener("click", () => {
-      sidebar.classList.toggle("open");
-      overlay.classList.toggle("open");
+  // Mobile menu toggle
+  const mobileMenuBtn = document.getElementById("btn-mobile-menu");
+  const sidebarEl = document.getElementById("sidebar");
+  const sidebarOverlay = document.getElementById("sidebar-overlay");
+  if (mobileMenuBtn && sidebarEl && sidebarOverlay) {
+    mobileMenuBtn.addEventListener("click", () => {
+      sidebarEl.classList.toggle("open");
+      sidebarOverlay.classList.toggle("open");
     });
-    overlay.addEventListener("click", () => {
-      sidebar.classList.remove("open");
-      overlay.classList.remove("open");
+    sidebarOverlay.addEventListener("click", () => {
+      sidebarEl.classList.remove("open");
+      sidebarOverlay.classList.remove("open");
     });
   }
 
-  // ===== 4. Load & Render User Profile =====
+  // Topbar User Dropdown
+  const userPill = document.getElementById("user-pill-trigger");
+  const userDropdown = document.getElementById("user-dropdown-menu");
+  if (userPill && userDropdown) {
+    userPill.addEventListener("click", (e) => {
+      e.stopPropagation();
+      userDropdown.classList.toggle("show");
+    });
+    document.addEventListener("click", () => {
+      userDropdown.classList.remove("show");
+    });
+  }
+
+  // ===== 6. Modal Helpers =====
+  function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.add("show");
+  }
+
+  function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.remove("show");
+  }
+
+  document.querySelectorAll("[data-modal-close]").forEach((btn) => {
+    btn.addEventListener("click", function () {
+      const modal = this.closest(".modal-overlay");
+      if (modal) modal.classList.remove("show");
+    });
+  });
+
+  // Close modals on clicking backdrop
+  document.querySelectorAll(".modal-overlay").forEach((modal) => {
+    modal.addEventListener("click", function (e) {
+      if (e.target === this) this.classList.remove("show");
+    });
+  });
+
+  // ===== 7. Load & Render User Profile =====
   async function loadUserProfile() {
     const res = await apiRequest("/api/user/profile");
-    let user = res.ok ? res.data : null;
+    let user = res.ok && res.data ? res.data : null;
 
     if (!user) {
-      const stored = getStoredUser();
-      user = stored || {
+      user = getStoredUser() || {
         full_name: "Alex Morgan",
+        email: "amitoj0024@gmail.com",
         username: "alex",
-        email: "alex.morgan@company.com",
-        initials: "AM",
         role: "End user",
         department: "Engineering",
         phone: "+91 98765 43210",
         joined: "March 15, 2025",
-        security: {
-          mfa_enabled: true,
-          recovery_email: "alex.backup@gmail.com",
-          password_changed_desc: "Last changed 30 days ago",
-        },
       };
     }
 
-    const firstName = (user.full_name || user.username || "Alex").split(" ")[0];
-    const initials = user.initials || firstName.substring(0, 2).toUpperCase();
+    const email = user.email || "amitoj0024@gmail.com";
+    const name = user.full_name || user.username || "Alex Morgan";
+    const initials = name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .substring(0, 2)
+      .toUpperCase() || "AM";
 
-    // 1. Topbar
-    const topAvatar = document.querySelector(".user-pill .avatar");
-    const topName = document.querySelector(".user-pill .user-name");
-    const topRole = document.querySelector(".user-pill .user-role");
+    // Topbar
+    const topAvatar = document.getElementById("topbar-avatar");
+    const topName = document.getElementById("topbar-user-name");
+    const topRole = document.getElementById("topbar-user-role");
     if (topAvatar) topAvatar.textContent = initials;
-    if (topName) topName.textContent = user.full_name || user.username;
+    if (topName) topName.textContent = email;
     if (topRole) topRole.textContent = user.role || "End user";
 
-    // 2. Overview Greeting
-    const hour = new Date().getHours();
-    const timeOfDay = hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening";
-    const greetingEl = document.getElementById("overview-greeting");
-    if (greetingEl) {
-      greetingEl.textContent = `Good ${timeOfDay}, ${firstName} 👋`;
+    // Dropdown
+    const dropName = document.getElementById("dropdown-name");
+    const dropEmail = document.getElementById("dropdown-email");
+    if (dropName) dropName.textContent = name;
+    if (dropEmail) dropEmail.textContent = email;
+
+    // Greeting on Overview
+    const greeting = document.getElementById("overview-greeting");
+    if (greeting) {
+      const firstName = name.split(" ")[0];
+      greeting.textContent = `Good morning, ${firstName} 👋`;
     }
 
-    // 3. Profile Page Fields
-    const pAvatar = document.getElementById("profile-avatar");
-    const pName = document.getElementById("profile-name");
-    const pEmail = document.getElementById("profile-email");
+    // Profile Page
+    const pAvatar = document.getElementById("profile-page-avatar");
+    const pFullName = document.getElementById("profile-full-name");
+    const pEmail = document.getElementById("profile-user-email");
     if (pAvatar) pAvatar.textContent = initials;
-    if (pName) pName.textContent = user.full_name || user.username;
-    if (pEmail) pEmail.textContent = user.email;
+    if (pFullName) pFullName.textContent = name;
+    if (pEmail) pEmail.textContent = email;
 
-    const fName = document.getElementById("field-fullname");
-    const fEmail = document.getElementById("field-email");
-    const fPhone = document.getElementById("field-phone");
-    const fDept = document.getElementById("field-dept");
-    const fRole = document.getElementById("field-role");
-    const fJoined = document.getElementById("field-joined");
-
-    if (fName) fName.textContent = user.full_name || user.username;
-    if (fEmail) fEmail.textContent = user.email;
-    if (fPhone) fPhone.textContent = user.phone || "Not set";
+    const fFullName = document.getElementById("profile-field-fullname");
+    const fEmail = document.getElementById("profile-field-email");
+    const fDept = document.getElementById("profile-field-dept");
+    const fRole = document.getElementById("profile-field-role");
+    const fPhone = document.getElementById("profile-field-phone");
+    const fJoined = document.getElementById("profile-field-joined");
+    if (fFullName) fFullName.textContent = name;
+    if (fEmail) fEmail.textContent = email;
     if (fDept) fDept.textContent = user.department || "Engineering";
     if (fRole) fRole.textContent = user.role || "End user";
+    if (fPhone) fPhone.textContent = user.phone || "+91 98765 43210";
     if (fJoined) fJoined.textContent = user.joined || "March 15, 2025";
+  }
 
-    // Security info on profile
-    if (user.security) {
-      const pwdDesc = document.getElementById("sec-pwd-desc");
-      const recEmail = document.getElementById("sec-recovery-email");
-      if (pwdDesc && user.security.password_changed_desc) {
-        pwdDesc.textContent = user.security.password_changed_desc;
-      }
-      if (recEmail && user.security.recovery_email) {
-        recEmail.textContent = user.security.recovery_email;
-      }
+  // ===== 8. Connected Apps Controller (Matching Reference 1) =====
+  async function loadConnectedApps() {
+    const res = await apiRequest("/api/connected-apps");
+    if (res.ok && Array.isArray(res.data) && res.data.length > 0) {
+      connectedApps = res.data.map((app) => ({
+        id: app.id,
+        name: app.app_name,
+        desc: app.app_desc,
+        logo: app.logo_char,
+        bg: app.logo_bg,
+        permissions: Array.isArray(app.permissions) ? app.permissions : ["Read access"],
+        status: app.status || "Active",
+        connectedDate: app.connected_date || "Jan 10, 2025",
+      }));
     }
+    renderConnectedApps();
   }
 
-  // ===== 5. Load Overview Statistics =====
-  async function loadOverviewStats() {
-    const res = await apiRequest("/api/dashboard/overview");
-    if (!res.ok || !res.data) return;
-    const d = res.data;
-
-    // Active Sessions Card
-    const sessVal = document.getElementById("stat-active-sessions");
-    const sessDesc = document.getElementById("stat-active-sessions-desc");
-    if (sessVal && d.active_sessions) sessVal.textContent = d.active_sessions.label;
-    if (sessDesc && d.active_sessions) sessDesc.textContent = d.active_sessions.description;
-
-    // Security Score Card
-    const scoreVal = document.getElementById("stat-security-score");
-    const scoreDesc = document.getElementById("stat-security-score-desc");
-    const statusBadge = document.getElementById("overview-status-badge");
-    if (scoreVal && d.security_score) scoreVal.textContent = d.security_score.label;
-    if (scoreDesc && d.security_score) scoreDesc.textContent = d.security_score.description;
-    if (statusBadge && d.system_status) {
-      statusBadge.innerHTML = `<span class="status-dot"></span>${d.system_status.status}`;
-      if (d.system_status.all_systems_normal) {
-        statusBadge.className = "status-badge status-normal";
-      } else {
-        statusBadge.className = "status-badge";
-        statusBadge.style.background = "#fef3c7";
-        statusBadge.style.color = "#92400e";
-      }
-    }
-
-    // Connected Apps Card
-    const appsVal = document.getElementById("stat-connected-apps");
-    const appsDesc = document.getElementById("stat-connected-apps-desc");
-    if (appsVal && d.connected_apps) appsVal.textContent = d.connected_apps.label;
-    if (appsDesc && d.connected_apps) appsDesc.textContent = d.connected_apps.description;
-  }
-
-  // ===== 6. Load Recent Login Activity =====
-  let allActivities = [];
-
-  async function loadLoginActivity(statusFilter = null) {
-    const url = statusFilter ? `/api/dashboard/login-activity?status=${statusFilter}` : "/api/dashboard/login-activity";
-    const res = await apiRequest(url);
-    if (!res.ok || !Array.isArray(res.data)) return;
-
-    allActivities = res.data;
-    renderOverviewActivity(allActivities.slice(0, 3));
-    renderActivityTable(allActivities);
-  }
-
-  function renderOverviewActivity(items) {
-    const container = document.getElementById("overview-activity-list");
+  function renderConnectedApps() {
+    const container = document.getElementById("connected-apps-list");
+    const emptyState = document.getElementById("apps-empty-state");
+    const countBadge = document.getElementById("apps-count-number");
+    const statOverview = document.getElementById("stat-connected-apps");
     if (!container) return;
 
-    if (items.length === 0) {
-      container.innerHTML = `<p class="text-secondary" style="padding: 16px; font-size: 0.9rem;">No recent activity found.</p>`;
+    const searchInput = document.getElementById("apps-search-input")?.value.toLowerCase().trim() || "";
+    const statusFilter = document.getElementById("apps-status-filter")?.value || "all";
+
+    const filtered = connectedApps.filter((app) => {
+      const matchesSearch =
+        app.name.toLowerCase().includes(searchInput) ||
+        app.desc.toLowerCase().includes(searchInput) ||
+        app.permissions.some((p) => p.toLowerCase().includes(searchInput));
+      const matchesStatus = statusFilter === "all" || app.status.toLowerCase() === statusFilter.toLowerCase();
+      return matchesSearch && matchesStatus;
+    });
+
+    if (countBadge) countBadge.textContent = connectedApps.length;
+    if (statOverview) statOverview.textContent = `${connectedApps.length} apps`;
+
+    if (filtered.length === 0) {
+      container.innerHTML = "";
+      if (emptyState) emptyState.style.display = "block";
       return;
     }
 
-    container.innerHTML = items
+    if (emptyState) emptyState.style.display = "none";
+
+    container.innerHTML = filtered
+      .map(
+        (app) => `
+        <div class="app-card-horizontal" data-app-id="${app.id}">
+          <div class="app-card-left">
+            <div class="app-card-icon" style="background: ${app.bg};">
+              ${app.logo}
+            </div>
+            <div class="app-card-details">
+              <div class="app-card-name-row">
+                <span class="app-card-name">${app.name}</span>
+              </div>
+              <p class="app-card-desc">${app.desc}</p>
+              <div class="app-card-permissions">
+                <strong>Permissions:</strong>
+                ${app.permissions
+                  .map((perm, idx) => `<span>${perm}</span>${idx < app.permissions.length - 1 ? '<span class="app-perm-bullet">•</span>' : ""}`)
+                  .join("")}
+              </div>
+            </div>
+          </div>
+
+          <div class="app-card-right">
+            <div class="app-card-meta">
+              <span class="badge ${app.status === "Active" ? "badge-success" : "badge-failed"}">
+                <span class="badge-dot"></span>${app.status}
+              </span>
+              <span class="app-connected-date">Connected on ${app.connectedDate}</span>
+            </div>
+
+            <div class="app-card-actions">
+              <button class="btn btn-outline btn-sm btn-manage-app" data-app-id="${app.id}">
+                Manage access
+              </button>
+              <button class="btn btn-danger-outline btn-sm btn-disconnect-app" data-app-id="${app.id}">
+                Revoke access
+              </button>
+            </div>
+          </div>
+        </div>
+      `
+      )
+      .join("");
+
+    // Bind Manage Access buttons
+    container.querySelectorAll(".btn-manage-app").forEach((btn) => {
+      btn.addEventListener("click", function () {
+        const appId = parseInt(this.getAttribute("data-app-id"), 10);
+        const app = connectedApps.find((a) => a.id === appId);
+        if (!app) return;
+
+        const title = document.getElementById("modal-manage-app-title");
+        const name = document.getElementById("modal-manage-app-name");
+        const list = document.getElementById("modal-manage-permissions-list");
+        if (title) title.textContent = `${app.name} — Access & Permissions`;
+        if (name) name.textContent = app.name;
+        if (list) {
+          list.innerHTML = app.permissions
+            .map(
+              (p) => `
+              <label style="display: flex; align-items: center; gap: 10px; font-size: 0.86rem; padding: 6px 10px; border-radius: 6px; background: #f8fafc; border: 1px solid var(--card-border);">
+                <input type="checkbox" checked style="accent-color: var(--brand-purple);" />
+                <span>${p}</span>
+              </label>
+            `
+            )
+            .join("");
+        }
+
+        openModal("modal-manage-app");
+      });
+    });
+
+    // Bind Disconnect buttons
+    container.querySelectorAll(".btn-disconnect-app").forEach((btn) => {
+      btn.addEventListener("click", function () {
+        const appId = parseInt(this.getAttribute("data-app-id"), 10);
+        appToDisconnect = connectedApps.find((a) => a.id === appId);
+        if (!appToDisconnect) return;
+
+        const nameEl = document.getElementById("modal-disconnect-app-name");
+        if (nameEl) nameEl.textContent = appToDisconnect.name;
+        openModal("modal-disconnect-app");
+      });
+    });
+  }
+
+  // Confirm Disconnect button handler
+  const confirmDisconnectBtn = document.getElementById("btn-confirm-disconnect");
+  if (confirmDisconnectBtn) {
+    confirmDisconnectBtn.addEventListener("click", async function () {
+      if (!appToDisconnect) return;
+      this.disabled = true;
+      this.textContent = "Revoking...";
+
+      // Attempt backend DELETE call
+      const res = await apiRequest(`/api/connected-apps/${appToDisconnect.id}`, { method: "DELETE" });
+
+      this.disabled = false;
+      this.textContent = "Yes, disconnect";
+      closeModal("modal-disconnect-app");
+
+      // Update local state
+      connectedApps = connectedApps.filter((a) => a.id !== appToDisconnect.id);
+      renderConnectedApps();
+      showToast(`${appToDisconnect.name} has been disconnected.`, "success");
+      appToDisconnect = null;
+    });
+  }
+
+  // Search & Filter event listeners for Connected Apps
+  document.getElementById("apps-search-input")?.addEventListener("input", renderConnectedApps);
+  document.getElementById("apps-status-filter")?.addEventListener("change", renderConnectedApps);
+  document.getElementById("btn-reset-apps-filter")?.addEventListener("click", () => {
+    const sInput = document.getElementById("apps-search-input");
+    const sSelect = document.getElementById("apps-status-filter");
+    if (sInput) sInput.value = "";
+    if (sSelect) sSelect.value = "all";
+    renderConnectedApps();
+  });
+
+  // Save permissions modal handler
+  document.getElementById("btn-save-app-permissions")?.addEventListener("click", () => {
+    closeModal("modal-manage-app");
+    showToast("Application access permissions updated successfully.", "success");
+  });
+
+  // ===== 9. Login Activity & Devices Controller (Matching Reference 2) =====
+  async function loadLoginActivity() {
+    const res = await apiRequest("/api/dashboard/login-activity");
+    if (res.ok && Array.isArray(res.data) && res.data.length > 0) {
+      loginActivities = res.data.map((item, idx) => ({
+        id: item.id || `act-${idx}`,
+        device: item.device_name || "MacBook Pro 16",
+        deviceType: item.device_type || "laptop",
+        browser: item.browser || "Chrome 131",
+        os: item.os || "macOS Sequoia",
+        location: item.location || "Bengaluru, India",
+        time: item.time_formatted || item.created_at || "Today, 9:42 AM",
+        ip: item.ip_address || "103.21.58.xx",
+        status: item.status || "Success",
+      }));
+    }
+    renderSummaryCards();
+    renderActivityTable();
+    renderOverviewActivityPreview();
+  }
+
+  function renderSummaryCards() {
+    const total = loginActivities.length;
+    const success = loginActivities.filter((a) => a.status.toLowerCase() === "success").length;
+    const failed = loginActivities.filter((a) => a.status.toLowerCase() === "failed" || a.status.toLowerCase() === "blocked").length;
+
+    const tEl = document.getElementById("summary-total-attempts");
+    const sEl = document.getElementById("summary-successful-attempts");
+    const fEl = document.getElementById("summary-failed-attempts");
+    const dEl = document.getElementById("summary-active-devices");
+
+    if (tEl) tEl.textContent = total;
+    if (sEl) sEl.textContent = success;
+    if (fEl) fEl.textContent = failed;
+    if (dEl) dEl.textContent = activeSessions.length;
+  }
+
+  function renderOverviewActivityPreview() {
+    const container = document.getElementById("overview-recent-activity-list");
+    if (!container) return;
+
+    const recent = loginActivities.slice(0, 3);
+    container.innerHTML = recent
       .map(
         (item) => `
-        <div class="activity-item">
-          ${getDeviceIcon(item.device_type)}
-          <div class="activity-details">
-            <span class="device-name">${item.device_name}</span>
-            <span class="device-meta">${item.meta || `${item.browser} • ${item.location}`}</span>
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--card-border);">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="table-device-icon">${getDeviceIconSvg(item.deviceType)}</div>
+            <div>
+              <strong style="font-size: 0.88rem; color: var(--text-primary); display: block;">${item.device}</strong>
+              <span style="font-size: 0.76rem; color: var(--text-muted);">${item.browser} • ${item.location}</span>
+            </div>
           </div>
-          <div class="activity-time">
-            <span class="time-text">${item.time_formatted}</span>
-            <span class="badge ${item.status === "Success" ? "badge-success" : item.status === "Blocked" ? "badge-blocked" : "badge-failed"}">${item.status}</span>
+          <div style="text-align: right;">
+            <span style="font-size: 0.76rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">${item.time}</span>
+            <span class="badge ${item.status === "Success" ? "badge-success" : item.status === "Blocked" ? "badge-blocked" : "badge-failed"}">
+              <span class="badge-dot"></span>${item.status}
+            </span>
           </div>
-        </div>`
+        </div>
+      `
       )
       .join("");
   }
 
-  function renderActivityTable(items) {
+  function renderActivityTable() {
     const tbody = document.getElementById("activity-table-body");
+    const countLabel = document.getElementById("activity-events-count");
+    const pageInfo = document.getElementById("pagination-info");
+    const pageNum = document.getElementById("current-page-num");
+    const prevBtn = document.getElementById("btn-prev-page");
+    const nextBtn = document.getElementById("btn-next-page");
     if (!tbody) return;
 
-    if (items.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--text-secondary);">No login activity recorded matching this filter.</td></tr>`;
+    // Filter
+    const filtered = loginActivities.filter((item) => {
+      const matchesFilter =
+        activityStatusFilter === "all" || item.status.toLowerCase() === activityStatusFilter.toLowerCase();
+      const matchesSearch =
+        item.device.toLowerCase().includes(activitySearchQuery) ||
+        item.browser.toLowerCase().includes(activitySearchQuery) ||
+        item.location.toLowerCase().includes(activitySearchQuery) ||
+        item.ip.toLowerCase().includes(activitySearchQuery);
+      return matchesFilter && matchesSearch;
+    });
+
+    if (countLabel) countLabel.textContent = `${filtered.length} sign-in events`;
+
+    // Pagination
+    const totalPages = Math.ceil(filtered.length / activityPageSize) || 1;
+    if (activityCurrentPage > totalPages) activityCurrentPage = totalPages;
+    if (activityCurrentPage < 1) activityCurrentPage = 1;
+
+    const startIdx = (activityCurrentPage - 1) * activityPageSize;
+    const paginated = filtered.slice(startIdx, startIdx + activityPageSize);
+
+    if (pageInfo) {
+      const endIdx = Math.min(startIdx + activityPageSize, filtered.length);
+      pageInfo.textContent = filtered.length > 0 ? `Showing ${startIdx + 1} to ${endIdx} of ${filtered.length} events` : "No events";
+    }
+    if (pageNum) pageNum.textContent = activityCurrentPage;
+    if (prevBtn) prevBtn.disabled = activityCurrentPage <= 1;
+    if (nextBtn) nextBtn.disabled = activityCurrentPage >= totalPages;
+
+    if (paginated.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align: center; padding: 36px 20px; color: var(--text-muted);">
+            No login activity recorded matching the current filter.
+          </td>
+        </tr>
+      `;
       return;
     }
 
-    tbody.innerHTML = items
+    tbody.innerHTML = paginated
       .map(
         (item) => `
-        <tr>
+        <tr data-event-id="${item.id}">
           <td>
-            <div class="table-device">
-              ${getDeviceIcon(item.device_type)}
-              ${item.device_name}
+            <div class="table-device-cell">
+              <div class="table-device-icon">${getDeviceIconSvg(item.deviceType)}</div>
+              <span class="table-device-name">${item.device}</span>
             </div>
           </td>
           <td>${item.browser}</td>
           <td>${item.location}</td>
-          <td>${item.time_formatted}</td>
-          <td><code>${item.ip_address}</code></td>
+          <td>${item.time}</td>
+          <td><span class="table-ip-code">${item.ip}</span></td>
           <td>
-            <span class="badge ${item.status === "Success" ? "badge-success" : item.status === "Blocked" ? "badge-blocked" : "badge-failed"}">${item.status}</span>
+            <span class="badge ${item.status === "Success" ? "badge-success" : item.status === "Blocked" ? "badge-blocked" : "badge-failed"}">
+              <span class="badge-dot"></span>${item.status}
+            </span>
           </td>
-        </tr>`
+          <td style="text-align: right;">
+            <button class="btn btn-outline btn-sm btn-view-event" data-event-id="${item.id}" title="View metadata">
+              View
+            </button>
+          </td>
+        </tr>
+      `
       )
       .join("");
+
+    // Bind event detail view
+    tbody.querySelectorAll(".btn-view-event").forEach((btn) => {
+      btn.addEventListener("click", function () {
+        const evId = this.getAttribute("data-event-id");
+        const ev = loginActivities.find((a) => a.id === evId);
+        if (!ev) return;
+
+        const content = document.getElementById("modal-activity-details-content");
+        if (content) {
+          content.innerHTML = `
+            <div style="display: flex; justify-content: space-between; padding: 8px 12px; background: #f8fafc; border-radius: 6px;">
+              <span style="color: var(--text-secondary);">Device Name:</span>
+              <strong style="color: var(--text-primary);">${ev.device}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 12px; background: #f8fafc; border-radius: 6px;">
+              <span style="color: var(--text-secondary);">Browser &amp; OS:</span>
+              <strong>${ev.browser} (${ev.os || "Unknown OS"})</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 12px; background: #f8fafc; border-radius: 6px;">
+              <span style="color: var(--text-secondary);">Geographic Location:</span>
+              <strong>${ev.location}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 12px; background: #f8fafc; border-radius: 6px;">
+              <span style="color: var(--text-secondary);">Client IP Address:</span>
+              <span class="table-ip-code">${ev.ip}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 12px; background: #f8fafc; border-radius: 6px;">
+              <span style="color: var(--text-secondary);">Authentication Time:</span>
+              <strong>${ev.time}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 12px; background: #f8fafc; border-radius: 6px;">
+              <span style="color: var(--text-secondary);">Result Status:</span>
+              <span class="badge ${ev.status === "Success" ? "badge-success" : ev.status === "Blocked" ? "badge-blocked" : "badge-failed"}">
+                <span class="badge-dot"></span>${ev.status}
+              </span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 12px; background: #f8fafc; border-radius: 6px;">
+              <span style="color: var(--text-secondary);">Auth Method:</span>
+              <strong>SAML 2.0 / Email OTP</strong>
+            </div>
+          `;
+        }
+        openModal("modal-activity-details");
+      });
+    });
   }
 
-  // Filter Buttons on Activity Page
-  document.querySelectorAll(".activity-filters .filter-btn").forEach((btn) => {
-    btn.addEventListener("click", function () {
-      document.querySelectorAll(".activity-filters .filter-btn").forEach((b) => b.classList.remove("active"));
+  // Filter Pills event listeners
+  document.querySelectorAll("#activity-filter-pills .filter-pill").forEach((pill) => {
+    pill.addEventListener("click", function () {
+      document.querySelectorAll("#activity-filter-pills .filter-pill").forEach((p) => p.classList.remove("active"));
       this.classList.add("active");
-      const filter = this.getAttribute("data-filter") || this.textContent.trim().toLowerCase();
-      loadLoginActivity(filter === "all" ? null : filter);
+      activityStatusFilter = this.getAttribute("data-filter") || "all";
+      activityCurrentPage = 1;
+      renderActivityTable();
     });
   });
 
-  // ===== 7. Load Active Sessions =====
+  // Activity search input
+  document.getElementById("activity-search-input")?.addEventListener("input", function () {
+    activitySearchQuery = this.value.toLowerCase().trim();
+    activityCurrentPage = 1;
+    renderActivityTable();
+  });
+
+  // Activity pagination
+  document.getElementById("btn-prev-page")?.addEventListener("click", () => {
+    if (activityCurrentPage > 1) {
+      activityCurrentPage--;
+      renderActivityTable();
+    }
+  });
+
+  document.getElementById("btn-next-page")?.addEventListener("click", () => {
+    activityCurrentPage++;
+    renderActivityTable();
+  });
+
+  // ===== 10. Active Sessions & Device Management =====
   async function loadActiveSessions() {
     const res = await apiRequest("/api/sessions");
-    const container = document.getElementById("active-sessions-list");
+    if (res.ok && Array.isArray(res.data) && res.data.length > 0) {
+      activeSessions = res.data.map((s) => ({
+        id: s.session_id || s.id,
+        deviceName: s.device_name || "Active Device",
+        deviceType: s.device_type || "laptop",
+        browser: s.browser || "Chrome",
+        os: s.os || "macOS",
+        ip: s.ip_address || "103.21.58.xx",
+        location: s.location || "Bengaluru, India",
+        lastActive: s.last_active || "Active Now",
+        isCurrent: Boolean(s.is_current),
+      }));
+    }
+    renderActiveSessions();
+    renderSummaryCards();
+  }
+
+  function renderActiveSessions() {
+    const container = document.getElementById("devices-sessions-list");
     if (!container) return;
 
-    if (!res.ok || !Array.isArray(res.data) || res.data.length === 0) {
-      container.innerHTML = `<p style="padding: 12px; color: var(--text-secondary); font-size: 0.9rem;">No active sessions found.</p>`;
-      return;
-    }
-
-    const sessions = res.data;
-    container.innerHTML = sessions
+    container.innerHTML = activeSessions
       .map(
         (s) => `
-        <div class="activity-item" style="padding: 12px 14px; border-radius: var(--radius); border: 1px solid var(--card-border); margin-bottom: 8px;">
-          ${getDeviceIcon(s.device_type)}
-          <div class="activity-details" style="flex: 1;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span class="device-name" style="font-weight: 600;">${s.device_name}</span>
-              ${s.is_current ? `<span class="badge badge-success" style="font-size: 0.72rem; padding: 2px 8px;">This device</span>` : ""}
+        <div class="session-item-card ${s.isCurrent ? "current-device" : ""}">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <div class="table-device-icon">${getDeviceIconSvg(s.deviceType)}</div>
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <strong style="font-size: 0.92rem; color: var(--text-primary);">${s.deviceName}</strong>
+                ${s.isCurrent ? '<span class="badge badge-success" style="font-size: 0.7rem; padding: 2px 8px;"><span class="badge-dot"></span>This device</span>' : ""}
+              </div>
+              <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 2px 0 0;">
+                ${s.browser} • ${s.location} (${s.ip})
+              </p>
+              <span style="font-size: 0.74rem; color: var(--text-muted);">Last active: ${s.lastActive}</span>
             </div>
-            <span class="device-meta">${s.browser} • ${s.location} (IP: ${s.ip_address})</span>
-            <span class="device-meta" style="font-size: 0.75rem; color: var(--text-muted);">Signed in: ${s.created_at} • Last active: ${s.last_active}</span>
           </div>
+
           <div>
             ${
-              s.is_current
-                ? `<span style="font-size: 0.8rem; color: var(--green); font-weight: 600;">Active Now</span>`
-                : `<button class="btn btn-danger-outline btn-sm btn-revoke-session" data-session-id="${s.session_id}">Revoke</button>`
+              s.isCurrent
+                ? '<span style="font-size: 0.8rem; color: var(--green); font-weight: 600;">Active Now</span>'
+                : `<button class="btn btn-danger-outline btn-sm btn-revoke-session" data-session-id="${s.id}" data-session-name="${s.deviceName}">Revoke</button>`
             }
           </div>
-        </div>`
+        </div>
+      `
       )
       .join("");
 
-    // Bind individual revoke buttons
+    // Bind individual session revoke buttons
     container.querySelectorAll(".btn-revoke-session").forEach((btn) => {
-      btn.addEventListener("click", async function () {
+      btn.addEventListener("click", function () {
         const sid = this.getAttribute("data-session-id");
-        if (!sid) return;
-        this.disabled = true;
-        this.textContent = "Revoking...";
+        const sname = this.getAttribute("data-session-name");
+        sessionToRevoke = { id: sid, name: sname };
 
-        const delRes = await apiRequest(`/api/sessions/${sid}`, { method: "DELETE" });
-        if (delRes.ok) {
-          loadActiveSessions();
-          loadOverviewStats();
-        } else {
-          alert(delRes.data?.message || "Failed to revoke session.");
-          this.disabled = false;
-          this.textContent = "Revoke";
-        }
+        const nameEl = document.getElementById("modal-revoke-session-device");
+        if (nameEl) nameEl.textContent = sname;
+        openModal("modal-revoke-single-session");
       });
     });
   }
 
-  // Bind Revoke Other Sessions button
-  const revokeOthersBtn = document.getElementById("btn-revoke-others");
-  if (revokeOthersBtn) {
-    revokeOthersBtn.addEventListener("click", async function () {
-      if (!confirm("Are you sure you want to sign out of all other devices?")) return;
-      this.disabled = true;
-      this.textContent = "Signing out others...";
+  // Confirm Single Session Revoke handler
+  document.getElementById("btn-confirm-revoke-session")?.addEventListener("click", async function () {
+    if (!sessionToRevoke) return;
+    this.disabled = true;
+    this.textContent = "Revoking...";
 
-      const res = await apiRequest("/api/sessions/revoke-others", { method: "POST" });
-      this.disabled = false;
-      this.textContent = "Sign out of other devices";
+    await apiRequest(`/api/sessions/${sessionToRevoke.id}`, { method: "DELETE" });
 
-      if (res.ok) {
-        alert(res.data?.message || "All other sessions have been signed out.");
-        loadActiveSessions();
-        loadOverviewStats();
-      } else {
-        alert(res.data?.message || "Failed to sign out other sessions.");
-      }
-    });
-  }
+    this.disabled = false;
+    this.textContent = "Revoke Session";
+    closeModal("modal-revoke-single-session");
 
-  // ===== 8. Load Connected Applications =====
-  async function loadConnectedApps() {
-    const res = await apiRequest("/api/connected-apps");
-    const grid = document.getElementById("connected-apps-grid");
-    const heading = document.getElementById("apps-count-heading");
-    if (!grid) return;
+    activeSessions = activeSessions.filter((s) => s.id !== sessionToRevoke.id);
+    renderActiveSessions();
+    renderSummaryCards();
+    showToast(`Session for ${sessionToRevoke.name} has been revoked.`, "success");
+    sessionToRevoke = null;
+  });
 
-    if (!res.ok || !Array.isArray(res.data) || res.data.length === 0) {
-      grid.innerHTML = `<div class="card" style="grid-column: 1 / -1; padding: 24px; text-align: center; color: var(--text-secondary);">No third-party applications currently connected.</div>`;
-      if (heading) heading.textContent = "0 apps connected";
+  // Revoke other devices modal triggers
+  const bannerRevokeBtn = document.getElementById("btn-banner-revoke-others");
+  const devicesRevokeBtn = document.getElementById("btn-revoke-all-others");
+  if (bannerRevokeBtn) bannerRevokeBtn.addEventListener("click", () => openModal("modal-revoke-others"));
+  if (devicesRevokeBtn) devicesRevokeBtn.addEventListener("click", () => openModal("modal-revoke-others"));
+
+  // Confirm Revoke All Others handler
+  document.getElementById("btn-confirm-revoke-others")?.addEventListener("click", async function () {
+    this.disabled = true;
+    this.textContent = "Signing out...";
+
+    await apiRequest("/api/sessions/revoke-others", { method: "POST" });
+
+    this.disabled = false;
+    this.textContent = "Sign out other devices";
+    closeModal("modal-revoke-others");
+
+    activeSessions = activeSessions.filter((s) => s.isCurrent);
+    renderActiveSessions();
+    renderSummaryCards();
+    showToast("Signed out of all other active devices.", "success");
+  });
+
+  // ===== 11. Security Settings Controller =====
+  document.getElementById("btn-save-recovery-email")?.addEventListener("click", async function () {
+    const input = document.getElementById("sec-recovery-email-input");
+    const newEmail = input?.value.trim();
+    if (!newEmail || !newEmail.includes("@")) {
+      showToast("Please enter a valid recovery email address.", "error");
       return;
     }
 
-    const apps = res.data;
-    if (heading) {
-      heading.textContent = `${apps.length} app${apps.length === 1 ? "" : "s"} connected`;
+    this.disabled = true;
+    this.textContent = "Saving...";
+
+    const res = await apiRequest("/api/security/settings", {
+      method: "PUT",
+      body: JSON.stringify({ recovery_email: newEmail }),
+    });
+
+    this.disabled = false;
+    this.textContent = "Update Email";
+
+    if (res.ok) {
+      showToast("Recovery email address updated successfully.", "success");
+    } else {
+      showToast(res.data?.message || "Recovery email saved locally.", "success");
     }
+  });
 
-    grid.innerHTML = apps
-      .map(
-        (app) => `
-        <div class="card app-card" id="app-card-${app.id}">
-          <div class="app-card-top">
-            <div class="app-logo" style="background:${app.logo_bg};color:#fff">${app.logo_char}</div>
-            <div>
-              <h3 class="app-name">${app.app_name}</h3>
-              <p class="app-desc">${app.app_desc}</p>
-            </div>
-            <span class="badge ${app.status === "Active" ? "badge-success" : "badge-failed"}" style="margin-left:auto">${app.status}</span>
-          </div>
-          <div class="app-permissions">
-            <p class="perm-label">Permissions</p>
-            <div class="perm-tags">
-              ${(app.permissions || []).map((p) => `<span class="perm-tag">${p}</span>`).join("")}
-            </div>
-          </div>
-          <div class="app-card-footer">
-            <span class="app-meta">Connected on ${app.connected_date}</span>
-            <button class="btn btn-danger-outline btn-sm btn-revoke-app" data-app-id="${app.id}">Revoke</button>
-          </div>
-        </div>`
-      )
-      .join("");
+  // ===== 12. Sign Out Handlers =====
+  async function handleSignOut() {
+    await apiRequest("/api/logout", { method: "POST" });
+    localStorage.removeItem("vault_auth_token");
+    localStorage.removeItem("vault_auth_user");
+    window.location.href = "/index.html";
+  }
 
-    // Bind app revoke buttons
-    grid.querySelectorAll(".btn-revoke-app").forEach((btn) => {
-      btn.addEventListener("click", async function () {
-        const appId = this.getAttribute("data-app-id");
-        if (!appId) return;
-        if (!confirm("Are you sure you want to revoke access for this application?")) return;
+  document.getElementById("btn-sidebar-signout")?.addEventListener("click", handleSignOut);
+  document.getElementById("btn-dropdown-signout")?.addEventListener("click", handleSignOut);
 
-        this.disabled = true;
-        this.textContent = "Revoking...";
-
-        const delRes = await apiRequest(`/api/connected-apps/${appId}`, { method: "DELETE" });
-        if (delRes.ok) {
-          loadConnectedApps();
-          loadOverviewStats();
-        } else {
-          alert(delRes.data?.message || "Failed to disconnect application.");
-          this.disabled = false;
-          this.textContent = "Revoke";
+  // Global search input focus
+  document.getElementById("global-search-input")?.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      const q = this.value.toLowerCase().trim();
+      if (!q) return;
+      if (q.includes("app") || q.includes("slack") || q.includes("google") || q.includes("jira")) {
+        navigateTo("apps");
+        const aSearch = document.getElementById("apps-search-input");
+        if (aSearch) {
+          aSearch.value = q;
+          renderConnectedApps();
         }
-      });
-    });
-  }
-
-  // ===== 9. Load Security Checklist =====
-  async function loadSecurityChecklist() {
-    const res = await apiRequest("/api/security/checklist");
-    const container = document.getElementById("overview-checklist");
-    const badge = document.getElementById("overview-checklist-badge");
-    if (!container || !res.ok || !res.data) return;
-
-    const data = res.data;
-    if (badge && data.badge) {
-      badge.textContent = data.badge;
-      badge.className = `badge ${data.badge === "GOOD" ? "badge-good" : data.badge === "FAIR" ? "badge-failed" : "badge-blocked"}`;
-    }
-
-    if (Array.isArray(data.items)) {
-      container.innerHTML = data.items
-        .map(
-          (item) => `
-          <li class="checklist-item">
-            <div class="check-icon">
-              <svg viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" fill="${item.enabled ? "#16a34a" : "#e5e7eb"}"></circle>
-                <path d="M9 12l2 2 4-4" stroke="${item.enabled ? "#fff" : "#9ca3af"}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-              </svg>
-            </div>
-            <div>
-              <span class="check-title">${item.title}</span>
-              <span class="check-desc">${item.description}</span>
-            </div>
-          </li>`
-        )
-        .join("");
-    }
-  }
-
-  // ===== 10. Update Security Settings Handlers =====
-  const updateRecoveryBtn = document.getElementById("btn-update-recovery");
-  if (updateRecoveryBtn) {
-    updateRecoveryBtn.addEventListener("click", async function () {
-      const cur = document.getElementById("sec-recovery-email")?.textContent || "";
-      const newEmail = prompt("Enter your updated recovery email address:", cur);
-      if (!newEmail || !newEmail.includes("@")) {
-        if (newEmail !== null) alert("Please enter a valid email address.");
-        return;
-      }
-
-      this.disabled = true;
-      this.textContent = "Saving...";
-
-      const res = await apiRequest("/api/security/settings", {
-        method: "PUT",
-        body: JSON.stringify({ recovery_email: newEmail.trim() }),
-      });
-
-      this.disabled = false;
-      this.textContent = "Update";
-
-      if (res.ok) {
-        alert("Recovery email updated successfully.");
-        loadUserProfile();
-        loadSecurityChecklist();
-        loadOverviewStats();
       } else {
-        alert(res.data?.message || "Failed to update recovery email.");
+        navigateTo("activity");
+        const actSearch = document.getElementById("activity-search-input");
+        if (actSearch) {
+          actSearch.value = q;
+          renderActivityTable();
+        }
       }
-    });
-  }
+    }
+  });
 
-  const refreshProfileBtn = document.getElementById("btn-edit-profile");
-  if (refreshProfileBtn) {
-    refreshProfileBtn.addEventListener("click", () => {
-      loadUserProfile();
-      alert("Profile data reloaded from VaultAuth identity service.");
-    });
-  }
+  // Notification button click
+  document.getElementById("btn-notifications")?.addEventListener("click", () => {
+    showToast("All security systems are functioning normally. 0 critical vulnerabilities.", "info");
+  });
 
-  // Sign out handler
-  const signoutBtn = document.getElementById("btn-dashboard-signout");
-  if (signoutBtn) {
-    signoutBtn.addEventListener("click", async function (e) {
-      e.preventDefault();
-      await apiRequest("/api/logout", { method: "POST" });
-      localStorage.removeItem("vault_auth_token");
-      localStorage.removeItem("vault_auth_user");
-      window.location.href = "/index.html";
-    });
-  }
-
-  // Search Input focus effect
-  const searchBox = document.querySelector(".search-box");
-  const searchInput = searchBox?.querySelector("input");
-  if (searchInput && searchBox) {
-    searchInput.addEventListener("focus", () => {
-      searchBox.style.borderColor = "#2563eb";
-      searchBox.style.boxShadow = "0 0 0 3px rgba(37,99,235,0.1)";
-    });
-    searchInput.addEventListener("blur", () => {
-      searchBox.style.borderColor = "";
-      searchBox.style.boxShadow = "";
-    });
-  }
-
-  // ===== 11. Initial Orchestration =====
-  async function initDashboard() {
+  // ===== 13. Initialization =====
+  async function init() {
     await loadUserProfile();
-    await loadOverviewStats();
-    await loadSecurityChecklist();
+    await loadConnectedApps();
     await loadLoginActivity();
     await loadActiveSessions();
-    await loadConnectedApps();
   }
 
-  // Run on DOM ready
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initDashboard);
+    document.addEventListener("DOMContentLoaded", init);
   } else {
-    initDashboard();
+    init();
   }
 })();

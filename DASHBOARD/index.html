@@ -3,243 +3,287 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VaultAuth — End User Dashboard</title>
+  <title>VaultAuthSSO — Enterprise IAM Dashboard</title>
+  <meta name="description" content="VaultAuthSSO Identity & Access Management Dashboard" />
+
+  <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-    rel="stylesheet"
-  />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Dashboard Styles -->
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- ===== SIDEBAR ===== -->
-  <aside class="sidebar">
+
+  <!-- ============================================== -->
+  <!--               1. LEFT SIDEBAR                  -->
+  <!-- ============================================== -->
+  <aside class="sidebar" id="sidebar">
     <div class="sidebar-top">
-      <div class="brand">
-        <div class="brand-icon">V</div>
+      <!-- VaultAuthSSO Primary Logo -->
+      <a href="#" class="brand" data-page="overview">
+        <div class="brand-icon-wrap">
+          <!-- Primary Shield Keyhole Icon -->
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L4 5.5V11.5C4 16.5 7.5 21 12 22C16.5 21 20 16.5 20 11.5V5.5L12 2Z" fill="#ffffff" fill-opacity="0.15" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="12" cy="10" r="2.2" fill="#ffffff"/>
+            <path d="M11 11.5L10 16H14L13 11.5" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="#ffffff"/>
+          </svg>
+        </div>
         <div class="brand-text">
-          <span class="brand-name">VaultAuth</span>
+          <span class="brand-name">VaultAuth<span>SSO</span></span>
           <span class="brand-sub">IDENTITY + ACCESS</span>
         </div>
-      </div>
+      </a>
 
       <p class="nav-label">WORKSPACE</p>
       <nav class="nav">
+        <!-- Overview -->
         <a href="#" class="nav-item active" data-page="overview">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
+            <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
+          </svg>
           Overview
         </a>
-        <a href="#" class="nav-item" data-page="profile">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          My profile
-        </a>
+
+        <!-- Connected Apps -->
         <a href="#" class="nav-item" data-page="apps">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/>
+          </svg>
           Connected apps
         </a>
+
+        <!-- Login Activity -->
         <a href="#" class="nav-item" data-page="activity">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/>
+          </svg>
           Login activity
+        </a>
+
+        <!-- Devices & Sessions -->
+        <a href="#" class="nav-item" data-page="devices">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+          Devices &amp; Sessions
+        </a>
+
+        <!-- Security Settings -->
+        <a href="#" class="nav-item" data-page="security">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
+            <circle cx="12" cy="11" r="3"/>
+          </svg>
+          Security settings
+        </a>
+
+        <!-- My Profile -->
+        <a href="#" class="nav-item" data-page="profile">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+          My profile
+        </a>
+
+        <!-- Help & Support -->
+        <a href="#" class="nav-item" data-page="help">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          Help &amp; Support
         </a>
       </nav>
     </div>
 
     <div class="sidebar-bottom">
-      <a href="/index.html" id="btn-dashboard-signout" style="display: flex; align-items: center; gap: 8px; color: var(--sidebar-text); font-size: 0.85rem; padding: 6px 0; margin-bottom: 8px; cursor: pointer; transition: color 0.2s;">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      <button class="sidebar-signout-btn" id="btn-sidebar-signout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
         Sign out
-      </a>
-      <span>v1.0.0 • Secure workspace</span>
+      </button>
+      <span class="sidebar-footer-text">v1.0.0 • Secure workspace</span>
     </div>
   </aside>
 
-  <!-- ===== MOBILE HAMBURGER ===== -->
-  <button class="mobile-menu-btn" aria-label="Menu">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-  </button>
-  <div class="sidebar-overlay"></div>
+  <!-- Mobile Overlay -->
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
-  <!-- ===== MAIN CONTENT ===== -->
+  <!-- ============================================== -->
+  <!--               2. MAIN WRAPPER                  -->
+  <!-- ============================================== -->
   <div class="main-wrapper">
-    <!-- Top bar -->
+    <!-- Top Bar Navigation -->
     <header class="topbar">
-      <div class="search-box">
-        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <input type="text" placeholder="Search settings, apps, activity..." />
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <button class="mobile-menu-btn" id="btn-mobile-menu" aria-label="Toggle Navigation">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+
+        <!-- Search Bar -->
+        <div class="search-box">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" id="global-search-input" placeholder="Search settings, apps, activity..." />
+        </div>
       </div>
 
       <div class="topbar-right">
-        <button class="icon-btn" aria-label="Notifications">
+        <!-- Notification Button -->
+        <button class="icon-btn" id="btn-notifications" aria-label="Notifications" title="Security notifications">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="notif-badge"></span>
         </button>
-        <div class="user-pill">
-          <div class="avatar">AM</div>
-          <div class="user-info">
-            <span class="user-name">Alex Morgan</span>
-            <span class="user-role">End user</span>
+
+        <!-- User Profile Pill -->
+        <div class="user-pill-container">
+          <div class="user-pill" id="user-pill-trigger">
+            <div class="avatar" id="topbar-avatar">AM</div>
+            <div class="user-info">
+              <span class="user-name" id="topbar-user-name">amitoj0024@gmail.com</span>
+              <span class="user-role" id="topbar-user-role">End user</span>
+            </div>
+            <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+
+          <!-- Profile Dropdown Menu -->
+          <div class="user-dropdown" id="user-dropdown-menu">
+            <div class="dropdown-user-header">
+              <strong id="dropdown-name">Alex Morgan</strong>
+              <small id="dropdown-email">amitoj0024@gmail.com</small>
+            </div>
+            <button class="dropdown-item" data-goto="profile">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              My Profile
+            </button>
+            <button class="dropdown-item" data-goto="security">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>
+              Security Settings
+            </button>
+            <button class="dropdown-item" data-goto="apps">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>
+              Connected Apps
+            </button>
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item danger" id="btn-dropdown-signout">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              Sign out
+            </button>
           </div>
         </div>
       </div>
     </header>
 
     <!-- ============================================== -->
-    <!--          PAGE: OVERVIEW                         -->
+    <!--            PAGE: OVERVIEW                      -->
     <!-- ============================================== -->
     <main class="content page" id="page-overview">
-      <section class="greeting">
-        <h1 id="overview-greeting">Good morning, Alex 👋</h1>
-        <p>Here's your identity and security overview for today.</p>
-      </section>
-
-      <div class="section-heading">
-        <h2>Account overview</h2>
-        <span class="status-badge status-normal" id="overview-status-badge">
-          <span class="status-dot"></span>ALL SYSTEMS NORMAL
-        </span>
+      <div class="page-header">
+        <h1 class="page-title" id="overview-greeting">Good morning, Alex 👋</h1>
+        <p class="page-desc">Here's your identity and security overview for today.</p>
       </div>
 
-      <div class="stat-cards">
-        <div class="stat-card" style="cursor: pointer;" data-goto="activity">
-          <p class="stat-label">Active sessions</p>
-          <h3 class="stat-value" id="stat-active-sessions">2 devices</h3>
-          <p class="stat-desc" id="stat-active-sessions-desc">You're signed in on 2 devices</p>
-          <div class="stat-card-icon">
+      <div class="overview-stats-grid">
+        <div class="overview-stat-card" data-goto="activity">
+          <p class="overview-stat-label">Active sessions</p>
+          <h3 class="overview-stat-value" id="stat-active-sessions">2 devices</h3>
+          <p class="overview-stat-desc" id="stat-active-sessions-desc">You're signed in on 2 devices</p>
+          <div class="overview-stat-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           </div>
         </div>
-        <div class="stat-card" style="cursor: pointer;" data-goto="profile">
-          <p class="stat-label">Security score</p>
-          <h3 class="stat-value" id="stat-security-score">92 / 100</h3>
-          <p class="stat-desc" id="stat-security-score-desc">Your account is well protected</p>
-          <div class="stat-card-icon blue">
+
+        <div class="overview-stat-card" data-goto="security">
+          <p class="overview-stat-label">Security score</p>
+          <h3 class="overview-stat-value" id="stat-security-score">92 / 100</h3>
+          <p class="overview-stat-desc" id="stat-security-score-desc">Your account is well protected</p>
+          <div class="overview-stat-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>
           </div>
         </div>
-        <div class="stat-card" style="cursor: pointer;" data-goto="apps">
-          <p class="stat-label">Connected apps</p>
-          <h3 class="stat-value" id="stat-connected-apps">5 apps</h3>
-          <p class="stat-desc" id="stat-connected-apps-desc">Across your approved workspace</p>
-          <div class="stat-card-icon teal">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+
+        <div class="overview-stat-card" data-goto="apps">
+          <p class="overview-stat-label">Connected apps</p>
+          <h3 class="overview-stat-value" id="stat-connected-apps">5 apps</h3>
+          <p class="overview-stat-desc" id="stat-connected-apps-desc">Across your approved workspace</p>
+          <div class="overview-stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>
           </div>
         </div>
       </div>
 
-      <div class="bottom-grid">
-        <!-- Recent login activity -->
-        <div class="card login-activity-card">
-          <div class="card-header">
-            <h2>Recent login activity</h2>
-            <a href="#" class="view-all" data-goto="activity">View all →</a>
+      <div class="overview-two-col">
+        <!-- Recent login activity list -->
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <h2 style="font-size: 1.05rem; font-weight: 700;">Recent login activity</h2>
+            <a href="#" class="btn btn-outline btn-sm" data-goto="activity">View all →</a>
           </div>
-          <p class="card-subtitle">Monitor the latest sign-ins to your account.</p>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 16px;">Monitor the latest sign-ins to your account.</p>
 
-          <div class="activity-list" id="overview-activity-list">
-            <div class="activity-item">
-              <div class="device-icon laptop">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
-              </div>
-              <div class="activity-details">
-                <span class="device-name">MacBook Pro 16"</span>
-                <span class="device-meta">Chrome • Bengaluru, India</span>
-              </div>
-              <div class="activity-time">
-                <span class="time-text">Today, 9:42 AM</span>
-                <span class="badge badge-success">Success</span>
-              </div>
-            </div>
-            <div class="activity-item">
-              <div class="device-icon mobile">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-              </div>
-              <div class="activity-details">
-                <span class="device-name">Samsung Galaxy S25 Ultra</span>
-                <span class="device-meta">VaultAuth mobile • Bengaluru, India</span>
-              </div>
-              <div class="activity-time">
-                <span class="time-text">Today, 8:16 AM</span>
-                <span class="badge badge-success">Success</span>
-              </div>
-            </div>
-            <div class="activity-item">
-              <div class="device-icon desktop">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-              </div>
-              <div class="activity-details">
-                <span class="device-name">Chrome on Windows</span>
-                <span class="device-meta">Chrome • Bengaluru, India</span>
-              </div>
-              <div class="activity-time">
-                <span class="time-text">Yesterday, 6:32 PM</span>
-                <span class="badge badge-success">Success</span>
-              </div>
-            </div>
+          <div id="overview-recent-activity-list" style="display: flex; flex-direction: column;">
+            <!-- Dynamically populated -->
           </div>
         </div>
 
-        <!-- Right column -->
-        <div class="right-column">
-          <div class="card security-card">
-            <div class="card-header">
-              <h2>Security checklist</h2>
-              <span class="badge badge-good" id="overview-checklist-badge">GOOD</span>
+        <!-- Security checklist & Quick actions -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <h2 style="font-size: 1.05rem; font-weight: 700;">Security checklist</h2>
+              <span class="badge badge-success" id="overview-checklist-badge">GOOD</span>
             </div>
-            <ul class="checklist" id="overview-checklist">
-              <li class="checklist-item">
-                <div class="check-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#16a34a"/><path d="M9 12l2 2 4-4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+
+            <div class="checklist-list" id="overview-checklist">
+              <div class="checklist-item">
+                <div class="check-circle-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
                 <div>
                   <span class="check-title">Multi-factor authentication</span>
-                  <span class="check-desc">Enabled for your account</span>
+                  <p class="check-desc">Enabled for your account</p>
                 </div>
-              </li>
-              <li class="checklist-item">
-                <div class="check-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#16a34a"/><path d="M9 12l2 2 4-4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              </div>
+              <div class="checklist-item">
+                <div class="check-circle-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
                 <div>
                   <span class="check-title">Recovery email</span>
-                  <span class="check-desc">Verified and up to date</span>
+                  <p class="check-desc">Verified and up to date</p>
                 </div>
-              </li>
-              <li class="checklist-item">
-                <div class="check-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#16a34a"/><path d="M9 12l2 2 4-4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              </div>
+              <div class="checklist-item">
+                <div class="check-circle-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
                 <div>
                   <span class="check-title">Password strength</span>
-                  <span class="check-desc">Strong password</span>
+                  <p class="check-desc">Strong password</p>
                 </div>
-              </li>
-            </ul>
+              </div>
+            </div>
           </div>
 
-          <div class="card quick-actions-card">
-            <h2>Quick actions</h2>
-            <div class="action-list">
-              <a href="#" class="action-item" data-goto="apps">
-                <div class="action-icon purple">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>
-                </div>
-                <div>
-                  <span class="action-title">Manage connected apps</span>
-                  <span class="action-desc">Review access permissions</span>
-                </div>
-              </a>
-              <a href="#" class="action-item" data-goto="activity">
-                <div class="action-icon blue">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                </div>
-                <div>
-                  <span class="action-title">Review active sessions</span>
-                  <span class="action-desc">Sign out of unused devices</span>
-                </div>
-              </a>
-              <a href="#" class="action-item" data-goto="profile">
-                <div class="action-icon green">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                </div>
-                <div>
-                  <span class="action-title">Update security settings</span>
-                  <span class="action-desc">Keep your account protected</span>
-                </div>
-              </a>
+          <div class="card">
+            <h2 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 14px;">Quick actions</h2>
+            <div class="quick-action-link" data-goto="apps">
+              <div class="quick-action-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg></div>
+              <div>
+                <strong style="font-size: 0.86rem; color: var(--text-primary);">Manage connected apps</strong>
+                <p style="font-size: 0.74rem; color: var(--text-muted); margin: 0;">Review access permissions</p>
+              </div>
+            </div>
+            <div class="quick-action-link" data-goto="activity">
+              <div class="quick-action-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+              <div>
+                <strong style="font-size: 0.86rem; color: var(--text-primary);">Review active sessions</strong>
+                <p style="font-size: 0.74rem; color: var(--text-muted); margin: 0;">Sign out of unused devices</p>
+              </div>
+            </div>
+            <div class="quick-action-link" data-goto="security">
+              <div class="quick-action-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+              <div>
+                <strong style="font-size: 0.86rem; color: var(--text-primary);">Update security settings</strong>
+                <p style="font-size: 0.74rem; color: var(--text-muted); margin: 0;">Keep your account protected</p>
+              </div>
             </div>
           </div>
         </div>
@@ -247,389 +291,453 @@
     </main>
 
     <!-- ============================================== -->
-    <!--          PAGE: MY PROFILE                       -->
+    <!--            PAGE: CONNECTED APPS                -->
     <!-- ============================================== -->
-    <main class="content page" id="page-profile" style="display:none">
-      <section class="greeting">
-        <h1>My profile</h1>
-        <p>Manage your personal information and account settings.</p>
-      </section>
-
-      <div class="profile-grid">
-        <!-- Profile card -->
-        <div class="card profile-main-card">
-          <div class="profile-header">
-            <div class="profile-avatar-lg" id="profile-avatar">AM</div>
-            <div>
-              <h2 class="profile-name-lg" id="profile-name">Alex Morgan</h2>
-              <p class="profile-email" id="profile-email">alex.morgan@company.com</p>
-              <span class="badge badge-success" style="margin-top:6px">Active</span>
-            </div>
-            <button class="btn btn-outline" style="margin-left:auto" id="btn-edit-profile">Refresh profile</button>
-          </div>
-
-          <div class="profile-fields">
-            <div class="field-row">
-              <div class="field">
-                <label>Full name</label>
-                <p id="field-fullname">Alex Morgan</p>
-              </div>
-              <div class="field">
-                <label>Email address</label>
-                <p id="field-email">alex.morgan@company.com</p>
-              </div>
-            </div>
-            <div class="field-row">
-              <div class="field">
-                <label>Phone number</label>
-                <p id="field-phone">+91 98765 43210</p>
-              </div>
-              <div class="field">
-                <label>Department</label>
-                <p id="field-dept">Engineering</p>
-              </div>
-            </div>
-            <div class="field-row">
-              <div class="field">
-                <label>Role</label>
-                <p id="field-role">End user</p>
-              </div>
-              <div class="field">
-                <label>Joined</label>
-                <p id="field-joined">March 15, 2025</p>
-              </div>
-            </div>
-          </div>
+    <main class="content page" id="page-apps" style="display: none;">
+      <!-- Page Header -->
+      <div class="apps-header-row">
+        <div>
+          <h1 class="page-title">Connected apps</h1>
+          <p class="page-desc">Manage and review third-party applications connected to your VaultAuth account.</p>
         </div>
-
-        <!-- Security settings -->
-        <div class="card" id="card-security-settings">
-          <div class="card-header">
-            <h2>Security settings</h2>
-          </div>
-
-          <div class="settings-list">
-            <div class="setting-item">
-              <div class="setting-info">
-                <div class="action-icon green">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                </div>
-                <div>
-                  <span class="action-title">Password</span>
-                  <span class="action-desc" id="sec-pwd-desc">Last changed 30 days ago</span>
-                </div>
-              </div>
-              <span class="badge badge-good" id="sec-pwd-badge">Strong</span>
-            </div>
-
-            <div class="setting-item">
-              <div class="setting-info">
-                <div class="action-icon blue">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-                </div>
-                <div>
-                  <span class="action-title">Multi-factor authentication</span>
-                  <span class="action-desc" id="sec-mfa-desc">Email OTP 2-Factor Authentication</span>
-                </div>
-              </div>
-              <span class="badge badge-success" id="sec-mfa-badge">Enabled</span>
-            </div>
-
-            <div class="setting-item">
-              <div class="setting-info">
-                <div class="action-icon purple">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                </div>
-                <div>
-                  <span class="action-title">Recovery email</span>
-                  <span class="action-desc" id="sec-recovery-email">alex.backup@gmail.com</span>
-                </div>
-              </div>
-              <button class="btn btn-outline btn-sm" id="btn-update-recovery">Update</button>
-            </div>
-          </div>
+        <div class="apps-counter-badge" id="apps-counter-badge">
+          <strong id="apps-count-number">5</strong> apps connected <span>• All verified apps</span>
         </div>
+      </div>
+
+      <!-- Information Banner Notice -->
+      <div class="apps-info-banner">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>
+        <p>Review third-party apps regularly. Disconnecting an application will revoke its OAuth authorization tokens and API access permissions immediately.</p>
+      </div>
+
+      <!-- Section Title & Filters -->
+      <div class="apps-section-controls">
+        <h2 class="apps-section-title">Your applications</h2>
+        <div class="apps-filters-group">
+          <input type="text" class="app-search-input" id="apps-search-input" placeholder="Search applications..." />
+          <select class="app-status-select" id="apps-status-filter">
+            <option value="all">All status</option>
+            <option value="Active">Active</option>
+            <option value="Revoked">Revoked</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Connected Applications List (Horizontal Cards Matching Reference 1) -->
+      <div class="apps-list" id="connected-apps-list">
+        <!-- Dynamically rendered -->
+      </div>
+
+      <!-- Empty State -->
+      <div class="card" id="apps-empty-state" style="display: none; text-align: center; padding: 48px 24px;">
+        <div style="width: 54px; height: 54px; border-radius: 14px; background: var(--page-bg); display: inline-flex; align-items: center; justify-content: center; color: var(--text-muted); margin-bottom: 14px;">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>
+        </div>
+        <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 6px;">No connected applications found</h3>
+        <p style="font-size: 0.86rem; color: var(--text-muted); max-width: 400px; margin: 0 auto 16px;">Try adjusting your search query or filter settings.</p>
+        <button class="btn btn-outline btn-sm" id="btn-reset-apps-filter">Reset search</button>
       </div>
     </main>
 
     <!-- ============================================== -->
-    <!--          PAGE: CONNECTED APPS                   -->
+    <!--       PAGE: LOGIN ACTIVITY & SESSIONS          -->
     <!-- ============================================== -->
-    <main class="content page" id="page-apps" style="display:none">
-      <section class="greeting">
-        <h1>Connected apps</h1>
-        <p>Review and manage third-party applications with access to your account.</p>
-      </section>
-
-      <div class="section-heading">
-        <h2 id="apps-count-heading">5 apps connected</h2>
-        <span class="status-badge status-normal">
-          <span class="status-dot"></span>ALL VERIFIED
-        </span>
+    <main class="content page" id="page-activity" style="display: none;">
+      <!-- Page Header -->
+      <div class="page-header">
+        <h1 class="page-title">Login activity &amp; Sessions</h1>
+        <p class="page-desc">Full history of sign-ins and active sessions for your account.</p>
       </div>
 
-      <div class="apps-grid" id="connected-apps-grid">
-        <!-- App 1 -->
-        <div class="card app-card">
-          <div class="app-card-top">
-            <div class="app-logo" style="background:#4285F4;color:#fff">G</div>
-            <div>
-              <h3 class="app-name">Google Workspace</h3>
-              <p class="app-desc">Email, Calendar, Drive</p>
-            </div>
-            <span class="badge badge-success" style="margin-left:auto">Active</span>
+      <!-- Security Summary Cards (4 Cards) -->
+      <div class="summary-cards-grid">
+        <div class="summary-card">
+          <div class="summary-card-info">
+            <h4>Total Login Attempts</h4>
+            <div class="summary-card-val" id="summary-total-attempts">14</div>
+            <span class="summary-card-desc">Last 30 days</span>
           </div>
-          <div class="app-permissions">
-            <p class="perm-label">Permissions</p>
-            <div class="perm-tags">
-              <span class="perm-tag">Read email</span>
-              <span class="perm-tag">Calendar access</span>
-              <span class="perm-tag">Drive read</span>
-            </div>
-          </div>
-          <div class="app-card-footer">
-            <span class="app-meta">Connected on Jan 10, 2025</span>
-            <button class="btn btn-danger-outline btn-sm">Revoke</button>
+          <div class="summary-card-icon purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
           </div>
         </div>
 
-        <!-- App 2 -->
-        <div class="card app-card">
-          <div class="app-card-top">
-            <div class="app-logo" style="background:#5865F2;color:#fff">S</div>
-            <div>
-              <h3 class="app-name">Slack</h3>
-              <p class="app-desc">Team messaging</p>
-            </div>
-            <span class="badge badge-success" style="margin-left:auto">Active</span>
+        <div class="summary-card">
+          <div class="summary-card-info">
+            <h4>Successful Logins</h4>
+            <div class="summary-card-val" style="color: var(--green);" id="summary-successful-attempts">12</div>
+            <span class="summary-card-desc">Verified sessions</span>
           </div>
-          <div class="app-permissions">
-            <p class="perm-label">Permissions</p>
-            <div class="perm-tags">
-              <span class="perm-tag">Send messages</span>
-              <span class="perm-tag">Read channels</span>
-            </div>
-          </div>
-          <div class="app-card-footer">
-            <span class="app-meta">Connected on Feb 02, 2025</span>
-            <button class="btn btn-danger-outline btn-sm">Revoke</button>
+          <div class="summary-card-icon green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
           </div>
         </div>
 
-        <!-- App 3 -->
-        <div class="card app-card">
-          <div class="app-card-top">
-            <div class="app-logo" style="background:#0052CC;color:#fff">J</div>
-            <div>
-              <h3 class="app-name">Jira</h3>
-              <p class="app-desc">Project management</p>
-            </div>
-            <span class="badge badge-success" style="margin-left:auto">Active</span>
+        <div class="summary-card">
+          <div class="summary-card-info">
+            <h4>Failed Attempts</h4>
+            <div class="summary-card-val" style="color: var(--red);" id="summary-failed-attempts">2</div>
+            <span class="summary-card-desc">Blocked / Incorrect</span>
           </div>
-          <div class="app-permissions">
-            <p class="perm-label">Permissions</p>
-            <div class="perm-tags">
-              <span class="perm-tag">Read issues</span>
-              <span class="perm-tag">Create issues</span>
-              <span class="perm-tag">Assign</span>
-            </div>
-          </div>
-          <div class="app-card-footer">
-            <span class="app-meta">Connected on Mar 18, 2025</span>
-            <button class="btn btn-danger-outline btn-sm">Revoke</button>
+          <div class="summary-card-icon red">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
           </div>
         </div>
 
-        <!-- App 4 -->
-        <div class="card app-card">
-          <div class="app-card-top">
-            <div class="app-logo" style="background:#FF9900;color:#fff">A</div>
-            <div>
-              <h3 class="app-name">AWS Console</h3>
-              <p class="app-desc">Cloud infrastructure</p>
-            </div>
-            <span class="badge badge-success" style="margin-left:auto">Active</span>
+        <div class="summary-card">
+          <div class="summary-card-info">
+            <h4>Active Devices</h4>
+            <div class="summary-card-val" id="summary-active-devices">2</div>
+            <span class="summary-card-desc">Signed in now</span>
           </div>
-          <div class="app-permissions">
-            <p class="perm-label">Permissions</p>
-            <div class="perm-tags">
-              <span class="perm-tag">Read-only</span>
-              <span class="perm-tag">IAM view</span>
-            </div>
-          </div>
-          <div class="app-card-footer">
-            <span class="app-meta">Connected on Apr 22, 2025</span>
-            <button class="btn btn-danger-outline btn-sm">Revoke</button>
-          </div>
-        </div>
-
-        <!-- App 5 -->
-        <div class="card app-card">
-          <div class="app-card-top">
-            <div class="app-logo" style="background:#171515;color:#fff">G</div>
-            <div>
-              <h3 class="app-name">GitHub</h3>
-              <p class="app-desc">Code repositories</p>
-            </div>
-            <span class="badge badge-success" style="margin-left:auto">Active</span>
-          </div>
-          <div class="app-permissions">
-            <p class="perm-label">Permissions</p>
-            <div class="perm-tags">
-              <span class="perm-tag">Repo read</span>
-              <span class="perm-tag">Repo write</span>
-              <span class="perm-tag">Webhooks</span>
-            </div>
-          </div>
-          <div class="app-card-footer">
-            <span class="app-meta">Connected on May 05, 2025</span>
-            <button class="btn btn-danger-outline btn-sm">Revoke</button>
+          <div class="summary-card-icon blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
           </div>
         </div>
       </div>
-    </main>
 
-    <!-- ============================================== -->
-    <!--          PAGE: LOGIN ACTIVITY                   -->
-    <!-- ============================================== -->
-    <main class="content page" id="page-activity" style="display:none">
-      <section class="greeting">
-        <h1>Login activity &amp; Sessions</h1>
-        <p>Full history of sign-ins and active sessions for your account.</p>
-      </section>
-
-      <!-- Active Sessions Section -->
-      <div class="card" style="margin-bottom: 24px; padding: 24px;">
-        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+      <!-- Active Sessions Banner Card (1136 x 132 Matching Reference 2) -->
+      <div class="active-sessions-banner">
+        <div class="active-sessions-left">
+          <div class="active-sessions-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
+              <circle cx="12" cy="11" r="3"/>
+            </svg>
+          </div>
           <div>
-            <h2>Active sessions</h2>
-            <p class="card-subtitle" style="margin-top: 4px;">Devices currently authenticated to your VaultAuth account.</p>
+            <h3 class="active-sessions-title">Active sessions</h3>
+            <p class="active-sessions-subtitle">Devices currently authenticated to your VaultAuth account.</p>
+            <p class="active-sessions-tip">Review your sessions regularly to help keep your account secure.</p>
           </div>
-          <button class="btn btn-danger-outline btn-sm" id="btn-revoke-others">Sign out of other devices</button>
         </div>
-        <div class="activity-list" id="active-sessions-list" style="margin-top: 16px;">
-          <!-- Loaded dynamically -->
+        <button class="btn btn-outline" id="btn-banner-revoke-others">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sign out of other devices
+        </button>
+      </div>
+
+      <!-- Filter Pills & Counter Row -->
+      <div class="activity-filter-bar">
+        <div class="activity-filter-pills" id="activity-filter-pills">
+          <button class="filter-pill active" data-filter="all">All</button>
+          <button class="filter-pill" data-filter="successful">Successful</button>
+          <button class="filter-pill" data-filter="failed">Failed</button>
+          <button class="filter-pill" data-filter="blocked">Blocked</button>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <input type="text" class="app-search-input" id="activity-search-input" placeholder="Search device, IP, location..." />
+          <span class="activity-events-count" id="activity-events-count">7 sign-in events</span>
         </div>
       </div>
 
-      <!-- Filters -->
-      <div class="activity-filters">
-        <button class="filter-btn active" data-filter="all">All</button>
-        <button class="filter-btn" data-filter="successful">Successful</button>
-        <button class="filter-btn" data-filter="failed">Failed</button>
-        <button class="filter-btn" data-filter="blocked">Blocked</button>
-      </div>
-
-      <div class="card" style="overflow: hidden;">
+      <!-- Login Activity Table (Matching Reference 2) -->
+      <div class="card activity-table-card">
         <table class="activity-table">
           <thead>
             <tr>
-              <th>Device</th>
+              <th>Device / Browser</th>
               <th>Browser / App</th>
               <th>Location</th>
               <th>Date &amp; Time</th>
               <th>IP Address</th>
               <th>Status</th>
+              <th style="text-align: right;">Actions</th>
             </tr>
           </thead>
           <tbody id="activity-table-body">
-            <tr>
-              <td>
-                <div class="table-device">
-                  <div class="device-icon laptop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>
-                  MacBook Pro 16"
-                </div>
-              </td>
-              <td>Chrome 131</td>
-              <td>Bengaluru, India</td>
-              <td>Today, 9:42 AM</td>
-              <td><code>103.21.58.xx</code></td>
-              <td><span class="badge badge-success">Success</span></td>
-            </tr>
-            <tr>
-              <td>
-                <div class="table-device">
-                  <div class="device-icon mobile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
-                  Samsung Galaxy S25 Ultra
-                </div>
-              </td>
-              <td>VaultAuth mobile</td>
-              <td>Bengaluru, India</td>
-              <td>Today, 8:16 AM</td>
-              <td><code>103.21.58.xx</code></td>
-              <td><span class="badge badge-success">Success</span></td>
-            </tr>
-            <tr>
-              <td>
-                <div class="table-device">
-                  <div class="device-icon desktop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
-                  Chrome on Windows
-                </div>
-              </td>
-              <td>Chrome 131</td>
-              <td>Bengaluru, India</td>
-              <td>Yesterday, 6:32 PM</td>
-              <td><code>49.37.12.xx</code></td>
-              <td><span class="badge badge-success">Success</span></td>
-            </tr>
-            <tr>
-              <td>
-                <div class="table-device">
-                  <div class="device-icon desktop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
-                  Unknown Device
-                </div>
-              </td>
-              <td>Firefox 132</td>
-              <td>Mumbai, India</td>
-              <td>Nov 9, 4:15 PM</td>
-              <td><code>152.58.44.xx</code></td>
-              <td><span class="badge badge-failed">Failed</span></td>
-            </tr>
-            <tr>
-              <td>
-                <div class="table-device">
-                  <div class="device-icon laptop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>
-                  MacBook Pro 16"
-                </div>
-              </td>
-              <td>Chrome 131</td>
-              <td>Bengaluru, India</td>
-              <td>Nov 9, 9:10 AM</td>
-              <td><code>103.21.58.xx</code></td>
-              <td><span class="badge badge-success">Success</span></td>
-            </tr>
-            <tr>
-              <td>
-                <div class="table-device">
-                  <div class="device-icon mobile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
-                  Samsung Galaxy S25 Ultra
-                </div>
-              </td>
-              <td>VaultAuth mobile</td>
-              <td>Bengaluru, India</td>
-              <td>Nov 8, 7:30 PM</td>
-              <td><code>103.21.58.xx</code></td>
-              <td><span class="badge badge-success">Success</span></td>
-            </tr>
-            <tr>
-              <td>
-                <div class="table-device">
-                  <div class="device-icon desktop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
-                  Unknown Device
-                </div>
-              </td>
-              <td>Safari 18</td>
-              <td>New Delhi, India</td>
-              <td>Nov 7, 2:45 AM</td>
-              <td><code>203.122.1.xx</code></td>
-              <td><span class="badge badge-blocked">Blocked</span></td>
-            </tr>
+            <!-- Dynamically populated rows -->
           </tbody>
         </table>
+
+        <!-- Table Pagination Row -->
+        <div class="table-pagination-row">
+          <span id="pagination-info">Showing 1 to 7 of 7 events</span>
+          <div class="pagination-controls">
+            <button class="page-btn" id="btn-prev-page" disabled>Previous</button>
+            <span style="font-weight: 600; color: var(--text-primary); padding: 0 4px;" id="current-page-num">1</span>
+            <button class="page-btn" id="btn-next-page" disabled>Next</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Warning Tip -->
+      <div class="table-footer-notice">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <span>Don't recognize a sign-in? Secure your account by <a href="#" data-goto="security">updating your password</a>.</span>
+      </div>
+    </main>
+
+    <!-- ============================================== -->
+    <!--         PAGE: DEVICES & SESSIONS               -->
+    <!-- ============================================== -->
+    <main class="content page" id="page-devices" style="display: none;">
+      <div class="page-header">
+        <h1 class="page-title">Devices &amp; Sessions</h1>
+        <p class="page-desc">Manage authenticated sessions, revoke unauthorized devices, and review session tokens.</p>
+      </div>
+
+      <div class="card" style="margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div>
+            <h2 style="font-size: 1.1rem; font-weight: 700;">Active Authenticated Sessions</h2>
+            <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 2px;">Revoking a session will immediately invalidate its SSO Bearer token.</p>
+          </div>
+          <button class="btn btn-danger-outline btn-sm" id="btn-revoke-all-others">Sign out of other devices</button>
+        </div>
+
+        <div class="sessions-list-container" id="devices-sessions-list">
+          <!-- Dynamically populated active sessions -->
+        </div>
+      </div>
+    </main>
+
+    <!-- ============================================== -->
+    <!--            PAGE: SECURITY SETTINGS             -->
+    <!-- ============================================== -->
+    <main class="content page" id="page-security" style="display: none;">
+      <div class="page-header">
+        <h1 class="page-title">Security Settings</h1>
+        <p class="page-desc">Configure multi-factor authentication, manage recovery credentials, and update your password.</p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <!-- Password Settings -->
+        <div class="card">
+          <h2 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 6px;">Password</h2>
+          <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 16px;">We recommend changing your password every 90 days.</p>
+          
+          <div style="background: var(--page-bg); padding: 14px; border-radius: var(--radius); margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <span style="font-size: 0.86rem; font-weight: 600;">Current Password Strength</span>
+              <p style="font-size: 0.76rem; color: var(--text-muted); margin: 2px 0 0;" id="sec-pwd-changed">Last changed 30 days ago</p>
+            </div>
+            <span class="badge badge-success">Strong</span>
+          </div>
+
+          <button class="btn btn-outline btn-sm" id="btn-open-change-pwd">Change Password</button>
+        </div>
+
+        <!-- MFA Settings -->
+        <div class="card">
+          <h2 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 6px;">Two-Factor Authentication (2FA)</h2>
+          <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 16px;">Protects your account with an email verification OTP code upon sign-in.</p>
+          
+          <div style="background: var(--page-bg); padding: 14px; border-radius: var(--radius); margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <span style="font-size: 0.86rem; font-weight: 600;">Email OTP Verification</span>
+              <p style="font-size: 0.76rem; color: var(--text-muted); margin: 2px 0 0;">Delivered to your registered email</p>
+            </div>
+            <span class="badge badge-success">Enabled</span>
+          </div>
+
+          <button class="btn btn-outline btn-sm" disabled style="opacity: 0.6;">Enforced by Enterprise Policy</button>
+        </div>
+
+        <!-- Recovery Email -->
+        <div class="card" style="grid-column: 1 / -1;">
+          <h2 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 6px;">Recovery Email</h2>
+          <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 16px;">Used to recover access if you lose your primary credentials.</p>
+          
+          <div style="display: flex; align-items: center; gap: 14px; max-width: 500px;">
+            <input type="email" class="app-search-input" id="sec-recovery-email-input" value="alex.backup@gmail.com" style="flex: 1;" />
+            <button class="btn btn-primary btn-sm" id="btn-save-recovery-email">Update Email</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ============================================== -->
+    <!--            PAGE: MY PROFILE                    -->
+    <!-- ============================================== -->
+    <main class="content page" id="page-profile" style="display: none;">
+      <div class="page-header">
+        <h1 class="page-title">My Profile</h1>
+        <p class="page-desc">Manage personal identity details and workspace directory attributes.</p>
+      </div>
+
+      <div class="card" style="max-width: 800px;">
+        <div style="display: flex; align-items: center; gap: 18px; padding-bottom: 20px; border-bottom: 1px solid var(--card-border); margin-bottom: 20px;">
+          <div class="avatar" id="profile-page-avatar" style="width: 56px; height: 56px; font-size: 1.25rem;">AM</div>
+          <div>
+            <h2 style="font-size: 1.2rem; font-weight: 700;" id="profile-full-name">Alex Morgan</h2>
+            <p style="font-size: 0.86rem; color: var(--text-secondary);" id="profile-user-email">amitoj0024@gmail.com</p>
+            <span class="badge badge-success" style="margin-top: 6px;">Active Employee</span>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-secondary);">Full Name</label>
+            <p style="font-size: 0.9rem; font-weight: 600; margin-top: 4px;" id="profile-field-fullname">Alex Morgan</p>
+          </div>
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-secondary);">Email Address</label>
+            <p style="font-size: 0.9rem; font-weight: 600; margin-top: 4px;" id="profile-field-email">amitoj0024@gmail.com</p>
+          </div>
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-secondary);">Department</label>
+            <p style="font-size: 0.9rem; font-weight: 600; margin-top: 4px;" id="profile-field-dept">Engineering</p>
+          </div>
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-secondary);">Directory Role</label>
+            <p style="font-size: 0.9rem; font-weight: 600; margin-top: 4px;" id="profile-field-role">End user</p>
+          </div>
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-secondary);">Phone Number</label>
+            <p style="font-size: 0.9rem; font-weight: 600; margin-top: 4px;" id="profile-field-phone">+91 98765 43210</p>
+          </div>
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-secondary);">Member Since</label>
+            <p style="font-size: 0.9rem; font-weight: 600; margin-top: 4px;" id="profile-field-joined">March 15, 2025</p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ============================================== -->
+    <!--            PAGE: HELP & SUPPORT                -->
+    <!-- ============================================== -->
+    <main class="content page" id="page-help" style="display: none;">
+      <div class="page-header">
+        <h1 class="page-title">Help &amp; Support</h1>
+        <p class="page-desc">Answers to common SSO questions, security best practices, and IT helpdesk contact info.</p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1.6fr 1fr; gap: 20px;">
+        <div class="card">
+          <h2 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 16px;">Frequently Asked Questions</h2>
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+            <div style="padding-bottom: 12px; border-bottom: 1px solid var(--card-border);">
+              <strong style="font-size: 0.9rem; color: var(--text-primary);">What is VaultAuthSSO?</strong>
+              <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 4px;">VaultAuthSSO is your enterprise Identity and Access Management (IAM) provider, allowing you to access all company tools securely with a single login.</p>
+            </div>
+            <div style="padding-bottom: 12px; border-bottom: 1px solid var(--card-border);">
+              <strong style="font-size: 0.9rem; color: var(--text-primary);">Why did I receive an OTP on sign-in?</strong>
+              <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 4px;">Two-factor authentication (2FA) is enforced to ensure that even if someone guesses your password, they cannot access your account without the OTP code sent to your email.</p>
+            </div>
+            <div>
+              <strong style="font-size: 0.9rem; color: var(--text-primary);">How do I revoke an app's access?</strong>
+              <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 4px;">Go to the Connected Apps tab, locate the application, and click "Revoke". This will invalidate the integration tokens immediately.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 12px;">Contact IT Security</h2>
+          <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 16px;">Need urgent account lock or notice suspicious activity?</p>
+          <div style="font-size: 0.85rem; color: var(--text-primary); line-height: 1.8;">
+            <p>📧 <strong>security@vaultauth.io</strong></p>
+            <p>☎️ <strong>+1 (800) 555-VAULT</strong></p>
+            <p>⏱️ <strong>24/7 Enterprise Response</strong></p>
+          </div>
+        </div>
       </div>
     </main>
   </div>
 
+  <!-- ============================================== -->
+  <!--               3. MODALS                        -->
+  <!-- ============================================== -->
+
+  <!-- Modal: Disconnect Connected App -->
+  <div class="modal-overlay" id="modal-disconnect-app">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">Disconnect Application</h3>
+        <button class="modal-close-btn" data-modal-close>&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to disconnect <strong id="modal-disconnect-app-name">this application</strong>?</p>
+        <p style="margin-top: 8px; font-size: 0.82rem; color: var(--red);">This will revoke all permissions, OAuth tokens, and active SSO authorizations. You will need to re-authenticate if you use this service again.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" data-modal-close>Cancel</button>
+        <button class="btn btn-danger-outline" id="btn-confirm-disconnect">Yes, disconnect</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Manage App Permissions -->
+  <div class="modal-overlay" id="modal-manage-app">
+    <div class="modal-container" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-manage-app-title">Application Permissions</h3>
+        <button class="modal-close-btn" data-modal-close>&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom: 12px;">Active permissions and security scopes authorized for <strong id="modal-manage-app-name">Google Workspace</strong>:</p>
+        <div id="modal-manage-permissions-list" style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- Permissions checkboxes / badges -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" data-modal-close>Close</button>
+        <button class="btn btn-primary" id="btn-save-app-permissions">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Sign Out Other Devices -->
+  <div class="modal-overlay" id="modal-revoke-others">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">Sign Out of Other Devices</h3>
+        <button class="modal-close-btn" data-modal-close>&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to sign out of all other active sessions?</p>
+        <p style="margin-top: 8px; font-size: 0.82rem; color: var(--text-muted);">Your current browser session will remain active, but all other browsers, mobile devices, and remembered sessions will be logged out immediately.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" data-modal-close>Cancel</button>
+        <button class="btn btn-danger-outline" id="btn-confirm-revoke-others">Sign out other devices</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Revoke Single Device Session -->
+  <div class="modal-overlay" id="modal-revoke-single-session">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">Revoke Device Session</h3>
+        <button class="modal-close-btn" data-modal-close>&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Revoke active session for <strong id="modal-revoke-session-device">Samsung Galaxy S25 Ultra</strong>?</p>
+        <p style="margin-top: 8px; font-size: 0.82rem; color: var(--text-muted);">The bearer session token on that device will be invalidated immediately.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" data-modal-close>Cancel</button>
+        <button class="btn btn-danger-outline" id="btn-confirm-revoke-session">Revoke Session</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Login Activity Event Details -->
+  <div class="modal-overlay" id="modal-activity-details">
+    <div class="modal-container" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Sign-in Event Details</h3>
+        <button class="modal-close-btn" data-modal-close>&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="modal-activity-details-content" style="display: flex; flex-direction: column; gap: 10px; font-size: 0.86rem;">
+          <!-- Dynamically populated metadata -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" data-modal-close>Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Stack -->
+  <div class="toast-stack" id="toast-stack"></div>
+
+  <!-- Dashboard Controller Script -->
   <script src="script.js"></script>
 </body>
 </html>
