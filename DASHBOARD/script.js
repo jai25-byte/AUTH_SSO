@@ -660,11 +660,20 @@
     const container = document.getElementById("overview-recent-activity-list");
     if (!container) return;
 
-    const recent = loginActivities.slice(0, 3);
-    container.innerHTML = recent
+    if (!loginActivities || loginActivities.length === 0) {
+      container.innerHTML = `
+        <div style="text-align: center; padding: 20px 12px; color: var(--text-muted); font-size: 0.85rem;">
+          No recent login activity records found.
+        </div>
+      `;
+      return;
+    }
+
+    // Render all login activity records dynamically without artificial slicing
+    container.innerHTML = loginActivities
       .map(
         (item) => `
-        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--card-border);">
+        <div class="overview-activity-item">
           <div style="display: flex; align-items: center; gap: 12px;">
             <div class="table-device-icon">${getDeviceIconSvg(item.deviceType)}</div>
             <div>
@@ -1016,6 +1025,34 @@
   document.getElementById("btn-notifications")?.addEventListener("click", () => {
     showToast("All security systems are functioning normally. 0 critical vulnerabilities.", "info");
   });
+
+  // Expose global helper for dynamic activity inspection and testing
+  window.VaultAuth = window.VaultAuth || {};
+  window.VaultAuth.setLoginActivities = function (records) {
+    if (Array.isArray(records)) {
+      loginActivities = [...records];
+      renderSummaryCards();
+      renderActivityTable();
+      renderOverviewActivityPreview();
+    }
+  };
+  window.VaultAuth.addLoginActivity = function (record) {
+    if (record) {
+      loginActivities.unshift(record);
+      renderSummaryCards();
+      renderActivityTable();
+      renderOverviewActivityPreview();
+    }
+  };
+  window.VaultAuth.removeLoginActivity = function (id) {
+    loginActivities = loginActivities.filter((a) => a.id !== id);
+    renderSummaryCards();
+    renderActivityTable();
+    renderOverviewActivityPreview();
+  };
+  window.VaultAuth.getLoginActivities = function () {
+    return loginActivities;
+  };
 
   // ===== 13. Initialization =====
   async function init() {

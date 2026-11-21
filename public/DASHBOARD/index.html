@@ -88,18 +88,17 @@
           </svg>
           My profile
         </a>
-
-        <!-- Help & Support -->
-        <a href="#" class="nav-item" data-page="help">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-          </svg>
-          Help &amp; Support
-        </a>
       </nav>
     </div>
 
     <div class="sidebar-bottom">
+      <!-- Help & Support placed at the end above Sign out -->
+      <a href="#" class="nav-item" data-page="help">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        Help &amp; Support
+      </a>
       <button class="sidebar-signout-btn" id="btn-sidebar-signout">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
@@ -217,14 +216,14 @@
 
       <div class="overview-two-col">
         <!-- Recent login activity list -->
-        <div class="card">
+        <div class="card overview-activity-card" id="overview-activity-card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
             <h2 style="font-size: 1.05rem; font-weight: 700;">Recent login activity</h2>
             <a href="#" class="btn btn-outline btn-sm" data-goto="activity">View all →</a>
           </div>
           <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 16px;">Monitor the latest sign-ins to your account.</p>
 
-          <div id="overview-recent-activity-list" style="display: flex; flex-direction: column;">
+          <div id="overview-recent-activity-list" class="overview-activity-list">
             <!-- Dynamically populated -->
           </div>
         </div>

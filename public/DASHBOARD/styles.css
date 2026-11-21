@@ -234,20 +234,20 @@ input, select, textarea {
 .sidebar-bottom {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px 6px 0;
+  gap: 4px;
+  padding-top: 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .sidebar-signout-btn {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   color: var(--sidebar-text);
-  font-size: 0.86rem;
+  font-size: 0.88rem;
   font-weight: 500;
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  border-radius: var(--radius);
   transition: var(--transition);
   cursor: pointer;
   background: none;
@@ -257,8 +257,10 @@ input, select, textarea {
 }
 
 .sidebar-signout-btn svg {
-  width: 17px;
-  height: 17px;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  transition: var(--transition);
 }
 
 .sidebar-signout-btn:hover {
@@ -269,7 +271,7 @@ input, select, textarea {
 .sidebar-footer-text {
   color: #4b5563;
   font-size: 0.72rem;
-  padding: 0 4px;
+  padding: 6px 12px 0;
 }
 
 /* ===== MAIN CONTENT WRAPPER ===== */
@@ -280,6 +282,12 @@ input, select, textarea {
   flex-direction: column;
   min-width: 0;
   min-height: 100vh;
+  background-color: var(--page-bg);
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(112, 71, 235, 0.04) 0px, transparent 55%),
+    radial-gradient(at 100% 10%, rgba(59, 130, 246, 0.035) 0px, transparent 50%),
+    radial-gradient(at 40% 60%, rgba(112, 71, 235, 0.02) 0px, transparent 50%);
+  background-attachment: fixed;
 }
 
 /* ===== TOP BAR ===== */
@@ -552,11 +560,29 @@ input, select, textarea {
   border-radius: var(--radius-lg);
   padding: 24px;
   box-shadow: var(--card-shadow);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.28s ease,
+              background 0.28s ease,
+              backdrop-filter 0.28s ease;
 }
 
 .card:hover {
   border-color: var(--card-border-hover);
+}
+
+/* Glass Card Hover Effect for Overview, Login Activity & Sessions */
+#page-overview .card:hover,
+#page-activity .card:hover,
+#page-devices .card:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94) 0%, rgba(255, 255, 255, 0.82) 100%);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border-color: rgba(112, 71, 235, 0.3);
+  box-shadow: 0 14px 30px -4px rgba(112, 71, 235, 0.12),
+              0 4px 12px -2px rgba(15, 23, 42, 0.04),
+              inset 0 1px 1.5px rgba(255, 255, 255, 0.95);
+  transform: translateY(-2px);
 }
 
 /* Badges */
@@ -903,12 +929,26 @@ input, select, textarea {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  transition: var(--transition);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.28s ease,
+              background 0.28s ease,
+              backdrop-filter 0.28s ease;
 }
 
 .summary-card:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--card-shadow-hover);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.78) 100%);
+  backdrop-filter: blur(14px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  border-color: rgba(112, 71, 235, 0.35);
+  box-shadow: 0 16px 32px -4px rgba(112, 71, 235, 0.14),
+              0 6px 14px -2px rgba(15, 23, 42, 0.04),
+              inset 0 1px 1.5px rgba(255, 255, 255, 0.95),
+              inset 0 -1px 2px rgba(112, 71, 235, 0.05);
+  transform: translateY(-3px);
 }
 
 .summary-card-info h4 {
@@ -941,6 +981,11 @@ input, select, textarea {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  transition: transform 0.25s ease;
+}
+
+.summary-card:hover .summary-card-icon {
+  transform: scale(1.08);
 }
 
 .summary-card-icon.purple { background: var(--brand-purple-light); color: var(--brand-purple); }
@@ -961,6 +1006,22 @@ input, select, textarea {
   justify-content: space-between;
   gap: 20px;
   box-shadow: var(--card-shadow);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.28s ease,
+              background 0.28s ease,
+              backdrop-filter 0.28s ease;
+}
+
+.active-sessions-banner:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.78) 100%);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border-color: rgba(112, 71, 235, 0.35);
+  box-shadow: 0 14px 32px -4px rgba(112, 71, 235, 0.13),
+              0 4px 12px -2px rgba(15, 23, 42, 0.04),
+              inset 0 1px 1.5px rgba(255, 255, 255, 0.95);
+  transform: translateY(-2px);
 }
 
 .active-sessions-left {
@@ -980,6 +1041,13 @@ input, select, textarea {
   justify-content: center;
   color: var(--brand-purple);
   flex-shrink: 0;
+  transition: all 0.25s ease;
+}
+
+.active-sessions-banner:hover .active-sessions-icon-box {
+  background: rgba(112, 71, 235, 0.12);
+  border-color: var(--brand-purple);
+  transform: scale(1.05);
 }
 
 .active-sessions-icon-box svg {
@@ -1033,12 +1101,19 @@ input, select, textarea {
   color: var(--text-secondary);
   border: none;
   background: transparent;
-  transition: var(--transition);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .filter-pill:hover {
   color: var(--text-primary);
   background: var(--page-bg);
+}
+
+.filter-pill:hover:not(.active) {
+  color: var(--brand-purple);
+  background: rgba(112, 71, 235, 0.08);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .filter-pill.active {
@@ -1086,11 +1161,15 @@ input, select, textarea {
 }
 
 .activity-table tbody tr {
-  transition: background 0.15s;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .activity-table tbody tr:hover {
-  background: #f8fafc;
+  background: linear-gradient(90deg, rgba(245, 243, 255, 0.75) 0%, rgba(245, 243, 255, 0.45) 100%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: inset 0 0 0 1px rgba(112, 71, 235, 0.18),
+              0 4px 12px rgba(112, 71, 235, 0.05);
 }
 
 .activity-table tbody tr:last-child td {
@@ -1114,6 +1193,14 @@ input, select, textarea {
   justify-content: center;
   color: var(--text-secondary);
   flex-shrink: 0;
+  transition: all 0.22s ease;
+}
+
+.activity-table tbody tr:hover .table-device-icon {
+  background: #ffffff;
+  border-color: rgba(112, 71, 235, 0.3);
+  color: var(--brand-purple);
+  transform: scale(1.06);
 }
 
 .table-device-icon svg {
@@ -1215,13 +1302,23 @@ input, select, textarea {
   overflow: hidden;
   box-shadow: var(--card-shadow);
   cursor: pointer;
-  transition: var(--transition);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.28s ease,
+              background 0.28s ease,
+              backdrop-filter 0.28s ease;
 }
 
 .overview-stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--card-shadow-hover);
-  border-color: #cbd5e1;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.75) 100%);
+  backdrop-filter: blur(14px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  border-color: rgba(112, 71, 235, 0.35);
+  box-shadow: 0 16px 32px -4px rgba(112, 71, 235, 0.14),
+              0 6px 14px -2px rgba(15, 23, 42, 0.04),
+              inset 0 1px 1.5px rgba(255, 255, 255, 0.95),
+              inset 0 -1px 2px rgba(112, 71, 235, 0.05);
+  transform: translateY(-3px);
 }
 
 .overview-stat-label {
@@ -1251,12 +1348,36 @@ input, select, textarea {
   height: 32px;
   color: var(--text-muted);
   opacity: 0.25;
+  transition: all 0.28s ease;
+}
+
+.overview-stat-card:hover .overview-stat-icon {
+  opacity: 0.45;
+  color: var(--brand-purple);
+  transform: scale(1.1) rotate(-4deg);
 }
 
 .overview-two-col {
   display: grid;
   grid-template-columns: 1.6fr 1fr;
   gap: 20px;
+  align-items: start;
+}
+
+.overview-activity-card {
+  height: auto !important;
+  min-height: auto;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+}
+
+.overview-activity-list {
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  min-height: auto;
+  overflow: visible;
 }
 
 .checklist-list {
@@ -1270,6 +1391,40 @@ input, select, textarea {
   display: flex;
   align-items: flex-start;
   gap: 12px;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  transition: all 0.22s ease;
+}
+
+.checklist-item:hover {
+  background: rgba(245, 243, 255, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: inset 0 0 0 1px rgba(112, 71, 235, 0.15);
+}
+
+.overview-activity-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border-bottom: 1px solid var(--card-border);
+  margin: 2px 0;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.overview-activity-item:hover {
+  background: linear-gradient(135deg, rgba(245, 243, 255, 0.8) 0%, rgba(255, 255, 255, 0.75) 100%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: inset 0 0 0 1px rgba(112, 71, 235, 0.22),
+              0 4px 14px rgba(112, 71, 235, 0.08);
+  transform: translateX(3px);
+}
+
+.overview-activity-item:last-child {
+  border-bottom: none;
 }
 
 .check-circle-icon {
@@ -1311,13 +1466,22 @@ input, select, textarea {
   background: #ffffff;
   border: 1px solid var(--card-border);
   margin-bottom: 10px;
-  transition: var(--transition);
   cursor: pointer;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.25s ease,
+              background 0.25s ease,
+              backdrop-filter 0.25s ease;
 }
 
 .quick-action-link:hover {
-  background: var(--page-bg);
-  border-color: #cbd5e1;
+  background: linear-gradient(135deg, rgba(245, 243, 255, 0.85) 0%, rgba(255, 255, 255, 0.8) 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-color: rgba(112, 71, 235, 0.35);
+  box-shadow: 0 8px 20px -2px rgba(112, 71, 235, 0.12),
+              inset 0 1px 1.5px rgba(255, 255, 255, 0.95);
+  transform: translateY(-2px) translateX(2px);
 }
 
 .quick-action-icon {
@@ -1353,14 +1517,37 @@ input, select, textarea {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  transition: var(--transition);
+  position: relative;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.28s ease,
+              background 0.28s ease,
+              backdrop-filter 0.28s ease;
 }
 
 .session-item-card:hover {
-  border-color: #cbd5e1;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.78) 100%);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  border-color: rgba(112, 71, 235, 0.35);
+  box-shadow: 0 12px 28px -3px rgba(112, 71, 235, 0.12),
+              0 4px 10px -2px rgba(15, 23, 42, 0.04),
+              inset 0 1px 1.5px rgba(255, 255, 255, 0.95);
+  transform: translateY(-2px);
+}
+
+.session-item-card:hover .table-device-icon {
+  background: #ffffff;
+  border-color: rgba(112, 71, 235, 0.3);
+  color: var(--brand-purple);
+  transform: scale(1.06);
 }
 
 .session-item-card.current-device {
+  border-left: 4px solid var(--brand-purple);
+}
+
+.session-item-card.current-device:hover {
   border-left: 4px solid var(--brand-purple);
 }
 
