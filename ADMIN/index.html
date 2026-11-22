@@ -114,7 +114,7 @@
   </button>
   <div class="sidebar-overlay"></div>
 
-  <!-- ===== MAIN CONTENT ===== -->
+  <!-- ===== MAIN CONTENT WRAPPER ===== -->
   <div class="main-wrapper">
 
     <!-- Top bar -->
@@ -124,7 +124,7 @@
           <circle cx="11" cy="11" r="8" />
           <path d="m21 21-4.3-4.3" />
         </svg>
-        <input type="text" placeholder="Search users, applications, activity..." />
+        <input type="text" id="global-search-input" placeholder="Search users, applications, activity..." />
         <span class="search-shortcut">⌘K</span>
       </div>
 
@@ -135,14 +135,14 @@
           </svg>
           Admin workspace
         </div>
-        <button class="icon-btn" aria-label="Notifications">
+        <button class="icon-btn" id="btn-notifications" aria-label="Notifications" title="Notifications">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
           </svg>
           <span class="notification-dot"></span>
         </button>
-        <div class="user-pill">
+        <div class="user-pill" data-goto="settings">
           <div class="avatar">AS</div>
           <div class="user-info">
             <span class="user-name" id="admin-user-name">Amitoj Singh</span>
@@ -157,24 +157,22 @@
     </header>
 
     <!-- ============================================== -->
-    <!--          PAGE: OVERVIEW                         -->
+    <!--          PAGE 1: OVERVIEW                      -->
     <!-- ============================================== -->
     <main class="content page" id="page-overview">
-
-      <!-- Page header -->
       <section class="page-header">
         <div class="page-header-left">
           <span class="page-label">WORKSPACE OVERVIEW</span>
           <h1>Admin dashboard</h1>
         </div>
         <div class="page-header-actions">
-          <button class="btn btn-outline btn-sm">
+          <button class="btn btn-outline btn-sm" id="btn-overview-range">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="6 9 12 15 18 9" />
             </svg>
             Last 24 hours
           </button>
-          <button class="btn btn-outline btn-sm">
+          <button class="btn btn-outline btn-sm" id="btn-export-overview">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
               <polyline points="7 10 12 15 17 10" />
@@ -182,7 +180,7 @@
             </svg>
             Export report
           </button>
-          <button class="btn btn-primary btn-sm">
+          <button class="btn btn-primary btn-sm btn-open-add-user">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
@@ -194,7 +192,7 @@
 
       <!-- Stat Cards Row -->
       <div class="stat-cards">
-        <div class="stat-card">
+        <div class="stat-card" style="cursor: pointer;" data-goto="users">
           <p class="stat-label">Total registered users</p>
           <h3 class="stat-value" id="stat-total-users">1,284</h3>
           <p class="stat-trend positive">
@@ -205,22 +203,22 @@
             +32 this month
           </p>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" style="cursor: pointer;" data-goto="users">
           <p class="stat-label">Active users</p>
           <h3 class="stat-value" id="stat-active-users">1,062</h3>
           <p class="stat-sub">82.7% of all users</p>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" style="cursor: pointer;" data-goto="sessions">
           <p class="stat-label">Active sessions</p>
           <h3 class="stat-value" id="stat-active-sessions">248</h3>
           <p class="stat-sub">Across 196 users</p>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" style="cursor: pointer;" data-goto="applications">
           <p class="stat-label">Connected applications</p>
           <h3 class="stat-value" id="stat-connected-apps">8</h3>
-          <p class="stat-sub">7 active · 1 inactive</p>
+          <p class="stat-sub" id="stat-connected-apps-sub">7 active · 1 inactive</p>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" style="cursor: pointer;" data-goto="security">
           <p class="stat-label">Failed login attempts</p>
           <h3 class="stat-value" id="stat-failed-logins">23</h3>
           <p class="stat-trend negative">
@@ -253,7 +251,7 @@
             <span class="score-value">98</span><span class="score-total">/ 100</span>
             <p class="score-label">Security score</p>
           </div>
-          <button class="btn btn-outline btn-sm">
+          <button class="btn btn-outline btn-sm" data-goto="security">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="9 18 15 12 9 6" />
             </svg>
@@ -262,7 +260,7 @@
         </div>
       </div>
 
-      <!-- Active Sessions Section -->
+      <!-- Active Sessions Preview -->
       <div class="content-grid">
         <div class="card sessions-card">
           <div class="card-header">
@@ -297,75 +295,8 @@
                 <th>ACTION</th>
               </tr>
             </thead>
-            <tbody id="admin-sessions-tbody">
-              <tr>
-                <td>
-                  <div class="user-cell">
-                    <span class="user-cell-name">Amitoj Singh</span>
-                    <span class="user-cell-email">amitoj@decisions.com</span>
-                  </div>
-                </td>
-                <td>
-                  <div class="device-cell">MacBook Pro<br><span class="device-sub">Chrome 131 · macOS</span></div>
-                </td>
-                <td>
-                  <div class="ip-cell">103.21.58.42<br><span class="ip-sub">Bengaluru, India</span></div>
-                </td>
-                <td>Just now</td>
-                <td><span class="status-pill current">Current</span></td>
-                <td><span class="action-dash">—</span></td>
-              </tr>
-              <tr>
-                <td>
-                  <div class="user-cell">
-                    <span class="user-cell-name">Sarah Wilson</span>
-                    <span class="user-cell-email">sarah@decisions.com</span>
-                  </div>
-                </td>
-                <td>
-                  <div class="device-cell">Windows PC<br><span class="device-sub">Edge 130 · Windows</span></div>
-                </td>
-                <td>
-                  <div class="ip-cell">49.37.12.86<br><span class="ip-sub">London, UK</span></div>
-                </td>
-                <td>2 min ago</td>
-                <td><span class="status-pill active">Active</span></td>
-                <td><button class="btn-revoke">Revoke</button></td>
-              </tr>
-              <tr>
-                <td>
-                  <div class="user-cell">
-                    <span class="user-cell-name">James Miller</span>
-                    <span class="user-cell-email">james@decisions.com</span>
-                  </div>
-                </td>
-                <td>
-                  <div class="device-cell">Unknown device<br><span class="device-sub">Firefox 132 · Linux</span></div>
-                </td>
-                <td>
-                  <div class="ip-cell">185.220.101.7<br><span class="ip-sub">Amsterdam, NL</span></div>
-                </td>
-                <td>8 min ago</td>
-                <td><span class="status-pill suspicious">Suspicious</span></td>
-                <td><button class="btn-revoke">Revoke</button></td>
-              </tr>
-              <tr>
-                <td>
-                  <div class="user-cell">
-                    <span class="user-cell-name">Priya Sharma</span>
-                    <span class="user-cell-email">priya@decisions.com</span>
-                  </div>
-                </td>
-                <td>
-                  <div class="device-cell">iPhone 16<br><span class="device-sub">Safari 18 · iOS</span></div>
-                </td>
-                <td>
-                  <div class="ip-cell">103.21.58.91<br><span class="ip-sub">Bengaluru, India</span></div>
-                </td>
-                <td>12 min ago</td>
-                <td><span class="status-pill active">Active</span></td>
-                <td><button class="btn-revoke">Revoke</button></td>
-              </tr>
+            <tbody id="overview-sessions-tbody">
+              <!-- Rendered via JS -->
             </tbody>
           </table>
           <div class="table-footer">
@@ -377,17 +308,17 @@
 
       <!-- Bottom Two-Column Grid -->
       <div class="bottom-grid">
-        <!-- Roles & Permissions -->
+        <!-- Roles & Permissions Preview -->
         <div class="card">
           <div class="card-header">
             <h2>Roles & permissions</h2>
-            <button class="btn btn-outline btn-xs">+ Create custom role</button>
+            <button class="btn btn-outline btn-xs btn-open-add-role">+ Create custom role</button>
           </div>
           <div class="roles-summary">
             <span>12 administrators</span>
             <span class="dot-sep">·</span>
             <span>4 roles</span>
-            <a href="#" class="link-arrow" data-goto="users">Manage all users →</a>
+            <a href="#" class="link-arrow" data-goto="roles">Manage all roles →</a>
           </div>
 
           <div class="role-list">
@@ -401,7 +332,7 @@
               </div>
               <div class="role-actions">
                 <span class="role-pill">Administrator ▾</span>
-                <button class="btn-change-role">Change role</button>
+                <button class="btn-change-role" data-goto="roles">Change role</button>
               </div>
             </div>
             <div class="role-item">
@@ -414,7 +345,7 @@
               </div>
               <div class="role-actions">
                 <span class="role-pill member">Member ▾</span>
-                <button class="btn-change-role">Change role</button>
+                <button class="btn-change-role" data-goto="roles">Change role</button>
               </div>
             </div>
           </div>
@@ -428,80 +359,30 @@
               <span>Unauthorized access restricted</span>
             </div>
             <span class="role-footer-desc">Deny-by-default access policy is enabled</span>
-            <button class="btn btn-outline btn-xs role-footer-btn">Edit permissions</button>
+            <button class="btn btn-outline btn-xs role-footer-btn" data-goto="roles">Edit permissions</button>
           </div>
         </div>
 
-        <!-- Connected Applications -->
+        <!-- Connected Applications Preview -->
         <div class="card">
           <div class="card-header">
             <h2>Connected applications</h2>
-            <button class="btn btn-outline btn-xs">+ Add application</button>
+            <button class="btn btn-outline btn-xs btn-open-add-app">+ Add application</button>
           </div>
           <div class="apps-summary">
-            <span>8 registered applications</span>
+            <span id="overview-apps-count">8 registered applications</span>
             <span class="dot-sep">·</span>
             <a href="#" class="link-arrow" data-goto="applications">View all applications →</a>
           </div>
 
-          <div class="app-list">
-            <div class="app-item">
-              <div class="app-info">
-                <div class="app-icon-circle" style="background:#1a1a2e"><span>GH</span></div>
-                <div>
-                  <span class="app-item-name">GitHub</span>
-                  <span class="app-item-desc">184 connected users</span>
-                </div>
-              </div>
-              <div class="app-controls">
-                <label class="toggle active">
-                  <input type="checkbox" checked>
-                  <span class="toggle-slider"></span>
-                </label>
-                <span class="app-status-text active">Active</span>
-                <a href="#" class="manage-link">Manage →</a>
-              </div>
-            </div>
-            <div class="app-item">
-              <div class="app-info">
-                <div class="app-icon-circle" style="background:#1a73e8"><span>GW</span></div>
-                <div>
-                  <span class="app-item-name">Google Workspace</span>
-                  <span class="app-item-desc">932 connected users</span>
-                </div>
-              </div>
-              <div class="app-controls">
-                <label class="toggle active">
-                  <input type="checkbox" checked>
-                  <span class="toggle-slider"></span>
-                </label>
-                <span class="app-status-text active">Active</span>
-                <a href="#" class="manage-link">Manage →</a>
-              </div>
-            </div>
-            <div class="app-item">
-              <div class="app-info">
-                <div class="app-icon-circle" style="background:#ff9900"><span>AWS</span></div>
-                <div>
-                  <span class="app-item-name">AWS Console</span>
-                  <span class="app-item-desc">48 connected users</span>
-                </div>
-              </div>
-              <div class="app-controls">
-                <label class="toggle inactive">
-                  <input type="checkbox">
-                  <span class="toggle-slider"></span>
-                </label>
-                <span class="app-status-text inactive">Inactive</span>
-                <a href="#" class="manage-link">Manage →</a>
-              </div>
-            </div>
+          <div class="app-list" id="overview-apps-list">
+            <!-- Dynamically populated or mirrored -->
           </div>
           <p class="app-footer-text">Manage details, connected users, permissions, or disconnect an app.</p>
         </div>
       </div>
 
-      <!-- Admin Settings Section -->
+      <!-- Admin Settings Preview -->
       <div class="card admin-settings-card">
         <div class="card-header">
           <div>
@@ -514,74 +395,47 @@
         <div class="settings-columns">
           <div class="settings-col">
             <p class="settings-col-label">AUTHENTICATION POLICIES</p>
-            <div class="setting-row">
+            <div class="setting-row" data-goto="settings">
               <span>Password policy</span>
-              <span class="setting-val">12+ characters <svg viewBox="0 0 24 24" width="12" height="12" fill="none"
-                  stroke="currentColor" stroke-width="2">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg></span>
+              <span class="setting-val"><span id="overview-setting-pwd">12+ characters</span> <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6" /></svg></span>
             </div>
-            <div class="setting-row">
+            <div class="setting-row" data-goto="settings">
               <span>MFA / OTP settings</span>
-              <span class="setting-val highlight">Required for admins <svg viewBox="0 0 24 24" width="12" height="12"
-                  fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg></span>
+              <span class="setting-val highlight"><span id="overview-setting-mfa">Required for admins</span> <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6" /></svg></span>
             </div>
-            <div class="setting-row">
+            <div class="setting-row" data-goto="settings">
               <span>Account lockout</span>
-              <span class="setting-val">5 failed attempts <svg viewBox="0 0 24 24" width="12" height="12" fill="none"
-                  stroke="currentColor" stroke-width="2">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg></span>
+              <span class="setting-val"><span id="overview-setting-lockout">5 failed attempts</span> <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6" /></svg></span>
             </div>
           </div>
           <div class="settings-col">
             <p class="settings-col-label">SESSIONS & NOTIFICATIONS</p>
-            <div class="setting-row">
+            <div class="setting-row" data-goto="settings">
               <span>Session timeout</span>
-              <span class="setting-val">30 minutes <svg viewBox="0 0 24 24" width="12" height="12" fill="none"
-                  stroke="currentColor" stroke-width="2">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg></span>
+              <span class="setting-val"><span id="overview-setting-timeout">30 minutes</span> <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6" /></svg></span>
             </div>
-            <div class="setting-row">
+            <div class="setting-row" data-goto="settings">
               <span>Security notifications</span>
-              <span class="setting-val">Email + in-app <svg viewBox="0 0 24 24" width="12" height="12" fill="none"
-                  stroke="currentColor" stroke-width="2">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg></span>
+              <span class="setting-val"><span id="overview-setting-notif">Email + in-app</span> <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6" /></svg></span>
             </div>
-            <div class="setting-row">
+            <div class="setting-row" data-goto="settings">
               <span>Access restrictions</span>
-              <span class="setting-val">Deny by default <svg viewBox="0 0 24 24" width="12" height="12" fill="none"
-                  stroke="currentColor" stroke-width="2">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg></span>
+              <span class="setting-val"><span id="overview-setting-restrictions">Deny by default</span> <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6" /></svg></span>
             </div>
           </div>
           <div class="settings-col">
             <p class="settings-col-label">ORGANIZATION & ACCOUNT</p>
-            <div class="setting-row">
-              <span>Organization information</span>
-              <span class="setting-val">decisions.com <svg viewBox="0 0 24 24" width="12" height="12" fill="none"
-                  stroke="currentColor" stroke-width="2">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg></span>
+            <div class="setting-row" data-goto="settings">
+              <span>Organization domain</span>
+              <span class="setting-val"><span id="overview-setting-org">decisions.com</span> <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6" /></svg></span>
             </div>
-            <div class="setting-row">
-              <span>Admin account settings</span>
-              <span class="setting-val">Amitoj Singh <svg viewBox="0 0 24 24" width="12" height="12" fill="none"
-                  stroke="currentColor" stroke-width="2">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg></span>
+            <div class="setting-row" data-goto="settings">
+              <span>Admin account</span>
+              <span class="setting-val"><span id="overview-setting-adminname">Amitoj Singh</span> <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6" /></svg></span>
             </div>
-            <div class="setting-row">
+            <div class="setting-row" data-goto="settings">
               <span>Account role</span>
-              <span class="setting-val">Administrator <svg viewBox="0 0 24 24" width="12" height="12" fill="none"
-                  stroke="currentColor" stroke-width="2">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg></span>
+              <span class="setting-val"><span id="overview-setting-adminrole">Administrator</span> <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6" /></svg></span>
             </div>
           </div>
         </div>
@@ -601,9 +455,849 @@
           <span>Last synced just now</span>
         </div>
       </div>
-
     </main>
+
+    <!-- ============================================== -->
+    <!--          PAGE 2: USERS                         -->
+    <!-- ============================================== -->
+    <main class="content page" id="page-users" style="display:none">
+      <section class="page-header">
+        <div class="page-header-left">
+          <span class="page-label">WORKSPACE / DIRECTORY</span>
+          <h1>Users & accounts</h1>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn btn-outline btn-sm" id="btn-export-users">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Export CSV
+          </button>
+          <button class="btn btn-primary btn-sm btn-open-add-user">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Add user
+          </button>
+        </div>
+      </section>
+
+      <!-- Users Stat Row -->
+      <div class="stat-cards">
+        <div class="stat-card">
+          <p class="stat-label">Total directory users</p>
+          <h3 class="stat-value" id="users-stat-total">1,284</h3>
+          <p class="stat-trend positive">+32 added this month</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Active today</p>
+          <h3 class="stat-value" id="users-stat-active">1,062</h3>
+          <p class="stat-sub">82.7% online past 24h</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">MFA Enforced</p>
+          <h3 class="stat-value">98.4%</h3>
+          <p class="stat-sub">1,264 users protected</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Pending invitations</p>
+          <h3 class="stat-value" id="users-stat-pending">14</h3>
+          <p class="stat-sub">Awaiting confirmation</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Suspended accounts</p>
+          <h3 class="stat-value" id="users-stat-suspended" style="color:var(--orange)">8</h3>
+          <p class="stat-sub">Restricted by policy</p>
+        </div>
+      </div>
+
+      <!-- Users Directory Card -->
+      <div class="card">
+        <div class="table-toolbar">
+          <div class="toolbar-search">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+            <input type="text" id="users-filter-search" placeholder="Filter by name, email, role or department..." />
+          </div>
+
+          <div class="toolbar-filters">
+            <div class="filter-tab-group" id="users-filter-tabs">
+              <button class="filter-tab active" data-user-filter="all">All (1,284)</button>
+              <button class="filter-tab" data-user-filter="Active">Active</button>
+              <button class="filter-tab" data-user-filter="Suspended">Suspended</button>
+              <button class="filter-tab" data-user-filter="Invited">Invited</button>
+            </div>
+
+            <select class="form-select" id="users-role-select" aria-label="Filter by role">
+              <option value="all">All Roles</option>
+              <option value="Administrator">Administrator</option>
+              <option value="Security Lead">Security Lead</option>
+              <option value="DevOps">DevOps</option>
+              <option value="Member">Member</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table" id="users-table">
+            <thead>
+              <tr>
+                <th>USER</th>
+                <th>ROLE</th>
+                <th>STATUS</th>
+                <th>MFA</th>
+                <th>DEPARTMENT</th>
+                <th>LAST ACTIVE</th>
+                <th style="text-align: right;">ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="users-table-tbody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="table-pagination">
+          <span class="page-meta" id="users-page-meta">Showing 1 - 8 of 1,284 users</span>
+          <div class="pagination-buttons">
+            <button class="btn btn-outline btn-xs" disabled>Previous</button>
+            <button class="btn btn-outline btn-xs active">1</button>
+            <button class="btn btn-outline btn-xs">2</button>
+            <button class="btn btn-outline btn-xs">3</button>
+            <button class="btn btn-outline btn-xs">Next</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ============================================== -->
+    <!--          PAGE 3: ROLES & PERMISSIONS           -->
+    <!-- ============================================== -->
+    <main class="content page" id="page-roles" style="display:none">
+      <section class="page-header">
+        <div class="page-header-left">
+          <span class="page-label">WORKSPACE / ACCESS CONTROL</span>
+          <h1>Roles & permissions</h1>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn btn-primary btn-sm btn-open-add-role">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Create custom role
+          </button>
+        </div>
+      </section>
+
+      <!-- Roles Card Grid -->
+      <div class="roles-cards-grid" id="roles-cards-container">
+        <!-- Rendered via JS -->
+      </div>
+
+      <!-- Permissions Matrix Card -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2>Permission matrix</h2>
+            <p class="card-subtitle">Define granular capabilities for each role across identity and security resources</p>
+          </div>
+          <div class="matrix-role-selector">
+            <span class="selector-label">Role:</span>
+            <select class="form-select" id="matrix-role-dropdown" aria-label="Select role to configure">
+              <option value="Administrator">Administrator</option>
+              <option value="Security Lead">Security Lead</option>
+              <option value="DevOps">DevOps</option>
+              <option value="Member">Member</option>
+              <option value="Auditor">Auditor</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table matrix-table">
+            <thead>
+              <tr>
+                <th style="width: 250px;">MODULE / RESOURCE</th>
+                <th style="text-align: center;">VIEW</th>
+                <th style="text-align: center;">CREATE</th>
+                <th style="text-align: center;">EDIT</th>
+                <th style="text-align: center;">DELETE</th>
+                <th style="text-align: center;">REVOKE / EXECUTE</th>
+              </tr>
+            </thead>
+            <tbody id="matrix-table-tbody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="matrix-footer">
+          <div class="matrix-footer-note">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+            </svg>
+            <span>Role changes apply automatically across active sessions upon save.</span>
+          </div>
+          <button class="btn btn-primary btn-sm" id="btn-save-permissions">Save permission changes</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- ============================================== -->
+    <!--          PAGE 4: SESSIONS                      -->
+    <!-- ============================================== -->
+    <main class="content page" id="page-sessions" style="display:none">
+      <section class="page-header">
+        <div class="page-header-left">
+          <span class="page-label">WORKSPACE / SECURITY SESSIONS</span>
+          <h1>Active sessions & devices</h1>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn btn-outline btn-sm btn-danger-text" id="btn-revoke-all-sessions">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            Sign out all other sessions
+          </button>
+        </div>
+      </section>
+
+      <!-- Stat cards for sessions -->
+      <div class="stat-cards">
+        <div class="stat-card">
+          <p class="stat-label">Total active sessions</p>
+          <h3 class="stat-value" id="sessions-page-total">248</h3>
+          <p class="stat-sub">Across 196 unique users</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Desktop & laptops</p>
+          <h3 class="stat-value">164</h3>
+          <p class="stat-sub">66.1% of all traffic</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Mobile devices</p>
+          <h3 class="stat-value">84</h3>
+          <p class="stat-sub">iOS & Android devices</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Suspicious flagged</p>
+          <h3 class="stat-value" id="sessions-page-flagged" style="color:var(--orange)">1</h3>
+          <p class="stat-trend negative">Requires review</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Revocations (30d)</p>
+          <h3 class="stat-value">42</h3>
+          <p class="stat-trend positive">Clean slate</p>
+        </div>
+      </div>
+
+      <!-- Threat Alert Banner -->
+      <div class="session-alert" id="sessions-threat-alert">
+        <div class="alert-icon warning">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <path
+              d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+        </div>
+        <div style="flex:1">
+          <strong>Suspicious sign-in flagged:</strong> James Miller from unfamiliar IP (185.220.101.7 · Amsterdam, NL) using Firefox on Linux.
+        </div>
+        <button class="btn btn-outline btn-xs" id="btn-quick-revoke-suspicious">Revoke session now</button>
+      </div>
+
+      <!-- Sessions Table Card -->
+      <div class="card">
+        <div class="table-toolbar">
+          <div class="toolbar-search">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+            <input type="text" id="sessions-filter-search" placeholder="Search sessions by user, device, IP, or city..." />
+          </div>
+
+          <div class="toolbar-filters">
+            <div class="filter-tab-group" id="sessions-filter-tabs">
+              <button class="filter-tab active" data-session-filter="all">All (248)</button>
+              <button class="filter-tab" data-session-filter="Active">Active</button>
+              <button class="filter-tab" data-session-filter="Suspicious">Suspicious (1)</button>
+              <button class="filter-tab" data-session-filter="Current">This device</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table" id="full-sessions-table">
+            <thead>
+              <tr>
+                <th>USER</th>
+                <th>DEVICE & PLATFORM</th>
+                <th>IP & LOCATION</th>
+                <th>STARTED</th>
+                <th>LAST ACTIVE</th>
+                <th>STATUS</th>
+                <th style="text-align: right;">ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="full-sessions-tbody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- ============================================== -->
+    <!--          PAGE 5: APPLICATIONS                  -->
+    <!-- ============================================== -->
+    <main class="content page" id="page-applications" style="display:none">
+      <section class="page-header">
+        <div class="page-header-left">
+          <span class="page-label">WORKSPACE / INTEGRATIONS</span>
+          <h1>Connected applications & SSO</h1>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn btn-primary btn-sm btn-open-add-app">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Add application
+          </button>
+        </div>
+      </section>
+
+      <!-- Apps Stat Row -->
+      <div class="stat-cards">
+        <div class="stat-card">
+          <p class="stat-label">Registered apps</p>
+          <h3 class="stat-value" id="apps-stat-total">8</h3>
+          <p class="stat-sub">Across cloud & workplace</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Active integrations</p>
+          <h3 class="stat-value" id="apps-stat-active">7</h3>
+          <p class="stat-trend positive">Fully operational</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">OAuth token grants</p>
+          <h3 class="stat-value">2,840</h3>
+          <p class="stat-sub">Valid active user tokens</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">API calls past 24h</p>
+          <h3 class="stat-value">142.8k</h3>
+          <p class="stat-trend positive">+12% traffic volume</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Protocols in use</p>
+          <h3 class="stat-value">SAML / OIDC</h3>
+          <p class="stat-sub">Industry grade standard</p>
+        </div>
+      </div>
+
+      <!-- Apps Grid -->
+      <div class="apps-admin-grid" id="apps-admin-container">
+        <!-- Rendered via JS -->
+      </div>
+    </main>
+
+    <!-- ============================================== -->
+    <!--          PAGE 6: SECURITY ACTIVITY             -->
+    <!-- ============================================== -->
+    <main class="content page" id="page-security" style="display:none">
+      <section class="page-header">
+        <div class="page-header-left">
+          <span class="page-label">WORKSPACE / AUDIT TRAIL</span>
+          <h1>Security activity & audit logs</h1>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn btn-outline btn-sm" id="btn-export-audit">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Export JSON log
+          </button>
+          <button class="btn btn-primary btn-sm" id="btn-run-security-scan">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+            </svg>
+            Run security scan
+          </button>
+        </div>
+      </section>
+
+      <!-- Security Stat Row -->
+      <div class="stat-cards">
+        <div class="stat-card">
+          <p class="stat-label">Security score</p>
+          <h3 class="stat-value" style="color:var(--green)">98 / 100</h3>
+          <p class="stat-trend positive">Excellent rating</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Failed login attempts</p>
+          <h3 class="stat-value" style="color:var(--red)">23</h3>
+          <p class="stat-trend negative">+18% vs yesterday</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Blocked IP addresses</p>
+          <h3 class="stat-value">14</h3>
+          <p class="stat-sub">Rate limiter activated</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Security events (24h)</p>
+          <h3 class="stat-value" id="security-stat-events">128</h3>
+          <p class="stat-sub">Total audit occurrences</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Threat severity</p>
+          <h3 class="stat-value" style="color:var(--green)">Low</h3>
+          <p class="stat-sub">Zero breaches recorded</p>
+        </div>
+      </div>
+
+      <!-- Security Logs Table Card -->
+      <div class="card">
+        <div class="table-toolbar">
+          <div class="toolbar-search">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+            <input type="text" id="security-filter-search" placeholder="Search event by name, initiator, or IP address..." />
+          </div>
+
+          <div class="toolbar-filters">
+            <div class="filter-tab-group" id="security-filter-tabs">
+              <button class="filter-tab active" data-security-filter="all">All Events</button>
+              <button class="filter-tab" data-security-filter="Warning">Warnings</button>
+              <button class="filter-tab" data-security-filter="Critical">Critical</button>
+              <button class="filter-tab" data-security-filter="Success">Success</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table" id="security-table">
+            <thead>
+              <tr>
+                <th>EVENT TYPE</th>
+                <th>INITIATOR</th>
+                <th>TARGET</th>
+                <th>IP / LOCATION</th>
+                <th>SEVERITY</th>
+                <th>TIME</th>
+                <th style="text-align: right;">INSPECT</th>
+              </tr>
+            </thead>
+            <tbody id="security-table-tbody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- ============================================== -->
+    <!--          PAGE 7: ADMIN SETTINGS                -->
+    <!-- ============================================== -->
+    <main class="content page" id="page-settings" style="display:none">
+      <section class="page-header">
+        <div class="page-header-left">
+          <span class="page-label">WORKSPACE / CONFIGURATION</span>
+          <h1>Admin settings & policies</h1>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn btn-outline btn-sm" id="btn-reset-settings">Reset defaults</button>
+          <button class="btn btn-primary btn-sm" id="btn-save-settings">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            Save all settings
+          </button>
+        </div>
+      </section>
+
+      <!-- Settings Layout Grid -->
+      <div class="settings-page-grid">
+        <!-- Section 1: Authentication Policies -->
+        <div class="card settings-section-card">
+          <div class="settings-section-header">
+            <div class="section-icon-badge purple">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+            </div>
+            <div>
+              <h2>Authentication & password policies</h2>
+              <p class="card-subtitle">Set credential requirements and multi-factor enforcement</p>
+            </div>
+          </div>
+
+          <div class="settings-form">
+            <div class="form-group">
+              <label class="form-label" for="setting-input-min-pwd">Minimum password length</label>
+              <div class="input-with-hint">
+                <input type="number" id="setting-input-min-pwd" class="form-input" value="12" min="8" max="64" />
+                <span class="form-hint">Recommended at least 12 characters</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Password complexity rules</label>
+              <div class="checkbox-group">
+                <label class="checkbox-item">
+                  <input type="checkbox" id="setting-check-special" checked />
+                  <span>Require at least one special character (!@#$%^&*)</span>
+                </label>
+                <label class="checkbox-item">
+                  <input type="checkbox" id="setting-check-numbers" checked />
+                  <span>Require numerical digits (0-9)</span>
+                </label>
+                <label class="checkbox-item">
+                  <input type="checkbox" id="setting-check-case" checked />
+                  <span>Require mixed casing (upper & lower case)</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="setting-select-mfa">Multi-Factor Authentication (MFA)</label>
+              <select class="form-select" id="setting-select-mfa">
+                <option value="Required for admins">Required for all administrators (Current)</option>
+                <option value="Enforced for all users">Enforced for all organization users</option>
+                <option value="Optional">Optional for regular members</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="setting-input-lockout">Account lockout threshold</label>
+              <div class="input-with-hint">
+                <input type="number" id="setting-input-lockout" class="form-input" value="5" min="3" max="20" />
+                <span class="form-hint">Maximum failed attempts before 30-min lockout</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: Session & Network Restrictions -->
+        <div class="card settings-section-card">
+          <div class="settings-section-header">
+            <div class="section-icon-badge blue">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2" />
+                <line x1="8" y1="21" x2="16" y2="21" />
+                <line x1="12" y1="17" x2="12" y2="21" />
+              </svg>
+            </div>
+            <div>
+              <h2>Sessions & network security</h2>
+              <p class="card-subtitle">Manage idle timeouts, geofences, and concurrent device limits</p>
+            </div>
+          </div>
+
+          <div class="settings-form">
+            <div class="form-group">
+              <label class="form-label" for="setting-select-timeout">Idle session timeout</label>
+              <select class="form-select" id="setting-select-timeout">
+                <option value="15 minutes">15 minutes (Strict)</option>
+                <option value="30 minutes" selected>30 minutes (Standard)</option>
+                <option value="1 hour">1 hour</option>
+                <option value="8 hours">8 hours (Full shift)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="setting-input-max-sessions">Max concurrent devices per user</label>
+              <input type="number" id="setting-input-max-sessions" class="form-input" value="3" min="1" max="10" />
+            </div>
+
+            <div class="form-group">
+              <div class="setting-toggle-row">
+                <div>
+                  <span class="setting-toggle-title">Deny-by-default access policy</span>
+                  <span class="setting-toggle-desc">Blocks unapproved IP ranges from connecting without explicit privilege</span>
+                </div>
+                <label class="toggle active">
+                  <input type="checkbox" id="setting-toggle-restrictions" checked />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div class="setting-toggle-row">
+                <div>
+                  <span class="setting-toggle-title">Geofencing & foreign login blocking</span>
+                  <span class="setting-toggle-desc">Automatically prompts MFA step-up on unexpected international travel</span>
+                </div>
+                <label class="toggle active">
+                  <input type="checkbox" id="setting-toggle-geofence" checked />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Organization Profile & Notifications -->
+        <div class="card settings-section-card">
+          <div class="settings-section-header">
+            <div class="section-icon-badge green">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+            </div>
+            <div>
+              <h2>Organization & security alerts</h2>
+              <p class="card-subtitle">Tenant identity, admin email, and notification preferences</p>
+            </div>
+          </div>
+
+          <div class="settings-form">
+            <div class="form-group">
+              <label class="form-label" for="setting-input-org-domain">Organization domain</label>
+              <input type="text" id="setting-input-org-domain" class="form-input" value="decisions.com" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="setting-input-admin-email">Security contact email</label>
+              <input type="email" id="setting-input-admin-email" class="form-input" value="security@decisions.com" />
+            </div>
+
+            <div class="form-group">
+              <div class="setting-toggle-row">
+                <div>
+                  <span class="setting-toggle-title">Immediate suspicious login alerts</span>
+                  <span class="setting-toggle-desc">Send immediate email and SMS alert on anomalous session detection</span>
+                </div>
+                <label class="toggle active">
+                  <input type="checkbox" id="setting-toggle-alerts" checked />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div class="setting-toggle-row">
+                <div>
+                  <span class="setting-toggle-title">Weekly executive compliance digest</span>
+                  <span class="setting-toggle-desc">Automated report summarizing failed authentications and active app tokens</span>
+                </div>
+                <label class="toggle active">
+                  <input type="checkbox" id="setting-toggle-digest" checked />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 4: Danger Zone -->
+        <div class="card settings-section-card danger-zone">
+          <div class="settings-section-header">
+            <div class="section-icon-badge red">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            </div>
+            <div>
+              <h2>Danger zone</h2>
+              <p class="card-subtitle">Irreversible actions that affect all organization accounts</p>
+            </div>
+          </div>
+
+          <div class="danger-actions-list">
+            <div class="danger-item">
+              <div>
+                <span class="danger-title">Force sign out of all active sessions</span>
+                <span class="danger-desc">Invalidates every session token in the organization immediately. All users will be prompted to re-authenticate.</span>
+              </div>
+              <button class="btn btn-outline btn-sm btn-danger-text" id="btn-force-signout-all">Force global sign out</button>
+            </div>
+            <div class="danger-item">
+              <div>
+                <span class="danger-title">Rotate token signing keys</span>
+                <span class="danger-desc">Generates new RSA master signing keys. Connected OAuth clients must reload JWKS.</span>
+              </div>
+              <button class="btn btn-outline btn-sm btn-danger-text" id="btn-rotate-keys">Rotate signing keys</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
   </div>
+
+  <!-- ===== MODALS ===== -->
+
+  <!-- Modal 1: Add User -->
+  <div class="modal-backdrop" id="modal-add-user">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>Add new user</h3>
+        <button class="modal-close" aria-label="Close dialog">&times;</button>
+      </div>
+      <form id="form-add-user" class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="add-user-name">Full name</label>
+          <input type="text" id="add-user-name" class="form-input" placeholder="e.g. Alex Chen" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="add-user-email">Work email address</label>
+          <input type="email" id="add-user-email" class="form-input" placeholder="e.g. alex@decisions.com" required />
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="flex:1;">
+            <label class="form-label" for="add-user-role">Role assignment</label>
+            <select id="add-user-role" class="form-select">
+              <option value="Member">Member</option>
+              <option value="Administrator">Administrator</option>
+              <option value="Security Lead">Security Lead</option>
+              <option value="DevOps">DevOps</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex:1;">
+            <label class="form-label" for="add-user-dept">Department</label>
+            <select id="add-user-dept" class="form-select">
+              <option value="Engineering">Engineering</option>
+              <option value="Security">Security</option>
+              <option value="Product">Product</option>
+              <option value="Sales">Sales</option>
+              <option value="Operations">Operations</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="checkbox-item">
+            <input type="checkbox" id="add-user-send-invite" checked />
+            <span>Send email invitation with secure setup link</span>
+          </label>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline btn-sm modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm">Create user account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 2: Create Custom Role -->
+  <div class="modal-backdrop" id="modal-add-role">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>Create custom role</h3>
+        <button class="modal-close" aria-label="Close dialog">&times;</button>
+      </div>
+      <form id="form-add-role" class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="add-role-name">Role title</label>
+          <input type="text" id="add-role-name" class="form-input" placeholder="e.g. Compliance Specialist" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="add-role-desc">Role description</label>
+          <textarea id="add-role-desc" class="form-input" rows="2" placeholder="Describe the responsibilities and scope of this role"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Base permissions template</label>
+          <select id="add-role-base" class="form-select">
+            <option value="Member">Inherit from Member</option>
+            <option value="Security Lead">Inherit from Security Lead</option>
+            <option value="Administrator">Inherit from Administrator</option>
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline btn-sm modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm">Save role</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 3: Add Application -->
+  <div class="modal-backdrop" id="modal-add-app">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>Add connected application</h3>
+        <button class="modal-close" aria-label="Close dialog">&times;</button>
+      </div>
+      <form id="form-add-app" class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="add-app-name">Application name</label>
+          <input type="text" id="add-app-name" class="form-input" placeholder="e.g. Notion Enterprise" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="add-app-desc">Description & category</label>
+          <input type="text" id="add-app-desc" class="form-input" placeholder="e.g. Knowledge base & documentation" required />
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="flex:1;">
+            <label class="form-label" for="add-app-protocol">Protocol</label>
+            <select id="add-app-protocol" class="form-select">
+              <option value="OAuth 2.0">OAuth 2.0 (PKCE)</option>
+              <option value="SAML 2.0">SAML 2.0</option>
+              <option value="OIDC">OpenID Connect</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex:1;">
+            <label class="form-label" for="add-app-color">Icon badge color</label>
+            <select id="add-app-color" class="form-select">
+              <option value="#7c3aed">Purple</option>
+              <option value="#2563eb">Blue</option>
+              <option value="#0d9488">Teal</option>
+              <option value="#16a34a">Green</option>
+              <option value="#ea580c">Orange</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="add-app-redirect">Redirect URI</label>
+          <input type="url" id="add-app-redirect" class="form-input" placeholder="https://app.example.com/oauth/callback" />
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline btn-sm modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm">Register application</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 4: Security Log Inspector -->
+  <div class="modal-backdrop" id="modal-log-inspect">
+    <div class="modal-dialog" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 id="inspect-log-title">Audit event payload</h3>
+        <button class="modal-close" aria-label="Close dialog">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="json-code-box">
+          <pre id="inspect-log-json">Loading event details...</pre>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary btn-sm modal-cancel">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
 
   <script src="script.js"></script>
 </body>
