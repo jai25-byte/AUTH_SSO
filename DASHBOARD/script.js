@@ -604,10 +604,42 @@
 
 
   // ---------------------------------------------------------------------------
+  //  Theme Controller (Black / Dark Theme Default)
+  // ---------------------------------------------------------------------------
+
+  function initTheme() {
+    const savedTheme = localStorage.getItem("vault_theme") || "dark";
+    setTheme(savedTheme);
+
+    const themeToggleBtn = document.getElementById("btn-theme-toggle");
+    if (themeToggleBtn) {
+      themeToggleBtn.addEventListener("click", () => {
+        const currentTheme = document.body.classList.contains("theme-light") ? "light" : "dark";
+        const newTheme = currentTheme === "dark" ? "light" : "dark";
+        setTheme(newTheme);
+      });
+    }
+  }
+
+  function setTheme(theme) {
+    if (theme === "light") {
+      document.body.classList.remove("theme-dark");
+      document.body.classList.add("theme-light");
+      localStorage.setItem("vault_theme", "light");
+    } else {
+      document.body.classList.remove("theme-light");
+      document.body.classList.add("theme-dark");
+      localStorage.setItem("vault_theme", "dark");
+    }
+  }
+
+
+  // ---------------------------------------------------------------------------
   //  Boot sequence — kick everything off once the DOM is ready
   // ---------------------------------------------------------------------------
 
   async function boot() {
+    initTheme();
     await loadUserProfile();
     // Fire the remaining fetches in parallel — they don't depend on each other
     await Promise.all([

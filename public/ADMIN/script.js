@@ -1088,10 +1088,42 @@
 
 
   // ---------------------------------------------------------------------------
-  //  13. Boot Sequence
+  //  13. Theme Controller (Black / Dark Theme Default)
+  // ---------------------------------------------------------------------------
+
+  function initTheme() {
+    const savedTheme = localStorage.getItem("vault_theme") || "dark";
+    setTheme(savedTheme);
+
+    const themeToggleBtn = document.getElementById("btn-theme-toggle");
+    if (themeToggleBtn) {
+      themeToggleBtn.addEventListener("click", () => {
+        const currentTheme = document.body.classList.contains("theme-light") ? "light" : "dark";
+        const newTheme = currentTheme === "dark" ? "light" : "dark";
+        setTheme(newTheme);
+        showToast(`${newTheme === "dark" ? "Black / Dark" : "Light"} theme activated`, "info");
+      });
+    }
+  }
+
+  function setTheme(theme) {
+    if (theme === "light") {
+      document.body.classList.remove("theme-dark");
+      document.body.classList.add("theme-light");
+      localStorage.setItem("vault_theme", "light");
+    } else {
+      document.body.classList.remove("theme-light");
+      document.body.classList.add("theme-dark");
+      localStorage.setItem("vault_theme", "dark");
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  //  14. Boot Sequence
   // ---------------------------------------------------------------------------
 
   function boot() {
+    initTheme();
     loadAdminProfile();
     renderOverview();
     renderUsers();
