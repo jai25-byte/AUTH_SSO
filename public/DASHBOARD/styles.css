@@ -16,7 +16,7 @@
 body,
 body.theme-dark {
   /* Sidebar */
-  --sidebar-bg: #090d16;
+  --sidebar-bg: #0C1014;
   --sidebar-width: 240px;
   --sidebar-active: #17243b;
   --sidebar-hover: rgba(255, 255, 255, 0.07);
@@ -27,8 +27,8 @@ body.theme-dark {
   --brand-purple: #8b5cf6;
 
   /* Page & Cards (Black / Dark Theme Default) */
-  --page-bg: #090d16;
-  --card-bg: #101726;
+  --page-bg: #0C1014;
+  --card-bg: #414141;
   --card-border: #1e293b;
   --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 
@@ -106,7 +106,7 @@ body.theme-dark .sidebar {
 }
 
 body.theme-dark .search-box {
-  background: #090d16;
+  background: #0C1014;
   border-color: #1e293b;
 }
 
@@ -127,7 +127,7 @@ body.theme-dark .device-icon.desktop {
 }
 
 body.theme-dark .activity-table thead {
-  background: #090d16;
+  background: #0C1014;
 }
 
 body.theme-dark .activity-table code {
@@ -136,7 +136,7 @@ body.theme-dark .activity-table code {
 }
 
 body.theme-dark .filter-btn {
-  background: #101726;
+  background: #414141;
   border-color: #1e293b;
   color: #94a3b8;
 }
