@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -475,21 +476,27 @@
     <main class="content page" id="page-devices" style="display: none;">
       <div class="page-header">
         <h1 class="page-title">Devices &amp; Sessions</h1>
-        <p class="page-desc">Manage authenticated sessions, revoke unauthorized devices, and review session tokens.</p>
+        <p class="page-desc">Manage authenticated sessions, revoke unauthorized devices, and review active credentials.</p>
       </div>
 
-      <div class="card" style="margin-bottom: 24px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-          <div>
-            <h2 style="font-size: 1.1rem; font-weight: 700;">Active Authenticated Sessions</h2>
-            <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 2px;">Revoking a session will immediately invalidate its SSO Bearer token.</p>
-          </div>
-          <button class="btn btn-danger-outline btn-sm" id="btn-revoke-all-others">Sign out of other devices</button>
-        </div>
+      <!-- Device Category Filter Pills -->
+      <div class="devices-filter-bar" id="devices-filter-bar">
+        <button class="device-filter-pill active" data-device-filter="all">
+          All Devices <span class="pill-count" id="filter-count-all">0</span>
+        </button>
+        <button class="device-filter-pill" data-device-filter="desktop">
+          Desktops &amp; Laptops <span class="pill-count" id="filter-count-desktop">0</span>
+        </button>
+        <button class="device-filter-pill" data-device-filter="mobile">
+          Mobile Devices <span class="pill-count" id="filter-count-mobile">0</span>
+        </button>
+      </div>
 
-        <div class="sessions-list-container" id="devices-sessions-list">
-          <!-- Dynamically populated active sessions -->
-        </div>
+      <div class="session-group-container" id="devices-sessions-list">
+        <!-- Dynamically rendered into groups:
+             1. Current Active Session (This Device)
+             2. Other Active Devices & Sessions
+        -->
       </div>
     </main>
 

@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sign in · VaultAuth SSO</title>
+<meta name="description" content="Sign in or register for VaultAuth SSO, your unified identity and access management platform." />
+<meta name="csrf-token" content="" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #f5f7fb;
+    --card: #ffffff;
+    --ink: #0f172a;
+    --muted: #64748b;
+    --line: #e2e8f0;
+    --brand: #2563eb;
+    --brand-dark: #1d4ed8;
+    --brand-light: #eff6ff;
+    --navy: #0b1220;
+    --danger: #dc2626;
+    --ok: #16a34a;
+    --warning: #f59e0b;
+    --radius: 12px;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px 16px;
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--ink); -webkit-font-smoothing: antialiased;
+    background:
+      radial-gradient(750px circle at 50% -10%, rgba(37,99,235,.12), transparent 60%),
+      radial-gradient(600px circle at 80% 90%, rgba(99,102,241,.06), transparent 50%),
+      var(--bg);
+  }
+  .wrap { width: 100%; max-width: 420px; }
+  .brand { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 8px; text-decoration: none; }
+  .brand svg { width: 34px; height: 34px; flex-shrink: 0; }
+  .brand span { font-size: 1.2rem; font-weight: 700; letter-spacing: -.01em; color: var(--navy); }
+  .brand em { font-style: normal; color: var(--brand); font-weight: 600; }
+  .tag { margin: 0 auto 20px; max-width: 320px; text-align: center; font-size: .88rem; line-height: 1.5; color: var(--muted); }
+
+  /* Card */
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+    padding: 32px; box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 16px 40px -16px rgba(15,23,42,.14);
+    position: relative;
+    transition: all .2s ease;
+  }
+
+  /* Segmented Nav Tabs */
+  .tabs {
+    display: flex; background: #f1f5f9; padding: 4px; border-radius: 10px;
+    margin-bottom: 22px; gap: 4px;
+  }
+  .tab-btn {
+    flex: 1; border: 0; background: transparent; padding: 8px 12px;
+    font: inherit; font-size: .88rem; font-weight: 600; color: var(--muted);
+    border-radius: 7px; cursor: pointer; transition: all .15s ease;
+    text-align: center;
+  }
+  .tab-btn.active {
+    background: #ffffff; color: var(--navy);
+    box-shadow: 0 1px 3px rgba(15,23,42,.08), 0 1px 2px rgba(15,23,42,.04);
+  }
+
+  h1 { margin: 0 0 4px; font-size: 1.45rem; font-weight: 700; letter-spacing: -.02em; }
+  .sub { margin: 0 0 20px; color: var(--muted); font-size: .92rem; line-height: 1.4; }
+
+  label.lbl { display: block; margin: 0 0 6px; font-size: .84rem; font-weight: 600; color: #1e293b; }
+  .field { margin-bottom: 15px; }
+  .ctl { position: relative; }
+  input[type=email], input[type=password], input[type=text] {
+    width: 100%; height: 44px; padding: 0 14px; font: inherit; font-size: .94rem; color: var(--ink);
+    background: #fff; border: 1.5px solid var(--line); border-radius: 10px; outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  input::placeholder { color: #94a3b8; }
+  input:focus { border-color: var(--brand); box-shadow: 0 0 0 4px rgba(37,99,235,.14); }
+  .field.bad input { border-color: var(--danger); }
+  .field.bad input:focus { box-shadow: 0 0 0 4px rgba(220,38,38,.12); }
+  .err { display: none; margin: 5px 0 0; font-size: .78rem; color: var(--danger); font-weight: 500; }
+  .field.bad .err { display: block; }
+
+  .pw input { padding-right: 64px; }
+  .show {
+    position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+    border: 0; background: none; padding: 6px 8px; border-radius: 6px; cursor: pointer;
+    font: inherit; font-size: .8rem; font-weight: 600; color: var(--muted);
+  }
+  .show:hover { color: var(--ink); background: #f1f5f9; }
+
+  /* Strength meter */
+  .strength-wrap { margin-top: 6px; }
+  .strength-bars { display: flex; gap: 4px; height: 4px; margin-bottom: 4px; }
+  .strength-bar { flex: 1; border-radius: 2px; background: #e2e8f0; transition: background .2s; }
+  .strength-text { font-size: .75rem; color: var(--muted); font-weight: 500; }
+
+  .row { display: flex; justify-content: space-between; align-items: center; margin: 4px 0 18px; font-size: .86rem; }
+  .row label { display: inline-flex; align-items: center; gap: 8px; color: #475569; cursor: pointer; }
+  .row input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--brand); margin: 0; cursor: pointer; }
+  a { color: var(--brand); font-weight: 600; text-decoration: none; cursor: pointer; }
+  a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+  .btn {
+    width: 100%; height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    font: inherit; font-size: .95rem; font-weight: 600; color: #fff; border: 0; border-radius: 10px;
+    background: var(--brand); cursor: pointer; transition: background .15s, transform .1s;
+    margin-top: 6px;
+  }
+  .btn:hover { background: var(--brand-dark); }
+  .btn:active { transform: translateY(1px); }
+  .btn:focus-visible, a:focus-visible, .show:focus-visible, .tab-btn:focus-visible { outline: 3px solid rgba(37,99,235,.4); outline-offset: 2px; }
+  .btn .spin { display: none; width: 16px; height: 16px; border: 2.5px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: s .7s linear infinite; }
+  .btn.load { pointer-events: none; opacity: .9; }
+  .btn.load .spin { display: inline-block; }
+  @keyframes s { to { transform: rotate(360deg); } }
+
+  .btn-secondary {
+    background: #f1f5f9; color: var(--ink); border: 1px solid var(--line);
+    margin-top: 10px;
+  }
+  .btn-secondary:hover { background: #e2e8f0; }
+
+  /* OTP boxes */
+  .otp-grid { display: flex; justify-content: space-between; gap: 8px; margin: 20px 0 16px; }
+  .otp-box {
+    width: 48px; height: 52px; text-align: center; font-size: 1.3rem; font-weight: 700;
+    border: 1.5px solid var(--line); border-radius: 10px; outline: none; background: #fff;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .otp-box:focus { border-color: var(--brand); box-shadow: 0 0 0 4px rgba(37,99,235,.14); }
+
+  .alt { margin: 20px 0 0; text-align: center; font-size: .88rem; color: var(--muted); }
+  .foot { margin-top: 22px; text-align: center; font-size: .78rem; color: #94a3b8; }
+
+  /* Status message banner inside card */
+  .banner {
+    display: none; padding: 10px 14px; border-radius: 8px; font-size: .86rem; margin-bottom: 16px;
+    align-items: center; gap: 8px;
+  }
+  .banner.show { display: flex; }
+  .banner.error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+  .banner.success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+  .banner.info { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+
+  /* Toasts */
+  .toasts { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); width: min(420px, calc(100vw - 32px)); display: grid; gap: 8px; z-index: 100; pointer-events: none; }
+  .toast {
+    padding: 12px 14px; background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--brand);
+    border-radius: 10px; font-size: .9rem; box-shadow: 0 12px 30px -10px rgba(15,23,42,.25);
+    animation: in .25s ease both; pointer-events: auto; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .toast.error { border-left-color: var(--danger); }
+  .toast.success { border-left-color: var(--ok); }
+  @keyframes in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+
+  @media (max-width: 480px) {
+    .card { padding: 24px 18px; }
+    .otp-box { width: 42px; height: 46px; font-size: 1.15rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+  <main class="wrap">
+    <!-- Brand Logo & Motto -->
+    <a href="/" class="brand" aria-label="VaultAuth SSO home">
+      <svg viewBox="0 0 32 32" aria-hidden="true">
+        <defs>
+          <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#3b82f6"/>
+            <stop offset="1" stop-color="#1d4ed8"/>
+          </linearGradient>
+        </defs>
+        <path d="M16 2 28 6.5v8.2c0 7.4-4.8 12.6-12 15.3C8.8 27.3 4 22.1 4 14.7V6.5L16 2Z" fill="url(#g)"/>
+        <path d="m10.5 16 4 4 7.5-8" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>VaultAuth <em>SSO</em></span>
+    </a>
+    <p class="tag">One identity. Every access.</p>
+
+    <!-- Main Container Card -->
+    <section class="card" aria-live="polite">
+      <!-- Nav Tabs -->
+      <nav class="tabs" id="nav-tabs" aria-label="Authentication views">
+        <button type="button" class="tab-btn active" id="tab-login" aria-controls="view-login" aria-selected="true">Sign in</button>
+        <button type="button" class="tab-btn" id="tab-register" aria-controls="view-register" aria-selected="false">Create account</button>
+      </nav>
+
+      <!-- Alert Banner -->
+      <div class="banner" id="card-banner" role="alert"></div>
+
+      <!-- ================= 1. LOGIN VIEW ================= -->
+      <div id="view-login" class="auth-view">
+        <h1>Welcome back</h1>
+        <p class="sub">Sign in to your VaultAuth account.</p>
+
+        <form id="form-login" novalidate>
+          <div class="field" id="f-login-email">
+            <label class="lbl" for="login-email">Email or username</label>
+            <input id="login-email" name="email" type="text" autocomplete="username" placeholder="you@company.com" required />
+            <p class="err" id="e-login-email" role="alert"></p>
+          </div>
+
+          <div class="field" id="f-login-pass">
+            <label class="lbl" for="login-password">Password</label>
+            <div class="ctl pw">
+              <input id="login-password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required />
+              <button type="button" class="show" id="show-login-pass" aria-pressed="false" aria-label="Show password">Show</button>
+            </div>
+            <p class="err" id="e-login-pass" role="alert"></p>
+          </div>
+
+          <div class="row">
+            <label><input type="checkbox" id="login-remember" checked /> Remember me</label>
+            <a href="#" id="link-forgot-pass">Forgot password?</a>
+          </div>
+
+          <button class="btn" id="btn-login" type="submit">
+            <span class="spin" aria-hidden="true"></span>
+            <span id="btn-login-text">Sign in</span>
+          </button>
+        </form>
+
+        <p class="alt">Don't have an account? <a href="/register" id="link-goto-register">Create one</a></p>
+      </div>
+
+      <!-- ================= 2. REGISTER VIEW ================= -->
+      <div id="view-register" class="auth-view" style="display: none;">
+        <h1>Create your account</h1>
+        <p class="sub">Join the VaultAuth SSO workspace network.</p>
+
+        <form id="form-register" novalidate>
+          <div class="field" id="f-reg-fullname">
+            <label class="lbl" for="reg-fullname">Full name</label>
+            <input id="reg-fullname" name="fullName" type="text" autocomplete="name" placeholder="Alex Morgan" required />
+            <p class="err" id="e-reg-fullname" role="alert"></p>
+          </div>
+
+          <div class="field" id="f-reg-username">
+            <label class="lbl" for="reg-username">Username</label>
+            <input id="reg-username" name="username" type="text" autocomplete="username" placeholder="alexmorgan" required />
+            <p class="err" id="e-reg-username" role="alert"></p>
+          </div>
+
+          <div class="field" id="f-reg-email">
+            <label class="lbl" for="reg-email">Email address</label>
+            <input id="reg-email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="alex@company.com" required />
+            <p class="err" id="e-reg-email" role="alert"></p>
+          </div>
+
+          <div class="field" id="f-reg-pass">
+            <label class="lbl" for="reg-password">Password</label>
+            <div class="ctl pw">
+              <input id="reg-password" name="password" type="password" autocomplete="new-password" placeholder="At least 8 characters" required />
+              <button type="button" class="show" id="show-reg-pass" aria-pressed="false" aria-label="Show password">Show</button>
+            </div>
+            <div class="strength-wrap" id="reg-strength-wrap">
+              <div class="strength-bars">
+                <div class="strength-bar" id="sb-1"></div>
+                <div class="strength-bar" id="sb-2"></div>
+                <div class="strength-bar" id="sb-3"></div>
+                <div class="strength-bar" id="sb-4"></div>
+              </div>
+              <span class="strength-text" id="reg-strength-text">Password strength: none</span>
+            </div>
+            <p class="err" id="e-reg-pass" role="alert"></p>
+          </div>
+
+          <div class="field" id="f-reg-confirm">
+            <label class="lbl" for="reg-confirm">Confirm password</label>
+            <div class="ctl pw">
+              <input id="reg-confirm" name="confirmPassword" type="password" autocomplete="new-password" placeholder="Re-enter your password" required />
+            </div>
+            <p class="err" id="e-reg-confirm" role="alert"></p>
+          </div>
+
+          <button class="btn" id="btn-register" type="submit">
+            <span class="spin" aria-hidden="true"></span>
+            <span id="btn-register-text">Create account</span>
+          </button>
+        </form>
+
+        <p class="alt">Already have an account? <a href="/login" id="link-goto-login">Sign in</a></p>
+      </div>
+
+      <!-- ================= 3. OTP VERIFICATION VIEW ================= -->
+      <div id="view-otp" class="auth-view" style="display: none;">
+        <h1>Two-Factor Auth</h1>
+        <p class="sub" id="otp-subtitle">Enter the 6-digit verification code sent to your registered email.</p>
+
+        <form id="form-otp" novalidate>
+          <div class="otp-grid" id="otp-inputs">
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-box" data-idx="0" autofocus />
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-box" data-idx="1" />
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-box" data-idx="2" />
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-box" data-idx="3" />
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-box" data-idx="4" />
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-box" data-idx="5" />
+          </div>
+          <p class="err" id="e-otp" style="text-align: center; margin-bottom: 12px;" role="alert"></p>
+
+          <button class="btn" id="btn-verify-otp" type="submit">
+            <span class="spin" aria-hidden="true"></span>
+            <span id="btn-otp-text">Verify &amp; Continue</span>
+          </button>
+        </form>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 18px; font-size: .86rem;">
+          <a href="#" id="link-resend-otp">Resend code</a>
+          <a href="/login" id="link-otp-back">← Back to sign in</a>
+        </div>
+      </div>
+
+      <!-- ================= 4. FORGOT PASSWORD VIEW ================= -->
+      <div id="view-forgot" class="auth-view" style="display: none;">
+        <h1>Reset password</h1>
+        <p class="sub">Enter your email and we'll send you recovery instructions.</p>
+
+        <form id="form-forgot" novalidate>
+          <div class="field" id="f-forgot-email">
+            <label class="lbl" for="forgot-email">Registered email</label>
+            <input id="forgot-email" name="email" type="email" placeholder="you@company.com" required />
+            <p class="err" id="e-forgot-email" role="alert"></p>
+          </div>
+
+          <button class="btn" id="btn-forgot" type="submit">
+            <span class="spin" aria-hidden="true"></span>
+            <span id="btn-forgot-text">Send instructions</span>
+          </button>
+
+          <button type="button" class="btn btn-secondary" id="btn-forgot-cancel">Back to sign in</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <p class="foot">Protected by VaultAuth SSO &middot; <span id="yr"></span></p>
+  </main>
+
+  <!-- Notification Toasts Container -->
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <!-- Client Script for Authentication & API Integration -->
+  <script>
+  (() => {
+    "use strict";
+
+    // Application API endpoints
+    const CFG = {
+      loginUrl: "/api/login",
+      registerUrl: "/api/register",
+      otpSendUrl: "/api/otp/send",
+      otpVerifyUrl: "/api/otp/verify",
+      sessionUrl: "/api/session",
+      dashboardUrl: "/DASHBOARD/index.html",
+      redirectDelay: 600
+    };
+
+    const $ = (s) => document.querySelector(s);
+    const $$ = (s) => document.querySelectorAll(s);
+
+    // DOM Elements
+    const tabLogin = $("#tab-login");
+    const tabRegister = $("#tab-register");
+    const navTabs = $("#nav-tabs");
+    const cardBanner = $("#card-banner");
+
+    const viewLogin = $("#view-login");
+    const viewRegister = $("#view-register");
+    const viewOtp = $("#view-otp");
+    const viewForgot = $("#view-forgot");
+
+    const formLogin = $("#form-login");
+    const formRegister = $("#form-register");
+    const formOtp = $("#form-otp");
+    const formForgot = $("#form-forgot");
+
+    const loginEmail = $("#login-email");
+    const loginPass = $("#login-password");
+    const btnLogin = $("#btn-login");
+    const showLoginPass = $("#show-login-pass");
+
+    const regFullName = $("#reg-fullname");
+    const regUsername = $("#reg-username");
+    const regEmail = $("#reg-email");
+    const regPass = $("#reg-password");
+    const regConfirm = $("#reg-confirm");
+    const btnRegister = $("#btn-register");
+    const showRegPass = $("#show-reg-pass");
+
+    const otpBoxes = Array.from($$(".otp-box"));
+    const btnVerifyOtp = $("#btn-verify-otp");
+    const otpSubtitle = $("#otp-subtitle");
+    const linkResendOtp = $("#link-resend-otp");
+
+    let currentAuthIdentifier = "";
+    let isSubmitting = false;
+    let resendTimer = null;
+    let resendCountdown = 0;
+
+    $("#yr").textContent = new Date().getFullYear();
+
+    /* ---------- Notification Toasts ---------- */
+    function toast(msg, type = "info", duration = 4500) {
+      const el = document.createElement("div");
+      el.className = "toast " + type;
+      el.setAttribute("role", type === "error" ? "alert" : "status");
+      el.innerHTML = `<span>${escapeHtml(msg)}</span><button type="button" style="border:0;background:none;color:#94a3b8;cursor:pointer;font-size:1.1rem;padding:0 4px;" aria-label="Close">×</button>`;
+      el.querySelector("button").addEventListener("click", () => el.remove());
+      $("#toasts").appendChild(el);
+      setTimeout(() => el.remove(), duration);
+    }
+
+    function showBanner(msg, type = "error") {
+      if (!msg) {
+        cardBanner.className = "banner";
+        cardBanner.textContent = "";
+        return;
+      }
+      cardBanner.className = `banner show ${type}`;
+      cardBanner.textContent = msg;
+    }
+
+    function escapeHtml(str) {
+      const p = document.createElement("p");
+      p.textContent = str;
+      return p.innerHTML;
+    }
+
+    function setFieldError(fieldId, errId, msg) {
+      const f = $(`#${fieldId}`);
+      const e = $(`#${errId}`);
+      if (!f || !e) return;
+      f.classList.toggle("bad", !!msg);
+      e.textContent = msg || "";
+    }
+
+    /* ---------- Navigation / View Switching ---------- */
+    function switchView(viewName, pushUrl = true) {
+      showBanner("");
+      [viewLogin, viewRegister, viewOtp, viewForgot].forEach((v) => (v.style.display = "none"));
+
+      if (viewName === "register") {
+        viewRegister.style.display = "block";
+        navTabs.style.display = "flex";
+        tabRegister.classList.add("active");
+        tabLogin.classList.remove("active");
+        tabRegister.setAttribute("aria-selected", "true");
+        tabLogin.setAttribute("aria-selected", "false");
+        document.title = "Create account · VaultAuth SSO";
+        if (pushUrl && window.location.pathname !== "/register") {
+          window.history.pushState({ view: "register" }, "", "/register");
+        }
+      } else if (viewName === "otp") {
+        viewOtp.style.display = "block";
+        navTabs.style.display = "none";
+        document.title = "Two-Factor Authentication · VaultAuth SSO";
+        otpBoxes.forEach((b) => (b.value = ""));
+        setTimeout(() => otpBoxes[0]?.focus(), 50);
+      } else if (viewName === "forgot") {
+        viewForgot.style.display = "block";
+        navTabs.style.display = "none";
+        document.title = "Reset password · VaultAuth SSO";
+        $("#forgot-email").focus();
+      } else {
+        // Default: login view
+        viewLogin.style.display = "block";
+        navTabs.style.display = "flex";
+        tabLogin.classList.add("active");
+        tabRegister.classList.remove("active");
+        tabLogin.setAttribute("aria-selected", "true");
+        tabRegister.setAttribute("aria-selected", "false");
+        document.title = "Sign in · VaultAuth SSO";
+        if (pushUrl && window.location.pathname !== "/login" && window.location.pathname !== "/") {
+          window.history.pushState({ view: "login" }, "", "/login");
+        }
+      }
+    }
+
+    tabLogin.addEventListener("click", () => switchView("login"));
+    tabRegister.addEventListener("click", () => switchView("register"));
+    $("#link-goto-register")?.addEventListener("click", (e) => { e.preventDefault(); switchView("register"); });
+    $("#link-goto-login")?.addEventListener("click", (e) => { e.preventDefault(); switchView("login"); });
+    $("#link-forgot-pass")?.addEventListener("click", (e) => { e.preventDefault(); switchView("forgot"); });
+    $("#btn-forgot-cancel")?.addEventListener("click", () => switchView("login"));
+    $("#link-otp-back")?.addEventListener("click", (e) => { e.preventDefault(); switchView("login"); });
+
+    // Handle browser forward/back buttons
+    window.addEventListener("popstate", () => {
+      if (window.location.pathname === "/register") {
+        switchView("register", false);
+      } else {
+        switchView("login", false);
+      }
+    });
+
+    /* ---------- Show/Hide Password Toggles ---------- */
+    function setupPasswordToggle(btn, input) {
+      btn.addEventListener("click", () => {
+        const isPass = input.type === "password";
+        input.type = isPass ? "text" : "password";
+        btn.textContent = isPass ? "Hide" : "Show";
+        btn.setAttribute("aria-pressed", String(isPass));
+      });
+    }
+    setupPasswordToggle(showLoginPass, loginPass);
+    setupPasswordToggle(showRegPass, regPass);
+
+    /* ---------- Password Strength Calculator ---------- */
+    function evaluatePasswordStrength(p) {
+      if (!p) return { score: 0, text: "Password strength: none", color: "#e2e8f0" };
+      let score = 0;
+      if (p.length >= 8) score++;
+      if (p.length >= 12) score++;
+      if (/[A-Z]/.test(p) && /[a-z]/.test(p)) score++;
+      if (/[0-9]/.test(p) && /[^A-Za-z0-9]/.test(p)) score++;
+
+      const levels = [
+        { score: 1, text: "Weak password", color: "#dc2626" },
+        { score: 2, text: "Medium password", color: "#f59e0b" },
+        { score: 3, text: "Strong password", color: "#2563eb" },
+        { score: 4, text: "Very strong password", color: "#16a34a" },
+      ];
+      return levels[Math.min(score, 4) - 1] || levels[0];
+    }
+
+    regPass.addEventListener("input", () => {
+      const val = regPass.value;
+      const res = evaluatePasswordStrength(val);
+      const bars = [$("#sb-1"), $("#sb-2"), $("#sb-3"), $("#sb-4")];
+      bars.forEach((b, i) => {
+        b.style.background = val && i < res.score ? res.color : "#e2e8f0";
+      });
+      $("#reg-strength-text").textContent = val ? res.text : "Password strength: none";
+    });
+
+    /* ---------- OTP Inputs Flow ---------- */
+    otpBoxes.forEach((box, i) => {
+      box.addEventListener("input", (e) => {
+        const val = e.target.value.replace(/[^0-9]/g, "");
+        e.target.value = val;
+        if (val && i < otpBoxes.length - 1) {
+          otpBoxes[i + 1].focus();
+        }
+      });
+      box.addEventListener("keydown", (e) => {
+        if (e.key === "Backspace" && !e.target.value && i > 0) {
+          otpBoxes[i - 1].focus();
+        }
+      });
+      box.addEventListener("paste", (e) => {
+        e.preventDefault();
+        const pasteData = (e.clipboardData || window.clipboardData).getData("text").replace(/[^0-9]/g, "").slice(0, 6);
+        pasteData.split("").forEach((char, idx) => {
+          if (otpBoxes[idx]) otpBoxes[idx].value = char;
+        });
+        if (pasteData.length === 6) {
+          otpBoxes[5].focus();
+        }
+      });
+    });
+
+    function startResendCountdown() {
+      resendCountdown = 30;
+      linkResendOtp.style.pointerEvents = "none";
+      linkResendOtp.style.opacity = "0.5";
+      linkResendOtp.textContent = `Resend in ${resendCountdown}s`;
+      clearInterval(resendTimer);
+      resendTimer = setInterval(() => {
+        resendCountdown--;
+        if (resendCountdown <= 0) {
+          clearInterval(resendTimer);
+          linkResendOtp.style.pointerEvents = "auto";
+          linkResendOtp.style.opacity = "1";
+          linkResendOtp.textContent = "Resend code";
+        } else {
+          linkResendOtp.textContent = `Resend in ${resendCountdown}s`;
+        }
+      }, 1000);
+    }
+
+    linkResendOtp.addEventListener("click", async (e) => {
+      e.preventDefault();
+      if (resendCountdown > 0) return;
+      toast("Sending a new verification code...", "info");
+      try {
+        await fetch(CFG.otpSendUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier: currentAuthIdentifier })
+        });
+        toast("New 6-digit code sent to your email.", "success");
+        startResendCountdown();
+      } catch {
+        toast("Could not resend code. Please try again.", "error");
+      }
+    });
+
+    /* ---------- Form Submit: LOGIN ---------- */
+    formLogin.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (isSubmitting) return;
+
+      const ident = loginEmail.value.trim();
+      const pwd = loginPass.value;
+
+      setFieldError("f-login-email", "e-login-email", !ident ? "Please enter your email or username." : "");
+      setFieldError("f-login-pass", "e-login-pass", !pwd ? "Please enter your password." : "");
+
+      if (!ident || !pwd) return;
+
+      isSubmitting = true;
+      btnLogin.classList.add("load");
+      showBanner("");
+
+      try {
+        const payload = {
+          login: ident,
+          username: ident,
+          email: ident,
+          password: pwd,
+          remember: $("#login-remember").checked
+        };
+
+        const res = await fetch(CFG.loginUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        // Case 1: OTP is required
+        if (data.otp_required || data.requires_otp) {
+          currentAuthIdentifier = ident;
+          otpSubtitle.textContent = data.message || `Enter the 6-digit verification code sent to ${ident}`;
+          switchView("otp");
+          startResendCountdown();
+          toast("Verification required. Check your email for the code.", "info");
+          return;
+        }
+
+        // Case 2: Successful authentication
+        if (res.ok && (data.success === undefined || data.success || data.token)) {
+          if (data.token) {
+            localStorage.setItem("vault_auth_token", data.token);
+          }
+          if (data.user) {
+            localStorage.setItem("vault_auth_user", JSON.stringify(data.user));
+          } else {
+            localStorage.setItem("vault_auth_user", JSON.stringify({ username: ident, email: ident, role: "End user" }));
+          }
+
+          toast(data.message || "Signed in successfully. Redirecting...", "success");
+          setTimeout(() => {
+            window.location.href = data.redirect || CFG.dashboardUrl;
+          }, CFG.redirectDelay);
+          return;
+        }
+
+        // Case 3: Error response
+        const errMessage = data.message || (res.status === 404 ? "User not found. Check credentials or create an account." : "Invalid email or password.");
+        showBanner(errMessage, "error");
+        toast(errMessage, "error");
+        loginPass.value = "";
+        loginPass.focus();
+      } catch {
+        showBanner("Cannot reach authentication server. Please check your connection.", "error");
+        toast("Network error. Verify server is running on port 5000.", "error");
+      } finally {
+        isSubmitting = false;
+        btnLogin.classList.remove("load");
+      }
+    });
+
+    /* ---------- Form Submit: REGISTER ---------- */
+    formRegister.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (isSubmitting) return;
+
+      const fullName = regFullName.value.trim();
+      const username = regUsername.value.trim();
+      const email = regEmail.value.trim().toLowerCase();
+      const pwd = regPass.value;
+      const confirmPwd = regConfirm.value;
+
+      let hasErr = false;
+
+      if (!fullName) { setFieldError("f-reg-fullname", "e-reg-fullname", "Full name is required."); hasErr = true; }
+      else { setFieldError("f-reg-fullname", "e-reg-fullname", ""); }
+
+      if (!username || username.length < 3) { setFieldError("f-reg-username", "e-reg-username", "Username must be at least 3 characters."); hasErr = true; }
+      else { setFieldError("f-reg-username", "e-reg-username", ""); }
+
+      const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+      if (!email || !emailRe.test(email)) { setFieldError("f-reg-email", "e-reg-email", "Enter a valid email address."); hasErr = true; }
+      else { setFieldError("f-reg-email", "e-reg-email", ""); }
+
+      if (!pwd || pwd.length < 8) { setFieldError("f-reg-pass", "e-reg-pass", "Password must be at least 8 characters."); hasErr = true; }
+      else { setFieldError("f-reg-pass", "e-reg-pass", ""); }
+
+      if (!confirmPwd || pwd !== confirmPwd) { setFieldError("f-reg-confirm", "e-reg-confirm", "Passwords do not match."); hasErr = true; }
+      else { setFieldError("f-reg-confirm", "e-reg-confirm", ""); }
+
+      if (hasErr) return;
+
+      isSubmitting = true;
+      btnRegister.classList.add("load");
+      showBanner("");
+
+      try {
+        const payload = {
+          fullName,
+          name: fullName,
+          username,
+          email,
+          password: pwd
+        };
+
+        const res = await fetch(CFG.registerUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (res.ok && (data.success === undefined || data.success || res.status === 200 || res.status === 201)) {
+          toast(`Account created for ${username}! You can now sign in.`, "success");
+          // Pre-fill login credentials
+          loginEmail.value = email || username;
+          loginPass.value = "";
+          switchView("login");
+          showBanner("Account created successfully. Enter your password to sign in.", "success");
+          loginPass.focus();
+          return;
+        }
+
+        const msg = data.message || (data.errors ? data.errors.join(", ") : "Registration could not be completed.");
+        showBanner(msg, "error");
+        toast(msg, "error");
+      } catch {
+        showBanner("Unable to reach backend registration service.", "error");
+        toast("Network error. Verify server is running on port 5000.", "error");
+      } finally {
+        isSubmitting = false;
+        btnRegister.classList.remove("load");
+      }
+    });
+
+    /* ---------- Form Submit: OTP VERIFICATION ---------- */
+    formOtp.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (isSubmitting) return;
+
+      const code = otpBoxes.map((b) => b.value.trim()).join("");
+      if (code.length < 6) {
+        $("#e-otp").textContent = "Please enter all 6 digits of your verification code.";
+        $("#e-otp").style.display = "block";
+        return;
+      }
+      $("#e-otp").style.display = "none";
+
+      isSubmitting = true;
+      btnVerifyOtp.classList.add("load");
+
+      try {
+        const res = await fetch(CFG.otpVerifyUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ identifier: currentAuthIdentifier, otp: code })
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (res.ok && (data.success === undefined || data.success || data.token)) {
+          if (data.token) {
+            localStorage.setItem("vault_auth_token", data.token);
+          }
+          if (data.user) {
+            localStorage.setItem("vault_auth_user", JSON.stringify(data.user));
+          } else {
+            localStorage.setItem("vault_auth_user", JSON.stringify({ username: currentAuthIdentifier, email: currentAuthIdentifier, role: "End user" }));
+          }
+
+          toast("Two-factor authentication successful! Redirecting...", "success");
+          setTimeout(() => {
+            window.location.href = data.redirect || CFG.dashboardUrl;
+          }, CFG.redirectDelay);
+          return;
+        }
+
+        $("#e-otp").textContent = data.message || "Invalid or expired verification code. Please try again.";
+        $("#e-otp").style.display = "block";
+        toast("Verification failed. Check the code and try again.", "error");
+        otpBoxes.forEach((b) => (b.value = ""));
+        otpBoxes[0].focus();
+      } catch {
+        toast("Verification service unavailable. Check your connection.", "error");
+      } finally {
+        isSubmitting = false;
+        btnVerifyOtp.classList.remove("load");
+      }
+    });
+
+    /* ---------- Form Submit: FORGOT PASSWORD ---------- */
+    formForgot.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const mail = $("#forgot-email").value.trim();
+      if (!mail) {
+        setFieldError("f-forgot-email", "e-forgot-email", "Please enter your registered email address.");
+        return;
+      }
+      setFieldError("f-forgot-email", "e-forgot-email", "");
+      toast(`Password recovery link sent to ${mail}`, "success");
+      setTimeout(() => switchView("login"), 1200);
+    });
+
+    /* ---------- URL & Search Params Initialization ---------- */
+    const path = window.location.pathname.toLowerCase();
+    const q = new URLSearchParams(window.location.search);
+
+    if (path.includes("register") || q.get("tab") === "register") {
+      switchView("register", false);
+    } else {
+      switchView("login", false);
+    }
+
+    // Check notice parameters (e.g. ?registered=1, ?logout=1)
+    if (q.has("registered")) toast("Account created. Please sign in.", "success");
+    if (q.has("verified")) toast("Email verified. You can now sign in.", "success");
+    if (q.has("logout")) toast("You have been signed out.", "info");
+    if (q.has("expired")) toast("Your session expired. Please sign in again.", "info");
+
+    // Live Reload EventSource for Bun dev server
+    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+      try {
+        const devEvts = new EventSource("/__dev_events");
+        devEvts.onmessage = (ev) => {
+          if (ev.data === "reload") window.location.reload();
+        };
+      } catch {}
+    }
+  })();
+  </script>
+</body>
+</html>

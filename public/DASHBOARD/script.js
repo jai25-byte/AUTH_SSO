@@ -654,6 +654,17 @@
     if (sEl) sEl.textContent = success;
     if (fEl) fEl.textContent = failed;
     if (dEl) dEl.textContent = activeSessions.length;
+
+    // Synchronize Overview active sessions card dynamically
+    const count = activeSessions.length;
+    const statActive = document.getElementById("stat-active-sessions");
+    const statActiveDesc = document.getElementById("stat-active-sessions-desc");
+    if (statActive) {
+      statActive.textContent = `${count} ${count === 1 ? "device" : "devices"}`;
+    }
+    if (statActiveDesc) {
+      statActiveDesc.textContent = `You're signed in on ${count} ${count === 1 ? "device" : "devices"}`;
+    }
   }
 
   function renderOverviewActivityPreview() {
@@ -852,8 +863,24 @@
 
   // ===== 10. Active Sessions & Device Management =====
   async function loadActiveSessions() {
+    const statActive = document.getElementById("stat-active-sessions");
+    const statActiveDesc = document.getElementById("stat-active-sessions-desc");
+
+    // 1. Fetch verified count from dedicated active sessions endpoint
+    const activeRes = await apiRequest("/api/sessions/active");
+    if (activeRes.ok && activeRes.data && activeRes.data.success) {
+      const activeCount = activeRes.data.active_sessions;
+      if (statActive) {
+        statActive.textContent = `${activeCount} ${activeCount === 1 ? "device" : "devices"}`;
+      }
+      if (statActiveDesc) {
+        statActiveDesc.textContent = `You're signed in on ${activeCount} ${activeCount === 1 ? "device" : "devices"}`;
+      }
+    }
+
+    // 2. Fetch full session records list
     const res = await apiRequest("/api/sessions");
-    if (res.ok && Array.isArray(res.data) && res.data.length > 0) {
+    if (res.ok && Array.isArray(res.data)) {
       activeSessions = res.data.map((s) => ({
         id: s.session_id || s.id,
         deviceName: s.device_name || "Active Device",
@@ -865,44 +892,175 @@
         lastActive: s.last_active || "Active Now",
         isCurrent: Boolean(s.is_current),
       }));
+
+      // Update active sessions counter if dedicated endpoint wasn't reached
+      if (!activeRes.ok || !activeRes.data?.success) {
+        const count = activeSessions.length;
+        if (statActive) {
+          statActive.textContent = `${count} ${count === 1 ? "device" : "devices"}`;
+        }
+        if (statActiveDesc) {
+          statActiveDesc.textContent = `You're signed in on ${count} ${count === 1 ? "device" : "devices"}`;
+        }
+      }
     }
     renderActiveSessions();
     renderSummaryCards();
+  }
+
+  let deviceTypeFilter = "all";
+
+  function renderSessionCardHtml(s) {
+    const isMobile = s.deviceType === "mobile" || s.deviceType === "tablet";
+    const typeLabel = isMobile ? "Mobile Device" : (s.deviceType === "laptop" ? "Laptop" : "Desktop PC");
+    return `
+      <div class="session-item-card ${s.isCurrent ? "current-device" : ""}" data-session-id="${s.id}">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <div class="table-device-icon">${getDeviceIconSvg(s.deviceType)}</div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <strong style="font-size: 0.92rem; color: var(--text-primary);">${s.deviceName}</strong>
+              <span class="badge" style="background: #f1f5f9; color: var(--text-secondary); font-size: 0.68rem; padding: 2px 6px;">${typeLabel}</span>
+              ${s.isCurrent ? '<span class="badge badge-success" style="font-size: 0.7rem; padding: 2px 8px;"><span class="badge-dot"></span>This device</span>' : ""}
+            </div>
+            <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 3px 0 0;">
+              ${s.browser} • ${s.location} (${s.ip})
+            </p>
+            <div style="display: flex; align-items: center; gap: 12px; margin-top: 3px; font-size: 0.74rem; color: var(--text-muted);">
+              <span>Last active: ${s.lastActive}</span>
+              ${s.created_at ? `<span>• Signed in: ${s.created_at}</span>` : ""}
+            </div>
+          </div>
+        </div>
+
+        <div>
+          ${
+            s.isCurrent
+              ? '<span style="font-size: 0.8rem; color: var(--green); font-weight: 600;">Active Now</span>'
+              : `<button class="btn btn-danger-outline btn-sm btn-revoke-session" data-session-id="${s.id}" data-session-name="${s.deviceName}">Revoke</button>`
+          }
+        </div>
+      </div>
+    `;
   }
 
   function renderActiveSessions() {
     const container = document.getElementById("devices-sessions-list");
     if (!container) return;
 
-    container.innerHTML = activeSessions
-      .map(
-        (s) => `
-        <div class="session-item-card ${s.isCurrent ? "current-device" : ""}">
-          <div style="display: flex; align-items: center; gap: 14px;">
-            <div class="table-device-icon">${getDeviceIconSvg(s.deviceType)}</div>
-            <div>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <strong style="font-size: 0.92rem; color: var(--text-primary);">${s.deviceName}</strong>
-                ${s.isCurrent ? '<span class="badge badge-success" style="font-size: 0.7rem; padding: 2px 8px;"><span class="badge-dot"></span>This device</span>' : ""}
-              </div>
-              <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 2px 0 0;">
-                ${s.browser} • ${s.location} (${s.ip})
-              </p>
-              <span style="font-size: 0.74rem; color: var(--text-muted);">Last active: ${s.lastActive}</span>
+    // Filter sessions by device type
+    const filteredSessions = activeSessions.filter((s) => {
+      if (deviceTypeFilter === "all") return true;
+      if (deviceTypeFilter === "desktop") {
+        return s.deviceType === "desktop" || s.deviceType === "laptop";
+      }
+      if (deviceTypeFilter === "mobile") {
+        return s.deviceType === "mobile" || s.deviceType === "tablet";
+      }
+      return true;
+    });
+
+    // Update filter counts in filter bar
+    const countAll = activeSessions.length;
+    const countDesktop = activeSessions.filter((s) => s.deviceType === "desktop" || s.deviceType === "laptop").length;
+    const countMobile = activeSessions.filter((s) => s.deviceType === "mobile" || s.deviceType === "tablet").length;
+
+    const elCountAll = document.getElementById("filter-count-all");
+    const elCountDesk = document.getElementById("filter-count-desktop");
+    const elCountMob = document.getElementById("filter-count-mobile");
+    if (elCountAll) elCountAll.textContent = countAll;
+    if (elCountDesk) elCountDesk.textContent = countDesktop;
+    if (elCountMob) elCountMob.textContent = countMobile;
+
+    if (!activeSessions || activeSessions.length === 0) {
+      container.innerHTML = `
+        <div class="card" style="text-align: center; padding: 48px 20px; color: var(--text-muted); font-size: 0.9rem;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 42px; height: 42px; margin: 0 auto 12px; color: var(--text-muted); opacity: 0.6;">
+            <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/>
+          </svg>
+          <strong style="display: block; font-size: 1.05rem; color: var(--text-primary); margin-bottom: 4px;">No Active Sessions</strong>
+          <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0;">You are currently not signed in on any registered devices.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const currentSessions = filteredSessions.filter((s) => s.isCurrent);
+    const otherSessions = filteredSessions.filter((s) => !s.isCurrent);
+
+    let html = "";
+
+    // ===== GROUP 1: Current Session (This Device) =====
+    if (deviceTypeFilter === "all" || currentSessions.length > 0) {
+      html += `
+        <div class="session-group-block">
+          <div class="session-group-header">
+            <div class="session-group-title-wrap">
+              <span class="session-group-title">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
+                </svg>
+                Current Active Session
+              </span>
+              <span class="badge badge-success session-group-badge">This Device</span>
             </div>
+            <span style="font-size: 0.78rem; font-weight: 600; color: var(--green); display: flex; align-items: center; gap: 6px;">
+              <span class="badge-dot" style="background: var(--green);"></span>Active Now
+            </span>
           </div>
 
-          <div>
+          <div class="sessions-list-container">
             ${
-              s.isCurrent
-                ? '<span style="font-size: 0.8rem; color: var(--green); font-weight: 600;">Active Now</span>'
-                : `<button class="btn btn-danger-outline btn-sm btn-revoke-session" data-session-id="${s.id}" data-session-name="${s.deviceName}">Revoke</button>`
+              currentSessions.length > 0
+                ? currentSessions.map((s) => renderSessionCardHtml(s)).join("")
+                : `<div class="session-group-empty">No current session matching the active filter.</div>`
             }
           </div>
         </div>
-      `
-      )
-      .join("");
+      `;
+    }
+
+    // ===== GROUP 2: Other Active Devices & Sessions =====
+    html += `
+      <div class="session-group-block">
+        <div class="session-group-header">
+          <div class="session-group-title-wrap">
+            <span class="session-group-title">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+              </svg>
+              Other Active Devices &amp; Sessions
+            </span>
+            <span class="badge" style="background: var(--brand-purple-light); color: var(--brand-purple); font-weight: 600; font-size: 0.75rem; padding: 2px 8px;">
+              ${otherSessions.length} ${otherSessions.length === 1 ? "device" : "devices"}
+            </span>
+          </div>
+
+          ${
+            otherSessions.length > 0
+              ? `<button class="btn btn-danger-outline btn-sm" id="btn-revoke-all-others-grouped">Sign out of other devices</button>`
+              : ""
+          }
+        </div>
+
+        <div class="sessions-list-container">
+          ${
+            otherSessions.length > 0
+              ? otherSessions.map((s) => renderSessionCardHtml(s)).join("")
+              : `
+                <div class="session-group-empty">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="margin: 0 auto 6px; display: block; opacity: 0.5;">
+                    <circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>
+                  </svg>
+                  You are not signed in on any other devices. Your account is only active on this device.
+                </div>
+              `
+          }
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = html;
 
     // Bind individual session revoke buttons
     container.querySelectorAll(".btn-revoke-session").forEach((btn) => {
@@ -916,6 +1074,12 @@
         openModal("modal-revoke-single-session");
       });
     });
+
+    // Bind grouped "Sign out of other devices" button
+    const groupRevokeOthersBtn = document.getElementById("btn-revoke-all-others-grouped");
+    if (groupRevokeOthersBtn) {
+      groupRevokeOthersBtn.addEventListener("click", () => openModal("modal-revoke-others"));
+    }
   }
 
   // Confirm Single Session Revoke handler
@@ -958,6 +1122,16 @@
     renderActiveSessions();
     renderSummaryCards();
     showToast("Signed out of all other active devices.", "success");
+  });
+
+  // Device Type Filter Pill Click Handlers
+  document.addEventListener("click", function (e) {
+    const pill = e.target.closest("#devices-filter-bar .device-filter-pill");
+    if (!pill) return;
+    document.querySelectorAll("#devices-filter-bar .device-filter-pill").forEach((p) => p.classList.remove("active"));
+    pill.classList.add("active");
+    deviceTypeFilter = pill.getAttribute("data-device-filter") || "all";
+    renderActiveSessions();
   });
 
   // ===== 11. Security Settings Controller =====
