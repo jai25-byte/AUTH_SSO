@@ -1,0 +1,2142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VaultAuthSSO · The Unified Identity Cloud (Okta + Auth0 + Clerk + WorkOS)</title>
+  <meta name="description" content="VaultAuthSSO unifies the developer simplicity of Clerk and Auth0 with the enterprise SSO, SCIM directory sync, and Zero Trust governance of WorkOS and Okta." />
+
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ==========================================================================
+       VAULTAUTH SSO — THE UNIFIED IDENTITY PLATFORM
+       Synthesis of:
+         • Clerk (Polished modern UI components, drop-in auth, passkeys, slick dark theme)
+         • Auth0 (Extensible Actions, event triggers, developer SDKs, universal login)
+         • WorkOS (Enterprise SSO SAML, SCIM Directory Sync, self-serve Admin Portal)
+         • Okta (Zero Trust governance, Universal Directory, compliance, adaptive MFA)
+       ========================================================================== */
+
+    :root {
+      /* Background Canvas */
+      --bg-base: #06070a;
+      --bg-surface: #0b0d14;
+      --bg-card: #111422;
+      --bg-card-subtle: rgba(17, 20, 34, 0.7);
+      --bg-card-hover: #161b2e;
+      --bg-glass: rgba(17, 20, 34, 0.75);
+
+      /* Borders & Lines */
+      --border-subtle: rgba(255, 255, 255, 0.07);
+      --border-medium: rgba(255, 255, 255, 0.12);
+      --border-bright: rgba(255, 255, 255, 0.2);
+      --border-glow: rgba(112, 71, 235, 0.4);
+
+      /* Typography */
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --text-inverse: #090a10;
+
+      /* Brand Accents */
+      --brand-purple: #7047eb;
+      --brand-purple-hover: #805cf6;
+      --brand-purple-glow: rgba(112, 71, 235, 0.45);
+      --brand-blue: #38bdf8;
+      --brand-indigo: #6366f1;
+      --brand-emerald: #10b981;
+      --brand-amber: #f59e0b;
+      --brand-rose: #f43f5e;
+
+      /* Gradients */
+      --grad-brand: linear-gradient(135deg, #7047eb 0%, #38bdf8 100%);
+      --grad-glow: radial-gradient(circle at 50% 0%, rgba(112, 71, 235, 0.18) 0%, transparent 70%);
+      --grad-card: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.005) 100%);
+
+      /* Spacing & Radii */
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --radius-xl: 24px;
+      --radius-pill: 9999px;
+
+      --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, Menlo, Monaco, Consolas, monospace;
+      --transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      background-image: 
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(112, 71, 235, 0.15), transparent),
+        radial-gradient(circle at 100% 30%, rgba(56, 189, 248, 0.05), transparent 40%),
+        radial-gradient(circle at 0% 70%, rgba(99, 102, 241, 0.05), transparent 40%);
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    /* Container Utility */
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Typography Utilities */
+    h1, h2, h3, h4, h5 {
+      color: var(--text-main);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.15;
+    }
+
+    p {
+      color: var(--text-muted);
+      line-height: 1.65;
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #93c5fd 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-gradient-text {
+      background: linear-gradient(135deg, #c084fc 0%, #7047eb 50%, #38bdf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* ==========================================================================
+       NAVIGATION BAR
+       ========================================================================== */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      background: rgba(6, 7, 10, 0.75);
+      border-bottom: 1px solid var(--border-subtle);
+      transition: var(--transition);
+    }
+
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 72px;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text-main);
+    }
+
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #7047eb 0%, #4318ff 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(112, 71, 235, 0.4);
+      color: #fff;
+    }
+
+    .brand-text {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .brand-badge {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      background: rgba(112, 71, 235, 0.18);
+      color: #c084fc;
+      border: 1px solid rgba(112, 71, 235, 0.3);
+      padding: 2px 7px;
+      border-radius: var(--radius-pill);
+      letter-spacing: 0.06em;
+      margin-left: 4px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .nav-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.92rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: var(--transition);
+    }
+
+    .nav-link:hover {
+      color: var(--text-main);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      padding: 9px 18px;
+      border-radius: var(--radius-sm);
+      transition: var(--transition);
+      cursor: pointer;
+      white-space: nowrap;
+      border: 1px solid transparent;
+    }
+
+    .btn-ghost {
+      color: var(--text-muted);
+      background: transparent;
+    }
+    .btn-ghost:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .btn-secondary {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--border-medium);
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--border-bright);
+    }
+
+    .btn-primary {
+      color: #ffffff;
+      background: linear-gradient(135deg, #7047eb 0%, #5b21b6 100%);
+      box-shadow: 0 2px 14px rgba(112, 71, 235, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #7e57f5 0%, #6d28d9 100%);
+      box-shadow: 0 4px 20px rgba(112, 71, 235, 0.6);
+      transform: translateY(-1px);
+    }
+
+    .btn-lg {
+      padding: 13px 26px;
+      font-size: 1rem;
+      border-radius: 10px;
+    }
+
+    .mobile-toggle {
+      display: none;
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font-size: 1.4rem;
+      cursor: pointer;
+    }
+
+    /* ==========================================================================
+       HERO SECTION
+       ========================================================================== */
+    .hero-section {
+      padding: 72px 0 60px;
+      position: relative;
+    }
+
+    .hero-pill-wrapper {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+
+    .hero-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(17, 20, 34, 0.8);
+      border: 1px solid var(--border-medium);
+      padding: 6px 16px;
+      border-radius: var(--radius-pill);
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      backdrop-filter: blur(10px);
+      text-decoration: none;
+      transition: var(--transition);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .hero-pill:hover {
+      border-color: var(--brand-purple);
+      color: var(--text-main);
+      box-shadow: 0 0 16px rgba(112, 71, 235, 0.25);
+    }
+
+    .pill-tag {
+      background: linear-gradient(135deg, #7047eb, #38bdf8);
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .hero-content {
+      text-align: center;
+      max-width: 940px;
+      margin: 0 auto 48px;
+    }
+
+    .hero-title {
+      font-size: 4rem;
+      line-height: 1.08;
+      font-weight: 900;
+      margin-bottom: 22px;
+      letter-spacing: -0.04em;
+    }
+
+    .hero-subtitle {
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      max-width: 780px;
+      margin: 0 auto 36px;
+      font-weight: 400;
+    }
+
+    .hero-cta-group {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 36px;
+    }
+
+    /* CLI install bar */
+    .cli-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      background: #090b12;
+      border: 1px solid var(--border-medium);
+      padding: 8px 14px 8px 18px;
+      border-radius: 10px;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: #cbd5e1;
+      max-width: 580px;
+      margin: 0 auto;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.4);
+    }
+
+    .cli-prompt {
+      color: var(--brand-purple-hover);
+      user-select: none;
+      font-weight: 700;
+    }
+
+    .cli-copy-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 6px 10px;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      font-family: var(--font-sans);
+      transition: var(--transition);
+    }
+
+    .cli-copy-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--text-main);
+    }
+
+    /* ==========================================================================
+       HERO SHOWCASE: DUAL INTERACTIVE PREVIEW (CLERK/AUTH0 vs WORKOS/OKTA)
+       ========================================================================== */
+    .hero-showcase {
+      margin-top: 48px;
+      background: #0b0e18;
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 80px rgba(112, 71, 235, 0.15);
+      position: relative;
+    }
+
+    .showcase-header {
+      background: #090b14;
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .window-dots {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .window-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .dot-red { background: #ef4444; }
+    .dot-yellow { background: #f59e0b; }
+    .dot-green { background: #10b981; }
+
+    /* Switcher: Developer Mode (Clerk/Auth0) vs Enterprise Mode (WorkOS/Okta) */
+    .mode-switcher {
+      display: inline-flex;
+      background: #06070a;
+      border: 1px solid var(--border-medium);
+      padding: 4px;
+      border-radius: var(--radius-pill);
+    }
+
+    .mode-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 7px 18px;
+      border-radius: var(--radius-pill);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: var(--transition);
+    }
+
+    .mode-btn.active {
+      background: linear-gradient(135deg, #7047eb 0%, #4f46e5 100%);
+      color: #ffffff;
+      box-shadow: 0 2px 10px rgba(112, 71, 235, 0.4);
+    }
+
+    .showcase-body {
+      padding: 32px;
+      min-height: 520px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      align-items: center;
+    }
+
+    .mode-panel {
+      display: none;
+      grid-column: 1 / -1;
+      width: 100%;
+    }
+
+    .mode-panel.active {
+      display: grid;
+      grid-template-columns: 1fr 1.1fr;
+      gap: 32px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* --- CLERK DROP-IN AUTH PREVIEW CARD --- */
+    .auth-component-card {
+      background: #111422;
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      box-shadow: 0 16px 36px rgba(0,0,0,0.4);
+      position: relative;
+    }
+
+    .card-brand-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .clerk-badge {
+      font-size: 0.7rem;
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      font-weight: 600;
+    }
+
+    .auth-input-group {
+      margin-bottom: 16px;
+    }
+
+    .auth-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .auth-input-mock {
+      width: 100%;
+      background: #090b14;
+      border: 1px solid var(--border-medium);
+      padding: 11px 14px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      color: #f8fafc;
+      outline: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .auth-social-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .social-btn-mock {
+      background: #0d101c;
+      border: 1px solid var(--border-medium);
+      padding: 9px;
+      border-radius: 8px;
+      color: #cbd5e1;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-weight: 500;
+      cursor: default;
+    }
+
+    .passkey-banner {
+      background: rgba(112, 71, 235, 0.12);
+      border: 1px solid rgba(112, 71, 235, 0.25);
+      border-radius: 8px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.82rem;
+      color: #c084fc;
+      margin-top: 18px;
+    }
+
+    /* --- CODE EDITOR CONTAINER --- */
+    .code-editor-box {
+      background: #080a12;
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+    }
+
+    .code-tabs {
+      background: #0c0f1a;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      overflow-x: auto;
+    }
+
+    .code-tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      padding: 11px 16px;
+      font-size: 0.78rem;
+      font-family: var(--font-mono);
+      font-weight: 500;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: var(--transition);
+      white-space: nowrap;
+    }
+
+    .code-tab-btn:hover {
+      color: var(--text-muted);
+    }
+
+    .code-tab-btn.active {
+      color: #38bdf8;
+      border-bottom-color: #38bdf8;
+    }
+
+    .code-content {
+      padding: 20px;
+      overflow-x: auto;
+      line-height: 1.7;
+      color: #e2e8f0;
+    }
+
+    /* Syntax Highlighting */
+    .syn-kw { color: #f43f5e; font-weight: 600; }
+    .syn-str { color: #34d399; }
+    .syn-fn { color: #38bdf8; }
+    .syn-prop { color: #c084fc; }
+    .syn-comm { color: #64748b; font-style: italic; }
+    .syn-tag { color: #f59e0b; }
+
+    /* --- WORKOS/OKTA ENTERPRISE VIEW --- */
+    .enterprise-portal-card {
+      background: #111422;
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      position: relative;
+    }
+
+    .portal-step-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .step-pill {
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      background: #090b14;
+      border: 1px solid var(--border-medium);
+      color: var(--text-dim);
+    }
+
+    .step-pill.active {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.35);
+      color: #10b981;
+      font-weight: 600;
+    }
+
+    .idp-selector-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .idp-card {
+      background: #0a0d18;
+      border: 1px solid var(--border-medium);
+      border-radius: 8px;
+      padding: 12px 8px;
+      text-align: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      cursor: default;
+      transition: var(--transition);
+    }
+
+    .idp-card.selected {
+      border-color: var(--brand-purple);
+      background: rgba(112, 71, 235, 0.1);
+      color: #f8fafc;
+    }
+
+    .scim-stream-card {
+      background: #080a12;
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+    }
+
+    .stream-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .live-pulse {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: #10b981;
+      font-weight: 600;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 10px #10b981;
+      animation: pulse 1.6s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.4; transform: scale(0.9); }
+      50% { opacity: 1; transform: scale(1.1); }
+      100% { opacity: 0.4; transform: scale(0.9); }
+    }
+
+    .event-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      font-size: 0.8rem;
+    }
+
+    .event-badge {
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .badge-saml { background: rgba(112, 71, 235, 0.2); color: #c084fc; }
+    .badge-scim { background: rgba(56, 189, 248, 0.2); color: #38bdf8; }
+    .badge-mfa { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+
+    /* ==========================================================================
+       TRUSTED BY LOGO CAROUSEL / RIBBON
+       ========================================================================== */
+    .trust-ribbon {
+      padding: 40px 0;
+      border-top: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border-subtle);
+      text-align: center;
+      background: rgba(11, 13, 20, 0.4);
+    }
+
+    .trust-label {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      margin-bottom: 24px;
+      font-weight: 600;
+    }
+
+    .logo-strip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 48px;
+      flex-wrap: wrap;
+      opacity: 0.75;
+    }
+
+    .logo-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #94a3b8;
+      letter-spacing: -0.02em;
+    }
+
+    /* ==========================================================================
+       THE 4 PILLARS BENTO GRID (CLERK + AUTH0 + WORKOS + OKTA)
+       ========================================================================== */
+    .section {
+      padding: 100px 0;
+      position: relative;
+    }
+
+    .section-header {
+      text-align: center;
+      max-width: 800px;
+      margin: 0 auto 64px;
+    }
+
+    .section-pill {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 4px 12px;
+      border-radius: var(--radius-pill);
+      margin-bottom: 16px;
+      background: rgba(112, 71, 235, 0.14);
+      color: #c084fc;
+      border: 1px solid rgba(112, 71, 235, 0.3);
+    }
+
+    .section-title {
+      font-size: 2.8rem;
+      margin-bottom: 18px;
+      letter-spacing: -0.035em;
+    }
+
+    .section-desc {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+    }
+
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 24px;
+    }
+
+    .bento-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 36px;
+      position: relative;
+      overflow: hidden;
+      transition: var(--transition);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .bento-card:hover {
+      border-color: var(--border-medium);
+      transform: translateY(-2px);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .bento-col-7 { grid-column: span 7; }
+    .bento-col-5 { grid-column: span 5; }
+    .bento-col-6 { grid-column: span 6; }
+    .bento-col-4 { grid-column: span 4; }
+    .bento-col-8 { grid-column: span 8; }
+
+    .bento-origin-tag {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 16px;
+      width: fit-content;
+    }
+
+    .tag-clerk { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+    .tag-auth0 { background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); }
+    .tag-workos { background: rgba(112, 71, 235, 0.15); color: #c084fc; border: 1px solid rgba(112, 71, 235, 0.3); }
+    .tag-okta { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+
+    .bento-card h3 {
+      font-size: 1.6rem;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+
+    .bento-card p {
+      font-size: 0.96rem;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    .bento-preview-box {
+      background: #090b14;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      margin-top: auto;
+    }
+
+    /* ==========================================================================
+       FEATURE COMPARISON MATRIX: VAULTAUTH vs 4 GIANTS
+       ========================================================================== */
+    .table-container {
+      background: #0b0e18;
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-xl);
+      overflow-x: auto;
+      margin-top: 40px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+    }
+
+    .matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.92rem;
+    }
+
+    .matrix-table th, .matrix-table td {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .matrix-table th {
+      background: #080a12;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .matrix-table th.col-vaultauth {
+      background: rgba(112, 71, 235, 0.15);
+      color: #c084fc;
+      border-left: 1px solid rgba(112, 71, 235, 0.3);
+      border-right: 1px solid rgba(112, 71, 235, 0.3);
+    }
+
+    .matrix-table td.col-vaultauth {
+      background: rgba(112, 71, 235, 0.04);
+      border-left: 1px solid rgba(112, 71, 235, 0.2);
+      border-right: 1px solid rgba(112, 71, 235, 0.2);
+      font-weight: 600;
+      color: #f8fafc;
+    }
+
+    .status-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #10b981;
+      font-weight: 600;
+    }
+
+    .status-dash {
+      color: #64748b;
+    }
+
+    .status-addon {
+      color: #f59e0b;
+      font-size: 0.8rem;
+    }
+
+    /* ==========================================================================
+       ENTERPRISE COMPLIANCE & PROTOCOLS
+       ========================================================================== */
+    .protocols-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-top: 40px;
+    }
+
+    .protocol-card {
+      background: #0d101c;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      transition: var(--transition);
+    }
+
+    .protocol-card:hover {
+      border-color: var(--border-medium);
+      background: #121626;
+      transform: translateY(-2px);
+    }
+
+    .protocol-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: rgba(112, 71, 235, 0.15);
+      color: #c084fc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+
+    .protocol-card h4 {
+      font-size: 1.15rem;
+      margin-bottom: 8px;
+    }
+
+    .protocol-card p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Compliance Badges */
+    .compliance-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      flex-wrap: wrap;
+      margin-top: 50px;
+      padding: 24px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+    }
+
+    .compliance-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #cbd5e1;
+    }
+
+    /* ==========================================================================
+       FAQ ACCORDION
+       ========================================================================== */
+    .faq-list {
+      max-width: 860px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .faq-item {
+      background: #0d101c;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      transition: var(--transition);
+    }
+
+    .faq-item:hover {
+      border-color: var(--border-medium);
+    }
+
+    .faq-question {
+      padding: 22px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+      font-weight: 600;
+      font-size: 1.05rem;
+      color: var(--text-main);
+    }
+
+    .faq-icon {
+      transition: transform 0.3s ease;
+      color: var(--text-muted);
+    }
+
+    .faq-item.open .faq-icon {
+      transform: rotate(180deg);
+      color: var(--brand-purple-hover);
+    }
+
+    .faq-answer {
+      display: none;
+      padding: 0 28px 24px;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.7;
+      border-top: 1px solid transparent;
+    }
+
+    .faq-item.open .faq-answer {
+      display: block;
+      border-top-color: var(--border-subtle);
+    }
+
+    /* ==========================================================================
+       CALL TO ACTION GLOW BANNER
+       ========================================================================== */
+    .cta-banner {
+      margin: 80px 0;
+      background: radial-gradient(circle at 50% 0%, rgba(112, 71, 235, 0.35) 0%, rgba(11, 14, 24, 0.95) 75%);
+      border: 1px solid rgba(112, 71, 235, 0.4);
+      border-radius: var(--radius-xl);
+      padding: 80px 40px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 20px 80px rgba(112, 71, 235, 0.2);
+    }
+
+    .cta-title {
+      font-size: 3.2rem;
+      margin-bottom: 20px;
+      letter-spacing: -0.03em;
+    }
+
+    .cta-desc {
+      font-size: 1.2rem;
+      color: #cbd5e1;
+      max-width: 680px;
+      margin: 0 auto 36px;
+    }
+
+    /* ==========================================================================
+       FOOTER
+       ========================================================================== */
+    .footer {
+      background: #050608;
+      border-top: 1px solid var(--border-subtle);
+      padding: 80px 0 40px;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr repeat(4, 1fr);
+      gap: 48px;
+      margin-bottom: 60px;
+    }
+
+    .footer-brand p {
+      font-size: 0.88rem;
+      color: var(--text-dim);
+      margin-top: 14px;
+      max-width: 320px;
+      line-height: 1.6;
+    }
+
+    .footer-col h5 {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-main);
+      margin-bottom: 20px;
+      font-weight: 700;
+    }
+
+    .footer-col ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .footer-col a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.88rem;
+      transition: var(--transition);
+    }
+
+    .footer-col a:hover {
+      color: #38bdf8;
+    }
+
+    .footer-bottom {
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 0.82rem;
+      color: var(--text-dim);
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .hero-title { font-size: 3rem; }
+      .bento-col-7, .bento-col-5, .bento-col-8, .bento-col-4, .bento-col-6 { grid-column: span 12; }
+      .showcase-body { grid-template-columns: 1fr; }
+      .mode-panel.active { grid-template-columns: 1fr; }
+      .protocols-grid { grid-template-columns: repeat(2, 1fr); }
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .mobile-toggle { display: block; }
+      .hero-title { font-size: 2.3rem; }
+      .hero-subtitle { font-size: 1.05rem; }
+      .cta-title { font-size: 2.2rem; }
+      .protocols-grid { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==========================================================================
+       TOP NAVIGATION BAR
+       ========================================================================== -->
+  <header class="navbar">
+    <div class="container">
+      <div class="nav-inner">
+        <!-- Logo -->
+        <a href="/" class="nav-brand">
+          <div class="brand-icon">
+            <!-- VaultAuth Shield Keyhole -->
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <circle cx="12" cy="10" r="2"/>
+              <path d="M12 12v3"/>
+            </svg>
+          </div>
+          <span class="brand-text">VaultAuth<span style="color:#7047eb">SSO</span></span>
+          <span class="brand-badge">Enterprise Cloud</span>
+        </a>
+
+        <!-- Desktop Navigation Links -->
+        <ul class="nav-links">
+          <li><a href="#features" class="nav-link">Pillars</a></li>
+          <li><a href="#demo" class="nav-link">Interactive Demo</a></li>
+          <li><a href="#matrix" class="nav-link">Why VaultAuth</a></li>
+          <li><a href="#protocols" class="nav-link">SAML & SCIM</a></li>
+          <li><a href="#faq" class="nav-link">FAQ</a></li>
+          <li>
+            <a href="https://github.com" target="_blank" rel="noopener" class="nav-link" style="color:#cbd5e1">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+              </svg>
+              <span>18.4k</span>
+            </a>
+          </li>
+        </ul>
+
+        <!-- Action Buttons -->
+        <div class="nav-actions">
+          <a href="/login" class="btn btn-ghost">Sign in</a>
+          <a href="/register" class="btn btn-primary">
+            <span>Get Started</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+          <button class="mobile-toggle" id="btn-mobile-toggle" aria-label="Toggle navigation">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==========================================================================
+       HERO SECTION: CLERK + WORKOS + AUTH0 + OKTA SYNTHESIS
+       ========================================================================== -->
+  <section class="hero-section">
+    <div class="container">
+      <!-- Top Announcement Pill -->
+      <div class="hero-pill-wrapper">
+        <a href="#features" class="hero-pill">
+          <span class="pill-tag">Synthesis</span>
+          <span>Clerk's DX + WorkOS's Enterprise SSO + Auth0's Actions + Okta's Governance</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+      </div>
+
+      <!-- Main Headline & Subtitle -->
+      <div class="hero-content">
+        <h1 class="hero-title">
+          Complete Identity Infrastructure.<br />
+          <span class="brand-gradient-text">Developer Simplicity. Enterprise Power.</span>
+        </h1>
+        <p class="hero-subtitle">
+          Build drop-in modern authentication with Clerk-grade UI components, customize event logic with Auth0-style Actions, unlock enterprise deals with WorkOS SAML/SCIM directory sync, and enforce Okta-grade Zero Trust governance.
+        </p>
+
+        <!-- CTA Action Buttons -->
+        <div class="hero-cta-group">
+          <a href="/register" class="btn btn-primary btn-lg">
+            <span>Start Building Free</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+          <a href="/DASHBOARD/index.html" class="btn btn-secondary btn-lg">
+            <!-- Terminal/Playground Icon -->
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            <span>Live IAM Dashboard</span>
+          </a>
+        </div>
+
+        <!-- Quick Terminal Install / Docker Command Bar -->
+        <div class="cli-bar">
+          <span class="cli-prompt">$</span>
+          <span id="cli-text">pip install vaultauth-sso &amp;&amp; vaultauth init</span>
+          <button class="cli-copy-btn" id="btn-copy-cli" title="Copy to clipboard">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <span>Copy</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ==========================================================================
+           INTERACTIVE DUAL SHOWCASE (DEVELOPER VIEW vs ENTERPRISE VIEW)
+           ========================================================================== -->
+      <div class="hero-showcase" id="demo">
+        <div class="showcase-header">
+          <div class="window-dots">
+            <span class="window-dot dot-red"></span>
+            <span class="window-dot dot-yellow"></span>
+            <span class="window-dot dot-green"></span>
+            <span style="font-family:var(--font-mono); font-size:0.75rem; color:var(--text-dim); margin-left:8px;">vaultauth-interactive-preview</span>
+          </div>
+
+          <!-- Mode Switcher -->
+          <div class="mode-switcher">
+            <button class="mode-btn active" id="btn-dev-mode">
+              <!-- Code Icon (Clerk / Auth0) -->
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              <span>Developer View (Clerk + Auth0)</span>
+            </button>
+            <button class="mode-btn" id="btn-ent-mode">
+              <!-- Building Icon (WorkOS + Okta) -->
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="9" y1="22" x2="9" y2="2"/><line x1="8" y1="6" x2="8.01" y2="6"/><line x1="16" y1="6" x2="16.01" y2="6"/><line x1="8" y1="10" x2="8.01" y2="10"/><line x1="16" y1="10" x2="16.01" y2="10"/><line x1="8" y1="14" x2="8.01" y2="14"/><line x1="16" y1="14" x2="16.01" y2="14"/><line x1="8" y1="18" x2="8.01" y2="18"/><line x1="16" y1="18" x2="16.01" y2="18"/></svg>
+              <span>Enterprise View (WorkOS + Okta)</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="showcase-body">
+          <!-- 1. DEVELOPER VIEW (CLERK DROP-IN UI + AUTH0 ACTIONS/SDK) -->
+          <div class="mode-panel active" id="panel-dev-mode">
+            <!-- Left: Clerk-Style Drop-In Auth Card -->
+            <div class="auth-component-card">
+              <div class="card-brand-header">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <div style="width:24px; height:24px; border-radius:6px; background:#7047eb; display:flex; align-items:center; justify-content:center; color:#fff;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  </div>
+                  <span style="font-weight:700; font-size:0.95rem;">&lt;VaultAuthSignIn /&gt;</span>
+                </div>
+                <span class="clerk-badge">Clerk DX</span>
+              </div>
+
+              <div class="auth-social-row">
+                <div class="social-btn-mock">
+                  <!-- Google G -->
+                  <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/><path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 12 0 12s.7 2.3 1.9 4.7l3.7-1.9z"/><path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2-6.4-4.8L1.9 16.4C3.7 20.4 7.5 23 12 23z"/></svg>
+                  <span>Google</span>
+                </div>
+                <div class="social-btn-mock">
+                  <!-- GitHub -->
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                  <span>GitHub</span>
+                </div>
+              </div>
+
+              <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px;">
+                <div style="flex:1; height:1px; background:var(--border-subtle)"></div>
+                <span style="font-size:0.75rem; color:var(--text-dim); text-transform:uppercase;">or email / passkey</span>
+                <div style="flex:1; height:1px; background:var(--border-subtle)"></div>
+              </div>
+
+              <div class="auth-input-group">
+                <label class="auth-label">Work Email</label>
+                <div class="auth-input-mock">
+                  <span>alex@enterprise.corp</span>
+                  <span style="color:#10b981; font-size:0.75rem; font-weight:600;">SSO Ready</span>
+                </div>
+              </div>
+
+              <button class="btn btn-primary" style="width:100%; padding:11px;">
+                <span>Continue with Single Sign-On</span>
+              </button>
+
+              <div class="passkey-banner">
+                <!-- Fingerprint / Passkey -->
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12C2 6.5 6.5 2 12 2a10 10 0 0 1 8 4"/><path d="M5 19.5C5.5 18 6 15 6 12c0-.7.1-1.4.3-2"/><path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/><path d="M14 13.12c0 2.38 0 6.38-1 8.88"/><path d="M17 16c-.5 2-1 4-2 6"/><path d="M21.4 15a10 10 0 0 0-1.4-5"/></svg>
+                <span>Biometric Passkey (FIDO2) detected for this device</span>
+              </div>
+            </div>
+
+            <!-- Right: Code Editor (Clerk Drop-in + Auth0 Action) -->
+            <div class="code-editor-box">
+              <div class="code-tabs">
+                <button class="code-tab-btn active" data-tab="react">React / Next.js</button>
+                <button class="code-tab-btn" data-tab="python">Python Flask</button>
+                <button class="code-tab-btn" data-tab="action">Auth0 Action</button>
+                <button class="code-tab-btn" data-tab="curl">cURL API</button>
+              </div>
+
+              <div class="code-content" id="code-snippet-panel">
+                <pre><code><span class="syn-comm">// 1. Drop into your App (Clerk-style simplicity)</span>
+<span class="syn-kw">import</span> { <span class="syn-prop">VaultAuthProvider</span>, <span class="syn-prop">SignIn</span>, <span class="syn-prop">UserButton</span> } <span class="syn-kw">from</span> <span class="syn-str">"@vaultauth/react"</span>;
+
+<span class="syn-kw">export default function</span> <span class="syn-fn">App</span>() {
+  <span class="syn-kw">return</span> (
+    <span class="syn-tag">&lt;<span class="syn-prop">VaultAuthProvider</span></span> <span class="syn-prop">publishableKey</span>=<span class="syn-str">"pk_live_vault_9041"</span><span class="syn-tag">&gt;</span>
+      <span class="syn-tag">&lt;<span class="syn-prop">header</span>&gt;</span>
+        <span class="syn-tag">&lt;<span class="syn-prop">UserButton</span></span> <span class="syn-prop">afterSignOutUrl</span>=<span class="syn-str">"/"</span> /<span class="syn-tag">&gt;</span>
+      <span class="syn-tag">&lt;/<span class="syn-prop">header</span>&gt;</span>
+      <span class="syn-tag">&lt;<span class="syn-prop">main</span>&gt;</span>
+        <span class="syn-tag">&lt;<span class="syn-prop">SignIn</span></span> <span class="syn-prop">routing</span>=<span class="syn-str">"path"</span> <span class="syn-prop">path</span>=<span class="syn-str">"/sign-in"</span> /<span class="syn-tag">&gt;</span>
+      <span class="syn-tag">&lt;/<span class="syn-prop">main</span>&gt;</span>
+    <span class="syn-tag">&lt;/<span class="syn-prop">VaultAuthProvider</span>&gt;</span>
+  );
+}</code></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. ENTERPRISE VIEW (WORKOS ADMIN PORTAL + OKTA GOVERNANCE) -->
+          <div class="mode-panel" id="panel-ent-mode">
+            <!-- Left: WorkOS Self-Serve Admin Portal -->
+            <div class="enterprise-portal-card">
+              <div class="card-brand-header">
+                <div>
+                  <h4 style="font-size:1.05rem;">Self-Serve SSO Admin Portal</h4>
+                  <p style="font-size:0.8rem; color:var(--text-muted);">Organization: <strong>Acme Enterprise Inc.</strong></p>
+                </div>
+                <span class="tag-workos">WorkOS Style</span>
+              </div>
+
+              <div class="portal-step-bar">
+                <span class="step-pill active">1. Select IdP</span>
+                <span class="step-pill">2. Configure SAML</span>
+                <span class="step-pill">3. SCIM Sync</span>
+              </div>
+
+              <div class="idp-selector-grid">
+                <div class="idp-card selected">
+                  <div style="font-size:1.1rem; margin-bottom:4px;">🔵</div>
+                  <span>Okta</span>
+                </div>
+                <div class="idp-card">
+                  <div style="font-size:1.1rem; margin-bottom:4px;">🔷</div>
+                  <span>Azure AD</span>
+                </div>
+                <div class="idp-card">
+                  <div style="font-size:1.1rem; margin-bottom:4px;">🔴</div>
+                  <span>Google SSO</span>
+                </div>
+              </div>
+
+              <div class="auth-input-group">
+                <label class="auth-label">SAML ACS (Assertion Consumer Service) URL</label>
+                <div class="auth-input-mock" style="font-family:var(--font-mono); font-size:0.75rem;">
+                  <span>https://api.vaultauth.io/sso/saml/acs/acme</span>
+                </div>
+              </div>
+
+              <div class="auth-input-group">
+                <label class="auth-label">Identity Provider Metadata URL</label>
+                <div class="auth-input-mock" style="font-family:var(--font-mono); font-size:0.75rem; color:#94a3b8;">
+                  <span>https://acme.okta.com/app/exk482/sso/saml/metadata</span>
+                </div>
+              </div>
+
+              <button class="btn btn-primary" style="width:100%; padding:10px;">
+                <span>Test SAML Connection &amp; Activate</span>
+              </button>
+            </div>
+
+            <!-- Right: Okta Zero Trust & SCIM Directory Stream -->
+            <div class="scim-stream-card">
+              <div class="stream-header">
+                <div>
+                  <h4 style="font-size:0.95rem;">Live Directory &amp; Security Stream</h4>
+                  <span style="font-size:0.75rem; color:var(--text-dim);">Okta Zero Trust Engine + SCIM 2.0</span>
+                </div>
+                <div class="live-pulse">
+                  <span class="pulse-dot"></span>
+                  <span>SYNCING</span>
+                </div>
+              </div>
+
+              <div class="event-row">
+                <div>
+                  <div style="font-weight:600;">alex.taylor@acme.corp</div>
+                  <div style="color:var(--text-dim); font-size:0.72rem;">Role: Security Admin · Tokyo, JP</div>
+                </div>
+                <span class="event-badge badge-saml">SAML 2.0 Success</span>
+              </div>
+
+              <div class="event-row">
+                <div>
+                  <div style="font-weight:600;">user.provisioned: sarah.c@acme</div>
+                  <div style="color:var(--text-dim); font-size:0.72rem;">Synced via Okta SCIM 2.0 push</div>
+                </div>
+                <span class="event-badge badge-scim">SCIM User Created</span>
+              </div>
+
+              <div class="event-row">
+                <div>
+                  <div style="font-weight:600;">Adaptive Step-Up MFA Challenge</div>
+                  <div style="color:var(--text-dim); font-size:0.72rem;">Impossible travel detected (NYC &rarr; Frankfurt)</div>
+                </div>
+                <span class="event-badge badge-mfa">Risk Triggered</span>
+              </div>
+
+              <div class="event-row">
+                <div>
+                  <div style="font-weight:600;">Remote Device Session Revoked</div>
+                  <div style="color:var(--text-dim); font-size:0.72rem;">iPhone 15 Pro session terminated by Admin</div>
+                </div>
+                <span class="event-badge" style="background:rgba(239,68,68,0.2); color:#f87171;">Revoked</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================================
+       TRUST RIBBON: COMPATIBILITY & ENTERPRISE BADGES
+       ========================================================================== -->
+  <section class="trust-ribbon">
+    <div class="container">
+      <div class="trust-label">Seamless Protocol Integration with the Entire Identity Ecosystem</div>
+      <div class="logo-strip">
+        <div class="logo-item">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#38bdf8"><circle cx="12" cy="12" r="10"/></svg>
+          <span>Okta</span>
+        </div>
+        <div class="logo-item">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#0078D4"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>
+          <span>Microsoft Entra ID</span>
+        </div>
+        <div class="logo-item">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#EA4335"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>
+          <span>Google Workspace</span>
+        </div>
+        <div class="logo-item">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#ECB22E"><path d="M6 15a2 2 0 0 1-2-2 2 2 0 0 1 2-2h2v4H6zm1 0a2 2 0 0 1 2 2 2 2 0 0 1-2 2 2 2 0 0 1-2-2v-2h2zm2-8a2 2 0 0 1-2 2 2 2 0 0 1-2-2 2 2 0 0 1 2-2h2v2zm1 0a2 2 0 0 1 2-2 2 2 0 0 1 2 2 2 2 0 0 1-2 2h-2v-2z"/></svg>
+          <span>Slack Connect</span>
+        </div>
+        <div class="logo-item">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#ffffff"><path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg>
+          <span>GitHub Enterprise</span>
+        </div>
+        <div class="logo-item">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#FF9900"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          <span>AWS IAM Identity Center</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================================
+       THE 4 PILLARS BENTO GRID
+       ========================================================================== -->
+  <section class="section" id="features">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-pill">The 4 Foundation Pillars</span>
+        <h2 class="section-title">One Platform. The Best of All Worlds.</h2>
+        <p class="section-desc">Why choose between quick developer auth and enterprise readiness? VaultAuthSSO consolidates the modern identity stack into one unified architecture.</p>
+      </div>
+
+      <div class="bento-grid">
+        <!-- 1. CLERK PILLAR (Span 7) -->
+        <div class="bento-card bento-col-7">
+          <div>
+            <span class="bento-origin-tag tag-clerk">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+              <span>Clerk-Inspired</span>
+            </span>
+            <h3>Drop-In UI Components &amp; Passwordless</h3>
+            <p>Pre-built, accessible React/Vue/Svelte and vanilla JS components. Support for biometric WebAuthn passkeys, magic email links, and session switching with zero boilerplate.</p>
+          </div>
+          <div class="bento-preview-box">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+              <span style="font-family:var(--font-mono); font-size:0.8rem; color:#38bdf8;">&lt;OrganizationSwitcher /&gt;</span>
+              <span style="font-size:0.75rem; color:#10b981;">✓ Multi-tenant Built-in</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px; background:#111524; padding:10px 14px; border-radius:8px; border:1px solid var(--border-subtle)">
+              <div style="width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg, #7047eb, #38bdf8); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75rem;">VA</div>
+              <div>
+                <div style="font-size:0.82rem; font-weight:600;">VaultAuth Dev Corp (Production)</div>
+                <div style="font-size:0.72rem; color:var(--text-dim);">14 active seats · Enterprise Tier</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. AUTH0 PILLAR (Span 5) -->
+        <div class="bento-card bento-col-5">
+          <div>
+            <span class="bento-origin-tag tag-auth0">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <span>Auth0-Inspired</span>
+            </span>
+            <h3>Extensible Auth Actions &amp; Pipeline Hooks</h3>
+            <p>Execute custom asynchronous code on every authentication event. Enrich claims, query your database, trigger Webhooks, or enforce step-up MFA.</p>
+          </div>
+          <div class="bento-preview-box" style="font-family:var(--font-mono); font-size:0.75rem; color:#cbd5e1;">
+            <div style="color:#64748b; margin-bottom:4px;">// onExecutePostLogin Hook</div>
+            <div><span class="syn-kw">exports</span>.<span class="syn-fn">onExecutePostLogin</span> = <span class="syn-kw">async</span> (event, api) =&gt; {</div>
+            <div style="padding-left:14px;"><span class="syn-kw">if</span> (event.user.riskScore &gt; <span class="syn-prop">80</span>) {</div>
+            <div style="padding-left:28px;">api.multifactor.<span class="syn-fn">enable</span>(<span class="syn-str">"any"</span>);</div>
+            <div style="padding-left:14px;">}</div>
+            <div>};</div>
+          </div>
+        </div>
+
+        <!-- 3. WORKOS PILLAR (Span 6) -->
+        <div class="bento-card bento-col-6">
+          <div>
+            <span class="bento-origin-tag tag-workos">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+              <span>WorkOS-Inspired</span>
+            </span>
+            <h3>Enterprise SSO &amp; SCIM Directory Sync</h3>
+            <p>Close enterprise contracts fast. Hand your customer's IT admin an embeddable self-service portal to link their SAML 2.0 / OIDC provider in minutes with automated user provisioning.</p>
+          </div>
+          <div class="bento-preview-box">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.8rem; font-weight:600;">Self-Serve Admin Link</span>
+              <span class="badge-scim" style="padding:2px 8px; border-radius:4px; font-size:0.7rem; font-weight:700;">SCIM 2.0 Auto-Sync</span>
+            </div>
+            <div style="margin-top:10px; font-size:0.75rem; color:var(--text-dim); font-family:var(--font-mono); word-break:break-all;">
+              vaultauth.admin_portal.generate_link(org_id="org_8921")
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. OKTA PILLAR (Span 6) -->
+        <div class="bento-card bento-col-6">
+          <div>
+            <span class="bento-origin-tag tag-okta">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <span>Okta-Inspired</span>
+            </span>
+            <h3>Zero Trust Governance &amp; Universal Directory</h3>
+            <p>Maintain centralized control across all organizational assets. Context-aware adaptive authentication, device health checks, and one-click global session revocation.</p>
+          </div>
+          <div class="bento-preview-box">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-size:0.8rem; font-weight:600;">Active Account Safeguard</span>
+              <span style="color:#10b981; font-size:0.75rem; font-weight:600;">● Continuous Risk Scoring</span>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <div style="flex:1; background:#121626; padding:8px; border-radius:6px; font-size:0.72rem; text-align:center;">
+                <div style="color:var(--text-dim);">Device Trust</div>
+                <div style="font-weight:700; color:#38bdf8;">100% Compliant</div>
+              </div>
+              <div style="flex:1; background:#121626; padding:8px; border-radius:6px; font-size:0.72rem; text-align:center;">
+                <div style="color:var(--text-dim);">Geo-Velocity</div>
+                <div style="font-weight:700; color:#10b981;">No Anomalies</div>
+              </div>
+              <div style="flex:1; background:#121626; padding:8px; border-radius:6px; font-size:0.72rem; text-align:center;">
+                <div style="color:var(--text-dim);">Global Sessions</div>
+                <div style="font-weight:700; color:#c084fc;">4 Managed</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================================
+       FEATURE MATRIX: HOW WE COMPARE
+       ========================================================================== -->
+  <section class="section" id="matrix" style="background:rgba(11, 13, 20, 0.5);">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-pill">Competitive Advantage</span>
+        <h2 class="section-title">The Unified Matrix</h2>
+        <p class="section-desc">See why teams replace fragmented auth stacks with VaultAuthSSO's unified architecture.</p>
+      </div>
+
+      <div class="table-container">
+        <table class="matrix-table">
+          <thead>
+            <tr>
+              <th style="width:28%;">Capability / Feature</th>
+              <th class="col-vaultauth" style="width:24%;">VaultAuthSSO (Unified)</th>
+              <th style="width:12%;">Clerk</th>
+              <th style="width:12%;">Auth0</th>
+              <th style="width:12%;">WorkOS</th>
+              <th style="width:12%;">Okta</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Drop-in React &amp; JS UI Components</strong></td>
+              <td class="col-vaultauth"><span class="status-check">✓ Native Built-in</span></td>
+              <td><span class="status-check">✓ Yes</span></td>
+              <td><span class="status-dash">— Limited</span></td>
+              <td><span class="status-dash">— No (API only)</span></td>
+              <td><span class="status-dash">— Hosted widget</span></td>
+            </tr>
+            <tr>
+              <td><strong>Self-Serve Enterprise SSO (SAML 2.0)</strong></td>
+              <td class="col-vaultauth"><span class="status-check">✓ Native Built-in</span></td>
+              <td><span class="status-addon">$ Enterprise Add-on</span></td>
+              <td><span class="status-addon">$$ Enterprise Tier</span></td>
+              <td><span class="status-check">✓ Yes</span></td>
+              <td><span class="status-check">✓ Yes</span></td>
+            </tr>
+            <tr>
+              <td><strong>SCIM Directory Sync (Auto-Provisioning)</strong></td>
+              <td class="col-vaultauth"><span class="status-check">✓ Included</span></td>
+              <td><span class="status-dash">— Limited</span></td>
+              <td><span class="status-addon">$$ Enterprise Tier</span></td>
+              <td><span class="status-check">✓ Yes</span></td>
+              <td><span class="status-check">✓ Yes</span></td>
+            </tr>
+            <tr>
+              <td><strong>Custom Auth Actions &amp; Pipeline Code</strong></td>
+              <td class="col-vaultauth"><span class="status-check">✓ Included</span></td>
+              <td><span class="status-dash">— Webhooks only</span></td>
+              <td><span class="status-check">✓ Actions</span></td>
+              <td><span class="status-dash">— Webhooks only</span></td>
+              <td><span class="status-dash">— Inline Hooks</span></td>
+            </tr>
+            <tr>
+              <td><strong>Biometric Passkeys &amp; Passwordless</strong></td>
+              <td class="col-vaultauth"><span class="status-check">✓ Native Built-in</span></td>
+              <td><span class="status-check">✓ Yes</span></td>
+              <td><span class="status-check">✓ Yes</span></td>
+              <td><span class="status-dash">— MFA only</span></td>
+              <td><span class="status-check">✓ FastPass</span></td>
+            </tr>
+            <tr>
+              <td><strong>Self-Hosted / Data Sovereignty Freedom</strong></td>
+              <td class="col-vaultauth"><span class="status-check">✓ Full Docker/K8s</span></td>
+              <td><span class="status-dash">— Cloud Only</span></td>
+              <td><span class="status-dash">— Cloud Only</span></td>
+              <td><span class="status-dash">— Cloud Only</span></td>
+              <td><span class="status-dash">— Cloud Only</span></td>
+            </tr>
+            <tr>
+              <td><strong>Pricing Predictability</strong></td>
+              <td class="col-vaultauth"><span class="status-check">✓ Open &amp; Predictable</span></td>
+              <td><span>Per MAU</span></td>
+              <td><span class="status-addon">Surge MAU billing</span></td>
+              <td><span class="status-addon">Per SSO Connection</span></td>
+              <td><span class="status-addon">Enterprise Contract</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================================
+       PROTOCOLS & COMPLIANCE
+       ========================================================================== -->
+  <section class="section" id="protocols">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-pill">Enterprise Standards</span>
+        <h2 class="section-title">Every Enterprise Protocol Supported</h2>
+        <p class="section-desc">Connect any identity provider or downstream application with certified, battle-tested standard protocols.</p>
+      </div>
+
+      <div class="protocols-grid">
+        <div class="protocol-card">
+          <div class="protocol-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <h4>SAML 2.0</h4>
+          <p>Both Identity Provider (IdP) and Service Provider (SP) initiated flows with seamless X.509 cert rotation.</p>
+        </div>
+
+        <div class="protocol-card">
+          <div class="protocol-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+          </div>
+          <h4>SCIM 2.0</h4>
+          <p>Automated user provisioning and deprovisioning directly from Okta, Azure AD, or Google Workspace.</p>
+        </div>
+
+        <div class="protocol-card">
+          <div class="protocol-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/></svg>
+          </div>
+          <h4>OIDC &amp; OAuth 2.0</h4>
+          <p>Full support for Authorization Code with PKCE, Refresh Tokens, and custom JWT payload enrichment.</p>
+        </div>
+
+        <div class="protocol-card">
+          <div class="protocol-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 0 0-8.5 15.3l-1.5 4.7 4.8-1.5A10 10 0 1 0 12 2z"/></svg>
+          </div>
+          <h4>FIDO2 &amp; WebAuthn</h4>
+          <p>Biometric passkeys with Apple TouchID, FaceID, Windows Hello, and YubiKey security keys.</p>
+        </div>
+      </div>
+
+      <!-- Compliance Badges -->
+      <div class="compliance-row">
+        <div class="compliance-pill">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+          <span>SOC 2 Type II Certified</span>
+        </div>
+        <div class="compliance-pill">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+          <span>ISO 27001 Compliant</span>
+        </div>
+        <div class="compliance-pill">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+          <span>HIPAA &amp; HITECH Ready</span>
+        </div>
+        <div class="compliance-pill">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+          <span>GDPR &amp; CCPA Compliant</span>
+        </div>
+        <div class="compliance-pill">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          <span>99.999% SLA Uptime</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================================
+       FREQUENTLY ASKED QUESTIONS
+       ========================================================================== -->
+  <section class="section" id="faq" style="background:rgba(11, 13, 20, 0.4);">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-pill">Got Questions?</span>
+        <h2 class="section-title">Frequently Asked Questions</h2>
+        <p class="section-desc">Everything you need to know about migrating from or combining Clerk, Auth0, WorkOS, and Okta.</p>
+      </div>
+
+      <div class="faq-list">
+        <div class="faq-item open">
+          <div class="faq-question">
+            <span>How does VaultAuthSSO combine Clerk, Auth0, WorkOS, and Okta?</span>
+            <svg class="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="faq-answer">
+            Instead of stitching together multiple disconnected identity products, VaultAuthSSO natively combines:
+            <strong>Clerk's</strong> drop-in frontend UI components and passkeys, 
+            <strong>Auth0's</strong> customizable event Actions and hooks, 
+            <strong>WorkOS's</strong> self-serve enterprise SAML SSO and SCIM directory sync portal, and 
+            <strong>Okta's</strong> Zero Trust governance, universal directory, and adaptive risk engine.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>Can I self-host VaultAuthSSO in my own cloud or VPC?</span>
+            <svg class="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="faq-answer">
+            Yes! Unlike Clerk, Auth0, and WorkOS which are strictly proprietary multi-tenant clouds, VaultAuthSSO can be self-hosted via Docker or Kubernetes in your own AWS, GCP, Azure, or on-prem environment. You retain 100% data sovereignty and never face surprise monthly active user (MAU) billing cliffs.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>How hard is it to integrate with customer Okta or Microsoft Entra ID tenants?</span>
+            <svg class="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="faq-answer">
+            It takes minutes. You can either use our pre-built Admin Portal link (like WorkOS) where your customer's IT admin enters their metadata URL, or configure it via our unified REST API. VaultAuthSSO automatically handles SAML assertion parsing, certificate validation, and SCIM attribute mapping.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>Does it work with existing backend stacks like Python, Flask, Node, and Go?</span>
+            <svg class="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="faq-answer">
+            Yes, our backend exposes standard REST endpoints and JWKS verification compatible with any language or web framework. Our project already includes a Python/Flask reference implementation with password hashing, OTP verification, and JWT session handling.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================================
+       CALL TO ACTION GLOW BANNER
+       ========================================================================== -->
+  <div class="container">
+    <div class="cta-banner">
+      <h2 class="cta-title">Upgrade to the Unified Identity Cloud</h2>
+      <p class="cta-desc">
+        Stop duct-taping separate providers for consumer login, developer auth, enterprise SAML, and directory sync. VaultAuthSSO gives you the complete stack today.
+      </p>
+      <div style="display:flex; justify-content:center; gap:16px; flex-wrap:wrap;">
+        <a href="/register" class="btn btn-primary btn-lg">
+          <span>Create Free Account</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+        <a href="/DASHBOARD/index.html" class="btn btn-secondary btn-lg">
+          <span>Explore IAM Dashboard</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       FOOTER
+       ========================================================================== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="/" class="nav-brand">
+            <div class="brand-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <circle cx="12" cy="10" r="2"/>
+                <path d="M12 12v3"/>
+              </svg>
+            </div>
+            <span class="brand-text">VaultAuth<span style="color:#7047eb">SSO</span></span>
+          </a>
+          <p>The unified identity engine merging Clerk, Auth0, WorkOS, and Okta into one developer-first, enterprise-ready platform.</p>
+        </div>
+
+        <div class="footer-col">
+          <h5>Product</h5>
+          <ul>
+            <li><a href="#features">UI Components (Clerk)</a></li>
+            <li><a href="#features">Enterprise SSO (WorkOS)</a></li>
+            <li><a href="#features">Auth Actions (Auth0)</a></li>
+            <li><a href="#features">Zero Trust (Okta)</a></li>
+            <li><a href="/DASHBOARD/index.html">IAM Dashboard</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h5>Protocols</h5>
+          <ul>
+            <li><a href="#protocols">SAML 2.0 WebSSO</a></li>
+            <li><a href="#protocols">SCIM 2.0 Sync</a></li>
+            <li><a href="#protocols">OIDC &amp; OAuth 2.0</a></li>
+            <li><a href="#protocols">WebAuthn Passkeys</a></li>
+            <li><a href="#protocols">LDAP Proxy</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h5>Developers</h5>
+          <ul>
+            <li><a href="/login">Sign In</a></li>
+            <li><a href="/register">Sign Up</a></li>
+            <li><a href="https://github.com" target="_blank" rel="noopener">GitHub</a></li>
+            <li><a href="#demo">Interactive Sandbox</a></li>
+            <li><a href="/api">API Reference</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h5>Security</h5>
+          <ul>
+            <li><a href="#protocols">SOC 2 Type II</a></li>
+            <li><a href="#protocols">ISO 27001</a></li>
+            <li><a href="#protocols">HIPAA Compliance</a></li>
+            <li><a href="#protocols">GDPR Alignment</a></li>
+            <li><a href="#protocols">Zero Trust Model</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <span>&copy; 2026 VaultAuthSSO Inc. Combining Clerk, Auth0, WorkOS &amp; Okta. All rights reserved.</span>
+        <div style="display:flex; align-items:center; gap:24px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="pulse-dot"></span>
+            <span style="color:#10b981; font-weight:600;">All Systems Operational</span>
+          </div>
+          <a href="#" style="color:var(--text-dim); text-decoration:none;">Privacy Policy</a>
+          <a href="#" style="color:var(--text-dim); text-decoration:none;">Terms of Service</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==========================================================================
+       INTERACTIVE JAVASCRIPT
+       ========================================================================== -->
+  <script>
+    (() => {
+      "use strict";
+
+      // 1. Dual Mode Switcher (Developer Mode vs Enterprise Mode)
+      const btnDevMode = document.getElementById("btn-dev-mode");
+      const btnEntMode = document.getElementById("btn-ent-mode");
+      const panelDevMode = document.getElementById("panel-dev-mode");
+      const panelEntMode = document.getElementById("panel-ent-mode");
+
+      btnDevMode?.addEventListener("click", () => {
+        btnDevMode.classList.add("active");
+        btnEntMode?.classList.remove("active");
+        panelDevMode?.classList.add("active");
+        panelEntMode?.classList.remove("active");
+      });
+
+      btnEntMode?.addEventListener("click", () => {
+        btnEntMode.classList.add("active");
+        btnDevMode?.classList.remove("active");
+        panelEntMode?.classList.add("active");
+        panelDevMode?.classList.remove("active");
+      });
+
+      // 2. Code Snippet Tabs in Developer Mode
+      const codeTabs = document.querySelectorAll(".code-tab-btn");
+      const codeSnippetPanel = document.getElementById("code-snippet-panel");
+
+      const snippets = {
+        react: `<pre><code><span class="syn-comm">// 1. Drop into your App (Clerk-style simplicity)</span>
+<span class="syn-kw">import</span> { <span class="syn-prop">VaultAuthProvider</span>, <span class="syn-prop">SignIn</span>, <span class="syn-prop">UserButton</span> } <span class="syn-kw">from</span> <span class="syn-str">"@vaultauth/react"</span>;
+
+<span class="syn-kw">export default function</span> <span class="syn-fn">App</span>() {
+  <span class="syn-kw">return</span> (
+    <span class="syn-tag">&lt;<span class="syn-prop">VaultAuthProvider</span></span> <span class="syn-prop">publishableKey</span>=<span class="syn-str">"pk_live_vault_9041"</span><span class="syn-tag">&gt;</span>
+      <span class="syn-tag">&lt;<span class="syn-prop">header</span>&gt;</span>
+        <span class="syn-tag">&lt;<span class="syn-prop">UserButton</span></span> <span class="syn-prop">afterSignOutUrl</span>=<span class="syn-str">"/"</span> /<span class="syn-tag">&gt;</span>
+      <span class="syn-tag">&lt;/<span class="syn-prop">header</span>&gt;</span>
+      <span class="syn-tag">&lt;<span class="syn-prop">main</span>&gt;</span>
+        <span class="syn-tag">&lt;<span class="syn-prop">SignIn</span></span> <span class="syn-prop">routing</span>=<span class="syn-str">"path"</span> <span class="syn-prop">path</span>=<span class="syn-str">"/sign-in"</span> /<span class="syn-tag">&gt;</span>
+      <span class="syn-tag">&lt;/<span class="syn-prop">main</span>&gt;</span>
+    <span class="syn-tag">&lt;/<span class="syn-prop">VaultAuthProvider</span>&gt;</span>
+  );
+}</code></pre>`,
+
+        python: `<pre><code><span class="syn-comm"># 2. Python Flask Backend Integration</span>
+<span class="syn-kw">from</span> flask <span class="syn-kw">import</span> Flask, request, jsonify
+<span class="syn-kw">from</span> vaultauth <span class="syn-kw">import</span> VaultAuthClient, require_auth
+
+app = Flask(__name__)
+client = VaultAuthClient(api_key=<span class="syn-str">"sk_live_9482"</span>)
+
+<span class="syn-tag">@app.route</span>(<span class="syn-str">"/api/protected"</span>)
+<span class="syn-tag">@require_auth</span>
+<span class="syn-kw">def</span> <span class="syn-fn">protected_route</span>(auth_context):
+    <span class="syn-comm"># Verified via JWKS &amp; Active Device Session</span>
+    <span class="syn-kw">return</span> jsonify({
+        <span class="syn-str">"user_id"</span>: auth_context.user_id,
+        <span class="syn-str">"org_id"</span>: auth_context.org_id,
+        <span class="syn-str">"roles"</span>: auth_context.roles
+    })</code></pre>`,
+
+        action: `<pre><code><span class="syn-comm">// 3. Auth0-Style Extensible Action Hook</span>
+<span class="syn-kw">exports</span>.<span class="syn-fn">onExecutePostLogin</span> = <span class="syn-kw">async</span> (event, api) =&gt; {
+  <span class="syn-comm">// Check risk score from Okta Zero-Trust engine</span>
+  <span class="syn-kw">if</span> (event.user.risk_level === <span class="syn-str">"HIGH"</span>) {
+    api.multifactor.<span class="syn-fn">enable</span>(<span class="syn-str">"webauthn_passkey"</span>);
+  }
+
+  <span class="syn-comm">// Enrich custom claims in the returned JWT</span>
+  api.idToken.<span class="syn-fn">setCustomClaim</span>(<span class="syn-str">"https://vaultauth.io/plan"</span>, <span class="syn-str">"enterprise"</span>);
+  api.idToken.<span class="syn-fn">setCustomClaim</span>(<span class="syn-str">"https://vaultauth.io/dept"</span>, event.user.department);
+};</code></pre>`,
+
+        curl: `<pre><code><span class="syn-comm"># 4. Instant Token Verification Endpoint</span>
+curl -X POST https://api.vaultauth.io/v1/sessions/verify \\
+  -H <span class="syn-str">"Authorization: Bearer sec_tok_8492049"</span> \\
+  -H <span class="syn-str">"Content-Type: application/json"</span> \\
+  -d <span class="syn-str">'{"require_active_device": true, "max_age_seconds": 3600}'</span></code></pre>`
+      };
+
+      codeTabs.forEach(btn => {
+        btn.addEventListener("click", () => {
+          codeTabs.forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          const tab = btn.getAttribute("data-tab");
+          if (codeSnippetPanel && snippets[tab]) {
+            codeSnippetPanel.innerHTML = snippets[tab];
+          }
+        });
+      });
+
+      // 3. Command Line Copy
+      const copyBtn = document.getElementById("btn-copy-cli");
+      const cliText = document.getElementById("cli-text");
+      copyBtn?.addEventListener("click", async () => {
+        const text = cliText?.innerText || "";
+        try {
+          await navigator.clipboard.writeText(text);
+          copyBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><span>Copied!</span>`;
+          setTimeout(() => {
+            copyBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>Copy</span>`;
+          }, 2000);
+        } catch {
+          // fallback
+        }
+      });
+
+      // 4. FAQ Accordion
+      const faqItems = document.querySelectorAll(".faq-item");
+      faqItems.forEach(item => {
+        const question = item.querySelector(".faq-question");
+        question?.addEventListener("click", () => {
+          const isOpen = item.classList.contains("open");
+          faqItems.forEach(i => i.classList.remove("open"));
+          if (!isOpen) {
+            item.classList.add("open");
+          }
+        });
+      });
+
+      // 5. Mobile Menu Toggle
+      const mobileToggle = document.getElementById("btn-mobile-toggle");
+      const navLinks = document.querySelector(".nav-links");
+      mobileToggle?.addEventListener("click", () => {
+        const isOpen = navLinks.style.display === "flex";
+        if (isOpen) {
+          navLinks.style.display = "none";
+        } else {
+          navLinks.style.display = "flex";
+          navLinks.style.flexDirection = "column";
+          navLinks.style.position = "absolute";
+          navLinks.style.top = "72px";
+          navLinks.style.left = "0";
+          navLinks.style.right = "0";
+          navLinks.style.background = "#06070a";
+          navLinks.style.padding = "24px";
+          navLinks.style.borderBottom = "1px solid rgba(255,255,255,0.1)";
+          navLinks.style.gap = "20px";
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

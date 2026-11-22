@@ -191,8 +191,12 @@ const server = Bun.serve({
 
     // Static routing
     let pathname = url.pathname;
-    if (pathname === "/" || pathname === "/login" || pathname === "/register") {
-      pathname = "/index.html";
+    if (pathname === "/" || pathname === "/landing" || pathname === "/home") {
+      pathname = "/landing.html";
+    } else if (pathname === "/login") {
+      pathname = "/login.html";
+    } else if (pathname === "/register") {
+      pathname = "/register.html";
     }
     if (pathname === "/admin" || pathname === "/admin/") {
       pathname = "/ADMIN/index.html";
