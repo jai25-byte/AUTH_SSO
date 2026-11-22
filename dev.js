@@ -194,6 +194,9 @@ const server = Bun.serve({
     if (pathname === "/" || pathname === "/login" || pathname === "/register") {
       pathname = "/index.html";
     }
+    if (pathname === "/admin" || pathname === "/admin/") {
+      pathname = "/ADMIN/index.html";
+    }
 
     // Serve DASHBOARD static assets if path starts with /DASHBOARD or /dashboard
     if (pathname.startsWith("/DASHBOARD") || pathname.startsWith("/dashboard")) {
