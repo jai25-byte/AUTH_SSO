@@ -1,7 +1,7 @@
 import { watch } from "fs";
 import { join } from "path";
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 const subscribers = new Set();
 
 // Function to rebuild JS
@@ -94,7 +94,6 @@ const MIME_TYPES = {
 // Start Bun Server
 const server = Bun.serve({
   port: PORT,
-  idleTimeout: 255,
   async fetch(req) {
     const url = new URL(req.url);
 
@@ -195,40 +194,19 @@ const server = Bun.serve({
     if (pathname === "/" || pathname === "/login" || pathname === "/register") {
       pathname = "/index.html";
     }
-
-    // Automatically redirect folder URLs without trailing slash so relative assets (styles.css, script.js) resolve correctly
-    if (
-      pathname === "/admin" ||
-      pathname === "/ADMIN" ||
-      pathname === "/dashboard" ||
-      pathname === "/DASHBOARD"
-    ) {
-      return Response.redirect(`${url.origin}${pathname}/${url.search}`, 302);
+    if (pathname === "/admin" || pathname === "/admin/") {
+      pathname = "/ADMIN/index.html";
     }
 
-    // Serve DASHBOARD static assets if path starts with /DASHBOARD/ or /dashboard/
-    if (/^\/(dashboard|DASHBOARD)(\/|$)/i.test(pathname)) {
-      const dashboardRel = pathname.replace(/^\/(dashboard|DASHBOARD)\/?/i, "") || "index.html";
+    // Serve DASHBOARD static assets if path starts with /DASHBOARD or /dashboard
+    if (pathname.startsWith("/DASHBOARD") || pathname.startsWith("/dashboard")) {
+      const dashboardRel = pathname.replace(/^\/DASHBOARD\/?/, "").replace(/^\/dashboard\/?/, "") || "index.html";
       const dashFilePath = join(process.cwd(), "DASHBOARD", dashboardRel);
       const dashFile = Bun.file(dashFilePath);
       if (await dashFile.exists()) {
         const ext = dashboardRel.substring(dashboardRel.lastIndexOf("."));
         const contentType = MIME_TYPES[ext] || "text/html; charset=utf-8";
         return new Response(dashFile, {
-          headers: { "Content-Type": contentType },
-        });
-      }
-    }
-
-    // Serve ADMIN static assets if path starts with /ADMIN/ or /admin/
-    if (/^\/(admin|ADMIN)(\/|$)/i.test(pathname)) {
-      const adminRel = pathname.replace(/^\/(admin|ADMIN)\/?/i, "") || "index.html";
-      const adminFilePath = join(process.cwd(), "ADMIN", adminRel);
-      const adminFile = Bun.file(adminFilePath);
-      if (await adminFile.exists()) {
-        const ext = adminRel.substring(adminRel.lastIndexOf("."));
-        const contentType = MIME_TYPES[ext] || "text/html; charset=utf-8";
-        return new Response(adminFile, {
           headers: { "Content-Type": contentType },
         });
       }

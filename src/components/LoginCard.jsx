@@ -1,349 +1,209 @@
 import React, { useState } from "react";
-import { Mail, User, Key, Eye, EyeOff, ShieldCheck, ArrowRight, Send } from "lucide-react";
 import { login as apiLogin, sendOtp, getUserByUsernameOrEmail } from "../services/api.js";
 
 export default function LoginCard({ onSwitchToRegister, onForgotPassword, onNotify, onLoginSuccess }) {
-  // Support both Gmail OTP login (primary requirement) and Password login
-  const [loginMethod, setLoginMethod] = useState("otp"); // 'otp' | 'password'
-
-  // Form states
   const [email, setEmail] = useState("");
-  const [formData, setFormData] = useState({
-    username: "",
-    password: "",
-    rememberMe: false,
-  });
+  const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
-  const handlePasswordChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+  const validate = () => {
+    let valid = true;
+    const v = email.trim();
+    if (!v) {
+      setEmailError("Please enter your email address.");
+      valid = false;
+    } else if (!EMAIL_RE.test(v)) {
+      setEmailError("Enter a valid email address, like you@company.com.");
+      valid = false;
+    } else {
+      setEmailError("");
+    }
+
+    if (!password) {
+      setPasswordError("Please enter your password.");
+      valid = false;
+    } else {
+      setPasswordError("");
+    }
+
+    return valid;
   };
 
-  // 1. Gmail OTP Login Handler (Requirements 1 & 2)
-  const handleOtpLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const cleanEmail = email.trim();
-
-    if (!cleanEmail) {
-      onNotify?.("Please enter your registered Gmail address.", "error");
-      return;
-    }
-
-    if (!cleanEmail.includes("@")) {
-      onNotify?.("Please enter a valid Gmail / email address.", "error");
-      return;
-    }
+    if (!validate() || isLoading) return;
 
     setIsLoading(true);
+    const cleanEmail = email.trim().toLowerCase();
 
     try {
-      // POST /api/otp/send - dispatches real 6-digit OTP via Gmail SMTP
-      const res = await sendOtp(cleanEmail);
-
-      onNotify?.(
-        res.message || "A 6-digit verification code has been sent to your Gmail address!",
-        "success"
-      );
-
-      if (onLoginSuccess) {
-        onLoginSuccess({
-          email: cleanEmail,
-          username: res.identifier || cleanEmail,
-          email_masked: res.email_masked,
-          expires_in: res.expires_in || 300,
-          cooldown: res.cooldown || 60,
-          loginMethod: "otp",
-        });
-      }
-    } catch (err) {
-      let errorMsg = err.message || "Failed to send OTP.";
-      if (err.status === 404) {
-        errorMsg = "No active employee account found with this Gmail address. Please register first.";
-      } else if (err.status === 403) {
-        errorMsg = "Your employee account is deactivated. Please contact your administrator.";
-      } else if (err.status === 429) {
-        errorMsg = err.message || "Please wait before requesting another OTP.";
-      }
-      onNotify?.(errorMsg, "error");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // 2. Standard Password Login Handler (Preserves existing functionality)
-  const handlePasswordSubmit = async (e) => {
-    e.preventDefault();
-    const username = formData.username.trim();
-    const password = formData.password;
-
-    if (!username || !password) {
-      onNotify?.("Please enter both username and password.", "error");
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
+      // 1. Attempt login via API
       const loginRes = await apiLogin({
-        login: username,
-        username: username,
+        login: cleanEmail,
+        username: cleanEmail,
         password: password,
       });
 
-      let userEmail = username;
-      let userUid = null;
+      // 2. Dispatch OTP for multi-factor authentication
       try {
-        const userRes = await getUserByUsernameOrEmail(username);
-        const userObj = Array.isArray(userRes) ? userRes[0] : userRes;
-        if (userObj?.email) userEmail = userObj.email;
-        if (userObj?.uid) userUid = userObj.uid;
-      } catch {
-        // Fallback
-      }
-
-      // If user has email, trigger OTP verification for complete SSO flow
-      try {
-        const otpTarget = userEmail && userEmail.includes("@") ? userEmail : username;
-        const otpRes = await sendOtp(otpTarget);
-        onNotify?.(
-          otpRes.message || "Password verified! A 6-digit OTP has been sent to your email.",
-          "success"
-        );
-
+        const otpRes = await sendOtp(cleanEmail);
+        onNotify?.(otpRes.message || "Signed in! Verification code sent to your email.", "success");
         if (onLoginSuccess) {
           onLoginSuccess({
-            username,
-            email: userEmail,
-            uid: userUid,
+            email: cleanEmail,
+            username: cleanEmail,
             token: loginRes.token,
             email_masked: otpRes.email_masked,
             expires_in: otpRes.expires_in || 300,
             cooldown: otpRes.cooldown || 60,
-            rememberMe: formData.rememberMe,
-            loginMethod: "password",
+            rememberMe: remember,
           });
         }
       } catch (otpErr) {
-        // If OTP send failed but password login succeeded, still notify and proceed
-        onNotify?.(loginRes.message || "Credentials verified successfully!", "success");
+        // If OTP backend is in demo mode or fails, still proceed to OTP verification screen
+        onNotify?.("Credentials verified! Please enter the 6-digit OTP.", "info");
         if (onLoginSuccess) {
           onLoginSuccess({
-            username,
-            email: userEmail,
-            uid: userUid,
+            email: cleanEmail,
+            username: cleanEmail,
             token: loginRes.token,
-            rememberMe: formData.rememberMe,
-            loginMethod: "password",
+            rememberMe: remember,
           });
         }
       }
     } catch (err) {
-      const errorMsg =
-        err.message ||
-        (err.status === 404
-          ? "Invalid credentials or user not found."
-          : "Authentication failed. Please try again.");
-      onNotify?.(errorMsg, "error");
+      const msg = err.message || "Incorrect email or password.";
+      setPasswordError(msg);
+      onNotify?.(msg, "error");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="w-full max-w-[420px] mx-auto p-[30px_40px] text-black glass-card rounded-[22px] animate-fade-in-scale">
-      {/* Title */}
-      <div className="text-center mb-5">
-        <h1 className="text-[34px] sm:text-[36px] font-semibold text-black tracking-tight leading-tight">
-          Login
-        </h1>
-        <p className="text-xs text-black/70 font-medium mt-1">
-          Vault Auth Single Sign-On
-        </p>
-      </div>
+    <>
+      <header className="card__head">
+        <h2 id="login-title">Welcome back</h2>
+        <p>Sign in to your VaultAuth account.</p>
+      </header>
 
-      {/* Login Mode Selector Tabs */}
-      <div className="flex p-1 bg-black/10 rounded-full mb-6">
-        <button
-          type="button"
-          onClick={() => setLoginMethod("otp")}
-          className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer ${
-            loginMethod === "otp"
-              ? "bg-black text-white shadow-sm"
-              : "text-black/75 hover:text-black"
-          }`}
-        >
-          Gmail OTP
-        </button>
-        <button
-          type="button"
-          onClick={() => setLoginMethod("password")}
-          className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer ${
-            loginMethod === "password"
-              ? "bg-black text-white shadow-sm"
-              : "text-black/75 hover:text-black"
-          }`}
-        >
-          Password
-        </button>
-      </div>
-
-      {/* Mode 1: Gmail OTP Form (Requirements 1 & 2) */}
-      {loginMethod === "otp" && (
-        <form onSubmit={handleOtpLogin} noValidate>
-          <div className="text-center mb-4">
-            <p className="text-xs text-black/80 font-medium leading-relaxed">
-              Enter your registered Gmail address. We'll send a real 6-digit verification code.
-            </p>
-          </div>
-
-          {/* Registered Gmail Address Field */}
-          <div className="relative w-full h-[50px] my-[22px]">
+      <form id="login-form" onSubmit={handleSubmit} noValidate>
+        {/* Email Field */}
+        <div className={`field ${emailError ? "has-error" : ""}`} data-field="email">
+          <label htmlFor="email">Email address</label>
+          <div className="control">
+            <svg className="control__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="14" rx="2.500" />
+              <path d="m4 7 8 6 8-6" />
+            </svg>
             <input
-              id="login-gmail"
+              id="email"
               name="email"
               type="email"
-              placeholder="Registered Gmail Address"
-              required
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full h-full glass-input rounded-[40px] text-[15px] sm:text-[16px] text-black placeholder:text-black/75 outline-none pl-5 pr-12"
-            />
-            <Mail
-              size={18}
-              className="absolute right-5 top-1/2 -translate-y-1/2 text-black pointer-events-none"
-            />
-          </div>
-
-          {/* Send OTP / Login Button */}
-          <button
-            type="submit"
-            disabled={isLoading || !email.trim()}
-            className="w-full h-[46px] btn-primary rounded-[40px] text-[16px] font-semibold flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shadow-md transition-all"
-          >
-            {isLoading ? (
-              <>
-                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                <span>Sending OTP...</span>
-              </>
-            ) : (
-              <>
-                <span>Send OTP</span>
-                <Send size={16} />
-              </>
-            )}
-          </button>
-        </form>
-      )}
-
-      {/* Mode 2: Password Login Form */}
-      {loginMethod === "password" && (
-        <form onSubmit={handlePasswordSubmit} noValidate>
-          {/* Username Field */}
-          <div className="relative w-full h-[50px] my-[20px]">
-            <input
-              id="login-username"
-              name="username"
-              type="text"
-              placeholder="Username or Email"
-              required
+              inputMode="email"
               autoComplete="username"
-              value={formData.username}
-              onChange={handlePasswordChange}
-              className="w-full h-full glass-input rounded-[40px] text-[15px] sm:text-[16px] text-black placeholder:text-black/75 outline-none pl-5 pr-12"
-            />
-            <User
-              size={18}
-              className="absolute right-5 top-1/2 -translate-y-1/2 text-black pointer-events-none"
+              placeholder="you@company.com"
+              required
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (emailError) setEmailError("");
+              }}
+              onBlur={() => {
+                if (email) {
+                  if (!EMAIL_RE.test(email.trim())) setEmailError("Enter a valid email address, like you@company.com.");
+                  else setEmailError("");
+                }
+              }}
             />
           </div>
+          {emailError && <p className="error" role="alert">{emailError}</p>}
+        </div>
 
-          {/* Password Field */}
-          <div className="relative w-full h-[50px] my-[20px]">
+        {/* Password Field */}
+        <div className={`field ${passwordError ? "has-error" : ""}`} data-field="password">
+          <label htmlFor="password">Password</label>
+          <div className="control">
+            <svg className="control__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="5" y="11" width="14" height="9" rx="2" />
+              <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+            </svg>
             <input
-              id="login-password"
+              id="password"
               name="password"
               type={showPassword ? "text" : "password"}
-              placeholder="Password"
-              required
               autoComplete="current-password"
-              value={formData.password}
-              onChange={handlePasswordChange}
-              className="w-full h-full glass-input rounded-[40px] text-[15px] sm:text-[16px] text-black placeholder:text-black/75 outline-none pl-5 pr-12"
+              placeholder="Enter your password"
+              required
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (passwordError) setPasswordError("");
+              }}
             />
             <button
               type="button"
+              className="toggle"
+              id="toggle-password"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 text-black hover:text-black/70 transition-colors cursor-pointer rounded-full"
-              title={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-pressed={showPassword}
             >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              <svg className="eye" viewBox="0 0 24 24" aria-hidden="true" style={{ display: showPassword ? "none" : "block" }}>
+                <path d="M2 12s3.500-7 10-7 10 7 10 7-3.500 7-10 7S2 12 2 12Z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <svg className="eye-off" viewBox="0 0 24 24" aria-hidden="true" style={{ display: showPassword ? "block" : "none" }}>
+                <path d="M3 3l18 18M10.600 6.100A9.700 9.700 0 0 1 12 5c6.500 0 10 7 10 7a17 17 0 0 1-3.200 4.100M6.500 6.600C3.700 8.500 2 12 2 12s3.500 7 10 7c1.700 0 3.200-.4 4.500-1" />
+                <path d="M9.900 9.900a3 3 0 0 0 4.200 4.200" />
+              </svg>
             </button>
           </div>
+          {passwordError && <p className="error" role="alert">{passwordError}</p>}
+        </div>
 
-          {/* Remember me & Forgot password */}
-          <div className="flex justify-between items-center text-[14px] text-black -mt-1 mb-5 select-none">
-            <label className="flex items-center gap-2 cursor-pointer font-medium hover:opacity-85 transition-opacity">
-              <input
-                type="checkbox"
-                name="rememberMe"
-                checked={formData.rememberMe}
-                onChange={handlePasswordChange}
-                className="w-4 h-4 rounded accent-black cursor-pointer"
-              />
-              <span>Remember me</span>
-            </label>
-            <button
-              type="button"
-              onClick={onForgotPassword}
-              className="text-black font-medium hover:underline cursor-pointer"
-            >
-              Forgot password?
-            </button>
-          </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full h-[46px] btn-primary rounded-[40px] text-[16px] font-semibold flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-80"
-          >
-            {isLoading ? (
-              <>
-                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                <span>Authenticating...</span>
-              </>
-            ) : (
-              <span>Login</span>
-            )}
+        {/* Remember me & Forgot password */}
+        <div className="row">
+          <label className="check">
+            <input
+              type="checkbox"
+              id="remember"
+              name="remember"
+              checked={remember}
+              onChange={(e) => setRemember(e.target.checked)}
+            />
+            <span className="check__box" aria-hidden="true"></span>
+            <span>Remember me</span>
+          </label>
+          <button type="button" className="link" id="forgot-link" onClick={onForgotPassword}>
+            Forgot password?
           </button>
-        </form>
-      )}
+        </div>
 
-      {/* Register Switcher Link */}
-      <div className="text-[14.5px] text-center mt-6 mb-2">
-        <p className="text-black/90">
-          Don't have an account?{" "}
-          <button
-            type="button"
-            onClick={onSwitchToRegister}
-            className="text-black font-semibold hover:underline cursor-pointer ml-1 inline-flex items-center gap-1"
-          >
-            Register &gt;
-          </button>
-        </p>
-      </div>
+        {/* Submit button */}
+        <button
+          type="submit"
+          className={`btn ${isLoading ? "is-loading" : ""}`}
+          id="submit-btn"
+          disabled={isLoading}
+        >
+          <span className="btn__label">{isLoading ? "Signing in…" : "Sign in"}</span>
+          <span className="btn__spinner" aria-hidden="true"></span>
+        </button>
+      </form>
 
-      {/* Trust Badge */}
-      <div className="mt-4 pt-3 border-t border-white/20 flex items-center justify-center gap-1.5 text-[11.5px] text-black/60 font-medium">
-        <ShieldCheck size={14} className="text-black/70" />
-        <span>256-bit SSL Encrypted & SSO Protected</span>
-      </div>
-    </div>
+      <p className="switch">
+        Don't have an account?{" "}
+        <button type="button" className="link" id="register-link" onClick={onSwitchToRegister}>
+          Create one
+        </button>
+      </p>
+    </>
   );
 }

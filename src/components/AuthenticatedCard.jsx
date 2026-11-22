@@ -1,17 +1,32 @@
 import React, { useState, useEffect } from "react";
-import { ShieldCheck, LogOut, ExternalLink, ArrowRight, Lock, Clock, Key } from "lucide-react";
+import { getCurrentUserRole } from "../services/adminApi.js";
 
 export default function AuthenticatedCard({ user, onSignOut, onNotify }) {
   const token = user?.token || localStorage.getItem("vault_auth_token") || "";
-  const sessionToken = token ? (token.length > 28 ? token.slice(0, 24) + "..." : token) : "SSO-SEC-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+  const sessionToken = token ? (token.length > 28 ? token.slice(0, 24) + "…" : token) : "SSO-SEC-" + Math.random().toString(36).substring(2, 8).toUpperCase();
   const [loginTime] = useState(() => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+  const [userRole, setUserRole] = useState(null);
 
   const username = user?.username || user?.identifier || "Authenticated User";
   const email = user?.email;
   const initial = username.charAt(0).toUpperCase();
 
+  useEffect(() => {
+    async function checkRole() {
+      try {
+        const res = await getCurrentUserRole();
+        if (res?.role) {
+          setUserRole(res.role);
+        }
+      } catch {
+        // Fallback
+      }
+    }
+    checkRole();
+  }, [token]);
+
   const handleLaunchApp = () => {
-    onNotify?.("Launching your VaultAuth Dashboard...", "info");
+    onNotify?.("Launching your VaultAuth Dashboard…", "info");
     const tokenToPass = token || localStorage.getItem("vault_auth_token") || "";
     const tokenParam = tokenToPass ? `?token=${encodeURIComponent(tokenToPass)}` : "";
     setTimeout(() => {
@@ -19,92 +34,125 @@ export default function AuthenticatedCard({ user, onSignOut, onNotify }) {
     }, 400);
   };
 
-  // Automatically transition to the dashboard after brief confirmation
+  const handleLaunchAdmin = () => {
+    onNotify?.("Opening VaultAuth Admin Dashboard…", "info");
+    const tokenToPass = token || localStorage.getItem("vault_auth_token") || "";
+    const tokenParam = tokenToPass ? `?token=${encodeURIComponent(tokenToPass)}` : "";
+    setTimeout(() => {
+      window.location.href = `/ADMIN/index.html${tokenParam}`;
+    }, 400);
+  };
+
   useEffect(() => {
-    const timer = setTimeout(() => {
-      handleLaunchApp();
-    }, 1400);
-    return () => clearTimeout(timer);
-  }, [user]);
+    // Only auto-redirect regular users, giving admins time to choose portal
+    if (userRole === "user") {
+      const timer = setTimeout(() => handleLaunchApp(), 1600);
+      return () => clearTimeout(timer);
+    }
+  }, [userRole]);
 
   return (
-    <div className="w-full max-w-[440px] mx-auto p-[34px_36px] text-black glass-card rounded-[24px] animate-fade-in-scale">
-      {/* Success Icon */}
-      <div className="flex flex-col items-center text-center mb-6">
-        <div className="relative mb-3">
-          <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-400/60 flex items-center justify-center shadow-lg">
-            <ShieldCheck className="w-9 h-9 text-emerald-800" />
-          </div>
-          <span className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white animate-pulse" />
+    <div>
+      {/* Success icon */}
+      <div style={{ textAlign: "center", marginBottom: "24px" }}>
+        <div style={{
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
+          width: "56px", height: "56px", borderRadius: "50%",
+          background: "rgba(22,163,74,.12)", border: "2px solid rgba(22,163,74,.3)",
+          marginBottom: "12px",
+        }}>
+          <svg viewBox="0 0 24 24" style={{ width: 28, height: 28, fill: "none", stroke: "#16a34a", strokeWidth: 2.5, strokeLinecap: "round", strokeLinejoin: "round" }}>
+            <path d="M12 3 4.5 6v5.5c0 4.6 3.1 7.9 7.5 9.5 4.4-1.6 7.5-4.9 7.5-9.5V6L12 3Z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
         </div>
-
-        <h1 className="text-[26px] sm:text-[28px] font-bold text-black tracking-tight">
-          Authenticated!
-        </h1>
-        <p className="text-xs text-black/75 font-medium mt-1">
-          Identity verified with 2-Factor Authentication (OTP)
+        <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 700, color: "var(--ink-900)" }}>Identity verified</h3>
+        <p style={{ margin: "4px 0 0", fontSize: ".88rem", color: "var(--ink-500)" }}>
+          {userRole === "admin" ? "Administrative session established" : "Redirecting to your dashboard…"}
         </p>
       </div>
 
-      {/* User Info Box */}
-      <div className="mb-5 p-3.5 rounded-2xl bg-white/35 border border-white/60 backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-full bg-black text-white font-bold text-lg flex items-center justify-center shadow-sm">
-            {initial}
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold text-black truncate">{username}</h3>
-            {email && email !== username && (
-              <p className="text-xs text-black/80 truncate font-medium">{email}</p>
-            )}
-            <p className="text-xs text-black/70 flex items-center gap-1.5 mt-0.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-600 inline-block" />
-              Active SSO Session &bull; Redirecting...
-            </p>
+      {/* User info */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px",
+        background: "var(--ink-100)", borderRadius: "12px", marginBottom: "20px",
+      }}>
+        <div style={{
+          width: "40px", height: "40px", borderRadius: "50%",
+          background: userRole === "admin" ? "linear-gradient(135deg, #7047eb, #818cf8)" : "linear-gradient(135deg, var(--blue-500), var(--indigo-500))",
+          color: "#fff", fontWeight: 700, fontSize: "1rem",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          {initial}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: ".92rem", fontWeight: 600, color: "var(--ink-900)" }}>{email || username}</div>
+          <div style={{ fontSize: ".8rem", color: "var(--ink-500)", display: "flex", alignItems: "center", gap: "6px", marginTop: "2px" }}>
+            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#16a34a" }} />
+            {userRole === "admin" ? "Enterprise Admin Session" : "Active SSO Session"}
           </div>
         </div>
       </div>
 
-      {/* Session Details */}
-      <div className="space-y-2 mb-6 text-xs text-black/85">
-        <div className="flex justify-between items-center py-1.5 px-3 rounded-lg bg-black/5">
-          <span className="flex items-center gap-1.5 text-black/70">
-            <Key size={13} /> Session Token
-          </span>
-          <span className="font-mono font-semibold text-black">{sessionToken}</span>
-        </div>
-        <div className="flex justify-between items-center py-1.5 px-3 rounded-lg bg-black/5">
-          <span className="flex items-center gap-1.5 text-black/70">
-            <Clock size={13} /> Verified At
-          </span>
-          <span className="font-semibold text-black">{loginTime}</span>
-        </div>
-        <div className="flex justify-between items-center py-1.5 px-3 rounded-lg bg-black/5">
-          <span className="flex items-center gap-1.5 text-black/70">
-            <Lock size={13} /> Encryption
-          </span>
-          <span className="font-semibold text-emerald-800">256-bit SSL / SAML 2.0</span>
-        </div>
+      {/* Session details */}
+      <div style={{ marginBottom: "24px" }}>
+        {[
+          { label: "Assigned Role", value: userRole === "admin" ? "Enterprise Admin" : "End User", color: userRole === "admin" ? "#7047eb" : "inherit" },
+          { label: "Session Token", value: sessionToken },
+          { label: "Verified At", value: loginTime },
+          { label: "Encryption", value: "256-bit SSL / SAML 2.0", color: "#16a34a" },
+        ].map((item) => (
+          <div key={item.label} style={{
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+            padding: "8px 12px", fontSize: ".82rem", marginBottom: "4px",
+            background: "var(--ink-100)", borderRadius: "8px",
+          }}>
+            <span style={{ color: "var(--ink-500)" }}>{item.label}</span>
+            <span style={{ fontWeight: 600, color: item.color || "var(--ink-900)", fontFamily: item.label === "Session Token" ? "monospace" : "inherit" }}>{item.value}</span>
+          </div>
+        ))}
       </div>
 
       {/* Actions */}
-      <div className="space-y-2.5">
+      <div style={{ display: "grid", gap: "8px" }}>
+        {userRole === "admin" && (
+          <button
+            type="button"
+            className="btn"
+            onClick={handleLaunchAdmin}
+            style={{
+              background: "linear-gradient(135deg, #7047eb, #4f46e5)",
+              boxShadow: "0 8px 20px -6px rgba(112, 71, 235, 0.55)",
+            }}
+          >
+            <span>Launch Admin Dashboard</span>
+            <svg viewBox="0 0 24 24" style={{ width: 18, height: 18, fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" }}>
+              <path d="M12 2L4 5.5V11.5C4 16.5 7.5 21 12 22C16.5 21 20 16.5 20 11.5V5.5L12 2Z"/>
+              <path d="m9 12 2 2 4-4"/>
+            </svg>
+          </button>
+        )}
+
         <button
           type="button"
+          className={userRole === "admin" ? "btn btn--ghost" : "btn"}
           onClick={handleLaunchApp}
-          className="w-full h-[46px] btn-primary rounded-[40px] text-[15px] font-semibold flex items-center justify-center gap-2 cursor-pointer shadow-md"
         >
-          <span>Continue to Dashboard</span>
-          <ArrowRight size={16} />
+          <span>Continue to User Dashboard</span>
+          <svg viewBox="0 0 24 24" style={{ width: 18, height: 18, fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" }}>
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
         </button>
 
         <button
           type="button"
+          className="btn btn--ghost"
           onClick={onSignOut}
-          className="w-full h-[44px] rounded-[40px] bg-white/30 hover:bg-white/50 border border-white/60 text-black text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer transition-all"
         >
-          <LogOut size={16} />
-          <span>Sign Out</span>
+          <svg viewBox="0 0 24 24" style={{ width: 18, height: 18, fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" }}>
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+          </svg>
+          <span>Sign out</span>
         </button>
       </div>
     </div>

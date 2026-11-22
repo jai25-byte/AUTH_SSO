@@ -1,43 +1,21 @@
 import React, { useEffect } from "react";
-import { CheckCircle2, AlertCircle, Info, X } from "lucide-react";
 
-export default function Toast({ message, type = "success", onClose, duration = 4000 }) {
+export default function Toast({ message, type = "info", onClose, duration = 5000 }) {
   useEffect(() => {
     if (!message) return;
-    const timer = setTimeout(() => {
-      onClose();
-    }, duration);
+    const timer = setTimeout(() => onClose(), duration);
     return () => clearTimeout(timer);
   }, [message, duration, onClose]);
 
   if (!message) return null;
 
-  const icons = {
-    success: <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />,
-    error: <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0" />,
-    info: <Info className="w-5 h-5 text-blue-600 flex-shrink-0" />,
-  };
-
-  const borderColors = {
-    success: "border-emerald-300 bg-white/90 shadow-emerald-500/10",
-    error: "border-rose-300 bg-white/90 shadow-rose-500/10",
-    info: "border-blue-300 bg-white/90 shadow-blue-500/10",
-  };
+  const borderColor = type === "success" ? "var(--success)" : type === "error" ? "var(--danger)" : "var(--blue-500)";
 
   return (
-    <div className="fixed top-6 right-6 z-50 animate-fade-in-scale">
-      <div
-        className={`flex items-center gap-3 px-4 py-3 rounded-2xl border backdrop-blur-xl shadow-xl max-w-md ${borderColors[type] || borderColors.info}`}
-      >
-        {icons[type] || icons.info}
-        <span className="text-sm font-medium text-slate-800 leading-snug">{message}</span>
-        <button
-          onClick={onClose}
-          type="button"
-          className="ml-2 text-slate-400 hover:text-slate-600 transition-colors p-1"
-        >
-          <X size={15} />
-        </button>
+    <div className="toasts-container">
+      <div className="toast" style={{ borderLeftColor: borderColor }}>
+        <span className="toast__msg">{message}</span>
+        <button type="button" className="toast__close" onClick={onClose} aria-label="Dismiss">×</button>
       </div>
     </div>
   );

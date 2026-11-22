@@ -43,4 +43,4 @@ console.log(`✅ [Tailwind] CSS compiled & minified in ${Math.round(performance.
 await cp("public/index.html", "dist/index.html");
 await cp("public/wallpaper.png", "dist/wallpaper.png");
 
-console.log("\n🎉 Production build complete! Distributable files are ready in ./dist/"); 
+console.log("\n🎉 Production build complete! Distributable files are ready in ./dist/");
