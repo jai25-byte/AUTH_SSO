@@ -1409,7 +1409,6 @@ input, select, textarea {
   justify-content: space-between;
   padding: 10px 12px;
   border-radius: var(--radius);
-  
   border-bottom: 1px solid var(--card-border);
   margin: 2px 0;
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
