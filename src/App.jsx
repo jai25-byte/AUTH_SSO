@@ -46,7 +46,11 @@ export default function App() {
   // Called after valid login step
   const handleLoginSuccess = (userData) => {
     setPendingUser(userData);
-    setAuthStep("otp");
+    if (userData?.passkeyVerified) {
+      setAuthStep("authenticated");
+    } else {
+      setAuthStep("otp");
+    }
   };
 
   // Called when OTP verification succeeds

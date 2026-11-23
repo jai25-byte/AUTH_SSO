@@ -323,3 +323,13 @@ export async function logout() {
   }
 }
 
+export {
+  isWebAuthnSupported,
+  isPlatformAuthenticatorAvailable,
+  registerPasskey,
+  loginWithPasskey,
+  getPasskeyCredentials,
+  deletePasskeyCredential,
+} from "./webauthn.js";
+
+

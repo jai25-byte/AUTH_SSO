@@ -300,6 +300,10 @@
     // Close user dropdown if open
     document.getElementById("user-dropdown-menu")?.classList.remove("show");
 
+    if (pageId === "security") {
+      loadUserPasskeys();
+    }
+
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -976,7 +980,7 @@
       container.innerHTML = `
         <div class="card" style="text-align: center; padding: 48px 20px; color: var(--text-muted); font-size: 0.9rem;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 42px; height: 42px; margin: 0 auto 12px; color: var(--text-muted); opacity: 0.6;">
-            <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/>
+            <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
           </svg>
           <strong style="display: block; font-size: 1.05rem; color: var(--text-primary); margin-bottom: 4px;">No Active Sessions</strong>
           <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0;">You are currently not signed in on any registered devices.</p>
@@ -1161,6 +1165,185 @@
     }
   });
 
+  // ===== WebAuthn Passkeys Controller =====
+  let registeredPasskeys = [];
+
+  async function loadUserPasskeys() {
+    const container = document.getElementById("passkeys-list-container");
+    if (!container) return;
+
+    const res = await apiRequest("/api/webauthn/credentials", { method: "GET" });
+    if (res.ok && res.data && Array.isArray(res.data.credentials)) {
+      registeredPasskeys = res.data.credentials;
+    } else {
+      registeredPasskeys = [];
+    }
+
+    renderUserPasskeys();
+  }
+
+  function renderUserPasskeys() {
+    const container = document.getElementById("passkeys-list-container");
+    if (!container) return;
+
+    if (!registeredPasskeys || registeredPasskeys.length === 0) {
+      container.innerHTML = `
+        <div style="text-align: center; padding: 28px 16px; background: var(--page-bg); border-radius: var(--radius); border: 1px dashed var(--card-border);">
+          <div style="width: 44px; height: 44px; margin: 0 auto 10px; border-radius: 50%; background: rgba(59,130,246,0.1); display: flex; align-items: center; justify-content: center; color: var(--brand-purple);">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/>
+              <path d="m21 2-9.6 9.6"/>
+              <circle cx="7.5" cy="15.5" r="5.5"/>
+            </svg>
+          </div>
+          <p style="font-weight: 600; font-size: 0.92rem; margin: 0 0 4px; color: var(--text-primary);">No passkeys registered yet</p>
+          <p style="font-size: 0.8rem; color: var(--text-secondary); max-width: 380px; margin: 0 auto 14px;">
+            Add your first passkey using Touch ID, Face ID, or Windows Hello for instant, phishing-resistant sign-in.
+          </p>
+        </div>
+      `;
+      return;
+    }
+
+    let html = `<div style="display: flex; flex-direction: column; gap: 10px;">`;
+    registeredPasskeys.forEach((pk) => {
+      html += `
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--page-bg); border-radius: var(--radius); border: 1px solid var(--card-border);">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(16,185,129,0.12); display: flex; align-items: center; justify-content: center; color: #10b981;">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/>
+                <path d="m21 2-9.6 9.6"/>
+                <circle cx="7.5" cy="15.5" r="5.5"/>
+              </svg>
+            </div>
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-weight: 600; font-size: 0.92rem; color: var(--text-primary);">${escapeHtml(pk.device_name || "Passkey Authenticator")}</span>
+                <span class="badge badge-success" style="font-size: 0.68rem; padding: 2px 6px;">Verified FIDO2</span>
+              </div>
+              <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 3px; display: flex; gap: 12px; flex-wrap: wrap;">
+                <span>ID: <code style="font-size: 0.76rem; background: rgba(0,0,0,0.05); padding: 1px 4px; border-radius: 4px;">${escapeHtml(pk.credential_id_masked || "")}</code></span>
+                <span>Created: ${escapeHtml(pk.created_at || "Recently")}</span>
+                <span>Last used: ${escapeHtml(pk.last_used_at || "Never")}</span>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-outline btn-sm btn-delete-passkey" data-id="${pk.id}" data-name="${escapeHtml(pk.device_name || "Passkey")}" style="color: var(--danger, #ef4444); border-color: rgba(239,68,68,0.3);">
+            Remove
+          </button>
+        </div>
+      `;
+    });
+    html += `</div>`;
+    container.innerHTML = html;
+  }
+
+  function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  // Register passkey button click handler
+  document.getElementById("btn-register-passkey")?.addEventListener("click", async function () {
+    if (!window.VaultAuthPasskeys || !window.VaultAuthPasskeys.isSupported()) {
+      showToast("WebAuthn / Passkeys are not supported on this browser or platform.", "error");
+      return;
+    }
+
+    const defaultName = navigator.userAgent.includes("Mac")
+      ? "MacBook Touch ID"
+      : navigator.userAgent.includes("Windows")
+      ? "Windows Hello"
+      : "Passkey Authenticator";
+
+    const deviceName = prompt("Enter a label for this passkey / authenticator:", defaultName);
+    if (!deviceName || !deviceName.trim()) return;
+
+    const btn = this;
+    const oldHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.textContent = "Requesting authenticator...";
+
+    try {
+      // 1. Get options from server
+      const optRes = await apiRequest("/api/webauthn/register/options", { method: "POST" });
+      if (!optRes.ok) {
+        throw new Error(optRes.data?.message || "Failed to generate passkey challenge options.");
+      }
+
+      const options = window.VaultAuthPasskeys.prepareRegistrationOptions(optRes.data);
+
+      // 2. Prompt user authenticator
+      btn.textContent = "Touch sensor / scan key...";
+      const credential = await navigator.credentials.create({ publicKey: options });
+      if (!credential) {
+        throw new Error("No passkey was created.");
+      }
+
+      // 3. Serialize and verify
+      btn.textContent = "Verifying with server...";
+      const serialized = window.VaultAuthPasskeys.serializeRegistrationCredential(credential);
+
+      const verifyRes = await apiRequest("/api/webauthn/register/verify", {
+        method: "POST",
+        body: JSON.stringify({
+          credential: serialized,
+          deviceName: deviceName.trim(),
+        }),
+      });
+
+      if (!verifyRes.ok || !verifyRes.data?.success) {
+        throw new Error(verifyRes.data?.message || "Server verification of passkey failed.");
+      }
+
+      showToast("Passkey registered successfully!", "success");
+      await loadUserPasskeys();
+
+    } catch (err) {
+      const parsedMsg = window.VaultAuthPasskeys ? window.VaultAuthPasskeys.parseError(err) : err.message;
+      showToast(parsedMsg, "error");
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = oldHtml;
+    }
+  });
+
+  // Delegate click for remove passkey
+  document.addEventListener("click", async function (e) {
+    const delBtn = e.target.closest(".btn-delete-passkey");
+    if (!delBtn) return;
+
+    const credId = delBtn.getAttribute("data-id");
+    const credName = delBtn.getAttribute("data-name") || "this passkey";
+    if (!credId) return;
+
+    if (!confirm(`Are you sure you want to remove ${credName}? You will not be able to sign in with this device passkey.`)) {
+      return;
+    }
+
+    delBtn.disabled = true;
+    delBtn.textContent = "Removing...";
+
+    const res = await apiRequest(`/api/webauthn/credentials/${credId}`, {
+      method: "DELETE",
+    });
+
+    if (res.ok && res.data?.success) {
+      showToast(`${credName} removed successfully.`, "success");
+      await loadUserPasskeys();
+    } else {
+      showToast(res.data?.message || "Failed to remove passkey.", "error");
+      delBtn.disabled = false;
+      delBtn.textContent = "Remove";
+    }
+  });
+
   // ===== 12. Sign Out Handlers =====
   async function handleSignOut() {
     await apiRequest("/api/logout", { method: "POST" });
@@ -1234,6 +1417,7 @@
     await loadConnectedApps();
     await loadLoginActivity();
     await loadActiveSessions();
+    await loadUserPasskeys();
   }
 
   if (document.readyState === "loading") {

@@ -18764,7 +18764,7 @@ var require_jsx_dev_runtime = __commonJS(function(exports, module) {
 });
 
 // src/main.jsx
-var import_react9 = __toESM(require_react(), 1);
+var import_react21 = __toESM(require_react(), 1);
 var import_client = __toESM(require_client(), 1);
 
 // src/App.jsx
@@ -18772,6 +18772,218 @@ var import_react8 = __toESM(require_react(), 1);
 
 // src/components/LoginCard.jsx
 var import_react = __toESM(require_react(), 1);
+
+// src/services/webauthn.js
+function bufferToBase64url(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let str = "";
+  for (let i = 0;i < bytes.length; i++) {
+    str += String.fromCharCode(bytes[i]);
+  }
+  return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function base64urlToBuffer(base64url) {
+  if (!base64url)
+    return new ArrayBuffer(0);
+  let base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
+  while (base64.length % 4) {
+    base64 += "=";
+  }
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0;i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+function isWebAuthnSupported() {
+  return typeof window !== "undefined" && window.PublicKeyCredential !== undefined && typeof window.navigator?.credentials?.create === "function" && typeof window.navigator?.credentials?.get === "function";
+}
+function prepareRegistrationOptions(options) {
+  const prepared = { ...options };
+  if (typeof prepared.challenge === "string") {
+    prepared.challenge = base64urlToBuffer(prepared.challenge);
+  }
+  if (prepared.user && typeof prepared.user.id === "string") {
+    try {
+      prepared.user.id = base64urlToBuffer(prepared.user.id);
+    } catch {
+      prepared.user.id = new TextEncoder().encode(prepared.user.id);
+    }
+  }
+  if (Array.isArray(prepared.excludeCredentials)) {
+    prepared.excludeCredentials = prepared.excludeCredentials.map((cred) => ({
+      ...cred,
+      id: typeof cred.id === "string" ? base64urlToBuffer(cred.id) : cred.id
+    }));
+  }
+  return prepared;
+}
+function prepareAuthenticationOptions(options) {
+  const prepared = { ...options };
+  if (typeof prepared.challenge === "string") {
+    prepared.challenge = base64urlToBuffer(prepared.challenge);
+  }
+  if (Array.isArray(prepared.allowCredentials)) {
+    prepared.allowCredentials = prepared.allowCredentials.map((cred) => ({
+      ...cred,
+      id: typeof cred.id === "string" ? base64urlToBuffer(cred.id) : cred.id
+    }));
+  }
+  return prepared;
+}
+function serializeRegistrationCredential(credential) {
+  const response = {
+    clientDataJSON: bufferToBase64url(credential.response.clientDataJSON),
+    attestationObject: bufferToBase64url(credential.response.attestationObject)
+  };
+  if (typeof credential.response.getTransports === "function") {
+    response.transports = credential.response.getTransports();
+  }
+  return {
+    id: credential.id,
+    rawId: bufferToBase64url(credential.rawId),
+    type: credential.type,
+    response,
+    clientExtensionResults: credential.getClientExtensionResults ? credential.getClientExtensionResults() : {}
+  };
+}
+function serializeAuthenticationCredential(credential) {
+  const response = {
+    clientDataJSON: bufferToBase64url(credential.response.clientDataJSON),
+    authenticatorData: bufferToBase64url(credential.response.authenticatorData),
+    signature: bufferToBase64url(credential.response.signature)
+  };
+  if (credential.response.userHandle) {
+    response.userHandle = bufferToBase64url(credential.response.userHandle);
+  }
+  return {
+    id: credential.id,
+    rawId: bufferToBase64url(credential.rawId),
+    type: credential.type,
+    response,
+    clientExtensionResults: credential.getClientExtensionResults ? credential.getClientExtensionResults() : {}
+  };
+}
+function parseWebAuthnError(err) {
+  if (!err)
+    return "Passkey operation failed.";
+  if (err.name === "NotAllowedError") {
+    return "Passkey prompt was dismissed or timed out.";
+  }
+  if (err.name === "InvalidStateError") {
+    return "This authenticator has already been registered to your account.";
+  }
+  if (err.name === "NotSupportedError") {
+    return "Passkeys are not supported on this browser or platform.";
+  }
+  if (err.name === "SecurityError") {
+    return "Security error: Ensure the dashboard is served over HTTPS or localhost.";
+  }
+  if (err.name === "AbortError") {
+    return "Passkey interaction was cancelled.";
+  }
+  return err.message || "An unexpected error occurred during passkey authentication.";
+}
+async function getAuthHeaders() {
+  const headers = { "Content-Type": "application/json" };
+  const token = getToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  return headers;
+}
+async function registerPasskey(deviceName) {
+  if (!isWebAuthnSupported()) {
+    throw new Error("WebAuthn is not supported on this browser or operating system.");
+  }
+  const base = getApiBaseUrl();
+  const headers = await getAuthHeaders();
+  const optRes = await fetch(`${base}/api/webauthn/register/options`, {
+    method: "POST",
+    headers,
+    credentials: "include"
+  });
+  if (!optRes.ok) {
+    const errData = await optRes.json().catch(() => ({}));
+    throw new Error(errData.message || "Failed to retrieve passkey registration options.");
+  }
+  const serverOptions = await optRes.json();
+  const publicKeyOptions = prepareRegistrationOptions(serverOptions);
+  let credential;
+  try {
+    credential = await navigator.credentials.create({
+      publicKey: publicKeyOptions
+    });
+  } catch (err) {
+    throw new Error(parseWebAuthnError(err));
+  }
+  if (!credential) {
+    throw new Error("No passkey was created by the authenticator.");
+  }
+  const serialized = serializeRegistrationCredential(credential);
+  const verifyRes = await fetch(`${base}/api/webauthn/register/verify`, {
+    method: "POST",
+    headers,
+    credentials: "include",
+    body: JSON.stringify({
+      credential: serialized,
+      deviceName: deviceName || "Passkey Authenticator"
+    })
+  });
+  const verifyData = await verifyRes.json().catch(() => ({}));
+  if (!verifyRes.ok || !verifyData.success) {
+    throw new Error(verifyData.message || "Server verification of passkey failed.");
+  }
+  return verifyData;
+}
+async function loginWithPasskey(identifier) {
+  if (!isWebAuthnSupported()) {
+    throw new Error("WebAuthn is not supported on this browser or device.");
+  }
+  const base = getApiBaseUrl();
+  const optRes = await fetch(`${base}/api/webauthn/login/options`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ identifier: identifier ? identifier.trim() : undefined })
+  });
+  if (!optRes.ok) {
+    const errData = await optRes.json().catch(() => ({}));
+    throw new Error(errData.message || "Failed to initiate passkey sign-in.");
+  }
+  const serverOptions = await optRes.json();
+  const publicKeyOptions = prepareAuthenticationOptions(serverOptions);
+  let assertion;
+  try {
+    assertion = await navigator.credentials.get({
+      publicKey: publicKeyOptions
+    });
+  } catch (err) {
+    throw new Error(parseWebAuthnError(err));
+  }
+  if (!assertion) {
+    throw new Error("Passkey sign-in was not completed.");
+  }
+  const serialized = serializeAuthenticationCredential(assertion);
+  const verifyRes = await fetch(`${base}/api/webauthn/login/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ credential: serialized })
+  });
+  const verifyData = await verifyRes.json().catch(() => ({}));
+  if (!verifyRes.ok || !verifyData.success) {
+    throw new Error(verifyData.message || "Passkey authentication verification failed.");
+  }
+  if (verifyData.token) {
+    setToken(verifyData.token);
+  }
+  if (verifyData.user) {
+    setStoredUser(verifyData.user);
+  }
+  return verifyData;
+}
 
 // src/services/api.js
 var DEFAULT_SERVER = "http://127.0.0.1:5000";
@@ -18973,6 +19185,7 @@ function LoginCard({ onSwitchToRegister, onForgotPassword, onNotify, onLoginSucc
   const [remember, setRemember] = import_react.useState(false);
   const [showPassword, setShowPassword] = import_react.useState(false);
   const [isLoading, setIsLoading] = import_react.useState(false);
+  const [isPasskeyLoading, setIsPasskeyLoading] = import_react.useState(false);
   const [emailError, setEmailError] = import_react.useState("");
   const [passwordError, setPasswordError] = import_react.useState("");
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -19039,6 +19252,35 @@ function LoginCard({ onSwitchToRegister, onForgotPassword, onNotify, onLoginSucc
       onNotify?.(msg, "error");
     } finally {
       setIsLoading(false);
+    }
+  };
+  const handlePasskeyLogin = async () => {
+    if (isPasskeyLoading || isLoading)
+      return;
+    if (!isWebAuthnSupported()) {
+      onNotify?.("WebAuthn / Passkeys are not supported on this browser or platform.", "error");
+      return;
+    }
+    setIsPasskeyLoading(true);
+    try {
+      const cleanEmail = email.trim();
+      const authResult = await loginWithPasskey(cleanEmail || undefined);
+      onNotify?.(authResult.message || "Passkey verified! Successfully signed in.", "success");
+      if (onLoginSuccess) {
+        onLoginSuccess({
+          email: authResult.user?.email || cleanEmail,
+          username: authResult.user?.username || cleanEmail,
+          role: authResult.user?.role,
+          fullName: authResult.user?.fullName,
+          token: authResult.token,
+          passkeyVerified: true
+        });
+      }
+    } catch (err) {
+      const msg = err.message || "Passkey authentication failed.";
+      onNotify?.(msg, "error");
+    } finally {
+      setIsPasskeyLoading(false);
     }
   };
   return /* @__PURE__ */ jsx_dev_runtime.jsxDEV(jsx_dev_runtime.Fragment, {
@@ -19258,6 +19500,47 @@ function LoginCard({ onSwitchToRegister, onForgotPassword, onNotify, onLoginSucc
               }, undefined, false, undefined, this)
             ]
           }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
+        className: "divider",
+        role: "separator",
+        children: /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
+          children: "OR"
+        }, undefined, false, undefined, this)
+      }, undefined, false, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
+        type: "button",
+        className: "btn--passkey",
+        id: "btn-passkey-login",
+        onClick: handlePasskeyLogin,
+        disabled: isLoading || isPasskeyLoading,
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("svg", {
+            viewBox: "0 0 24 24",
+            fill: "none",
+            stroke: "currentColor",
+            strokeWidth: "2",
+            strokeLinecap: "round",
+            strokeLinejoin: "round",
+            "aria-hidden": "true",
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("path", {
+                d: "m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("path", {
+                d: "m21 2-9.6 9.6"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("circle", {
+                cx: "7.5",
+                cy: "15.5",
+                r: "5.5"
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
+            children: isPasskeyLoading ? "Verifying Passkey…" : "Sign in with Passkey"
+          }, undefined, false, undefined, this)
         ]
       }, undefined, true, undefined, this),
       /* @__PURE__ */ jsx_dev_runtime.jsxDEV("p", {
@@ -19916,14 +20199,224 @@ function OtpVerificationCard({ user, onVerifySuccess, onBackToLogin, onNotify })
 
 // src/components/AuthenticatedCard.jsx
 var import_react4 = __toESM(require_react(), 1);
+
+// src/services/adminApi.js
+var workingBase = null;
+var getToken2 = () => {
+  if (typeof window === "undefined")
+    return null;
+  const urlParams = new URLSearchParams(window.location.search);
+  const qToken = urlParams.get("token");
+  if (qToken) {
+    localStorage.setItem("vault_auth_token", qToken);
+    return qToken;
+  }
+  return localStorage.getItem("vault_auth_token");
+};
+var removeToken2 = () => {
+  if (typeof window === "undefined")
+    return;
+  localStorage.removeItem("vault_auth_token");
+  localStorage.removeItem("vault_auth_user");
+};
+async function adminRequest(endpoint, options = {}) {
+  const candidates = [
+    workingBase,
+    "",
+    "http://127.0.0.1:5000",
+    "http://localhost:5000"
+  ].filter(Boolean);
+  const uniqueCandidates = [...new Set(candidates)];
+  let lastError = null;
+  for (const base of uniqueCandidates) {
+    const url = `${base}${endpoint}`;
+    const headers = new Headers(options.headers || {});
+    if (!headers.has("Content-Type") && options.body && typeof options.body === "string") {
+      headers.set("Content-Type", "application/json");
+    }
+    const token = getToken2();
+    if (token && !headers.has("Authorization")) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers,
+        credentials: "include"
+      });
+      if (response.status === 502 && uniqueCandidates.length > 1) {
+        lastError = new Error("Dev proxy 502 Bad Gateway");
+        continue;
+      }
+      workingBase = base;
+      const contentType = response.headers.get("content-type") || "";
+      let data = null;
+      if (contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = text;
+        }
+      }
+      if (!response.ok) {
+        const errorMsg = data && typeof data === "object" && data.message || typeof data === "string" && data || `HTTP Error ${response.status}: ${response.statusText}`;
+        const err = new Error(errorMsg);
+        err.status = response.status;
+        err.data = data;
+        throw err;
+      }
+      return data;
+    } catch (err) {
+      lastError = err;
+      if (err.status && err.status !== 502) {
+        throw err;
+      }
+    }
+  }
+  throw lastError || new Error("Failed to reach VaultAuth API service.");
+}
+async function getCurrentUserRole() {
+  return await adminRequest("/api/user/role", { method: "GET" });
+}
+async function getAdminStats() {
+  return await adminRequest("/api/admin/dashboard/stats", { method: "GET" });
+}
+async function getAdminUsers({ search = "", role = "all", status = "all", page = 1, per_page = 20 } = {}) {
+  const query = new URLSearchParams({
+    page: String(page),
+    per_page: String(per_page),
+    paginate: "true"
+  });
+  if (search)
+    query.set("search", search);
+  if (role && role !== "all")
+    query.set("role", role);
+  if (status && status !== "all")
+    query.set("status", status);
+  return await adminRequest(`/api/admin/users?${query.toString()}`, { method: "GET" });
+}
+async function createAdminUser(userData) {
+  return await adminRequest("/api/admin/users", {
+    method: "POST",
+    body: JSON.stringify(userData)
+  });
+}
+async function updateAdminUser(uid, data) {
+  return await adminRequest(`/api/admin/users/${uid}`, {
+    method: "PUT",
+    body: JSON.stringify(data)
+  });
+}
+async function toggleUserStatus(uid, is_active) {
+  return await adminRequest(`/api/admin/users/${uid}/status`, {
+    method: "PUT",
+    body: JSON.stringify({ is_active })
+  });
+}
+async function deleteAdminUser(uid) {
+  return await adminRequest(`/api/admin/users/${uid}`, {
+    method: "DELETE"
+  });
+}
+async function updateUserRole(uid, role) {
+  return await adminRequest(`/api/admin/users/${uid}/role`, {
+    method: "PUT",
+    body: JSON.stringify({ role })
+  });
+}
+async function getAdminRoles() {
+  return await adminRequest("/api/admin/roles", { method: "GET" });
+}
+async function getAdminSessions({ search = "", status = "all", page = 1, per_page = 20 } = {}) {
+  const query = new URLSearchParams({
+    page: String(page),
+    per_page: String(per_page)
+  });
+  if (search)
+    query.set("search", search);
+  if (status && status !== "all")
+    query.set("status", status);
+  return await adminRequest(`/api/admin/sessions?${query.toString()}`, { method: "GET" });
+}
+async function revokeAdminSession(sessionId) {
+  return await adminRequest(`/api/admin/sessions/${encodeURIComponent(sessionId)}/revoke`, {
+    method: "POST"
+  });
+}
+async function revokeAllUserSessions(uid) {
+  return await adminRequest(`/api/admin/users/${uid}/sessions/revoke-all`, {
+    method: "POST"
+  });
+}
+async function getAdminLoginActivity({ search = "", status = "all", date_from = "", date_to = "", page = 1, per_page = 25 } = {}) {
+  const query = new URLSearchParams({
+    page: String(page),
+    per_page: String(per_page)
+  });
+  if (search)
+    query.set("search", search);
+  if (status && status !== "all")
+    query.set("status", status);
+  if (date_from)
+    query.set("date_from", date_from);
+  if (date_to)
+    query.set("date_to", date_to);
+  return await adminRequest(`/api/admin/login-activity?${query.toString()}`, { method: "GET" });
+}
+async function getAdminAuditLogs({ search = "", event = "all", page = 1, per_page = 25 } = {}) {
+  const query = new URLSearchParams({
+    page: String(page),
+    per_page: String(per_page)
+  });
+  if (search)
+    query.set("search", search);
+  if (event && event !== "all")
+    query.set("event", event);
+  return await adminRequest(`/api/admin/audit-logs?${query.toString()}`, { method: "GET" });
+}
+async function getAdminSettings() {
+  return await adminRequest("/api/admin/settings", { method: "GET" });
+}
+async function updateAdminSettings(settings) {
+  return await adminRequest("/api/admin/settings", {
+    method: "PUT",
+    body: JSON.stringify(settings)
+  });
+}
+async function adminLogout() {
+  try {
+    await adminRequest("/api/logout", { method: "POST" });
+  } catch {} finally {
+    removeToken2();
+  }
+}
+
+// src/components/AuthenticatedCard.jsx
 var jsx_dev_runtime4 = __toESM(require_jsx_dev_runtime(), 1);
 function AuthenticatedCard({ user, onSignOut, onNotify }) {
   const token = user?.token || localStorage.getItem("vault_auth_token") || "";
   const sessionToken = token ? token.length > 28 ? token.slice(0, 24) + "…" : token : "SSO-SEC-" + Math.random().toString(36).substring(2, 8).toUpperCase();
   const [loginTime] = import_react4.useState(() => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+  const [userRole, setUserRole] = import_react4.useState(null);
+  const [isRegisteringPasskey, setIsRegisteringPasskey] = import_react4.useState(false);
+  const [passkeyRegistered, setPasskeyRegistered] = import_react4.useState(false);
   const username = user?.username || user?.identifier || "Authenticated User";
   const email = user?.email;
   const initial = username.charAt(0).toUpperCase();
+  import_react4.useEffect(() => {
+    async function checkRole() {
+      try {
+        const res = await getCurrentUserRole();
+        if (res?.role) {
+          setUserRole(res.role);
+        }
+      } catch {}
+    }
+    checkRole();
+  }, [token]);
   const handleLaunchApp = () => {
     onNotify?.("Launching your VaultAuth Dashboard…", "info");
     const tokenToPass = token || localStorage.getItem("vault_auth_token") || "";
@@ -19932,10 +20425,39 @@ function AuthenticatedCard({ user, onSignOut, onNotify }) {
       window.location.href = `/DASHBOARD/index.html${tokenParam}`;
     }, 400);
   };
+  const handleLaunchAdmin = () => {
+    onNotify?.("Opening VaultAuth Admin Dashboard…", "info");
+    const tokenToPass = token || localStorage.getItem("vault_auth_token") || "";
+    const tokenParam = tokenToPass ? `?token=${encodeURIComponent(tokenToPass)}` : "";
+    setTimeout(() => {
+      window.location.href = `/ADMIN/index.html${tokenParam}`;
+    }, 400);
+  };
+  const handleRegisterPasskey = async () => {
+    if (isRegisteringPasskey)
+      return;
+    if (!isWebAuthnSupported()) {
+      onNotify?.("WebAuthn is not supported in this browser.", "error");
+      return;
+    }
+    setIsRegisteringPasskey(true);
+    try {
+      const defaultDevice = navigator.userAgent.includes("Mac") ? "MacBook Passkey" : navigator.userAgent.includes("Windows") ? "Windows Hello" : "Passkey Authenticator";
+      const res = await registerPasskey(defaultDevice);
+      setPasskeyRegistered(true);
+      onNotify?.(res.message || "Passkey registered successfully!", "success");
+    } catch (err) {
+      onNotify?.(err.message || "Failed to register passkey.", "error");
+    } finally {
+      setIsRegisteringPasskey(false);
+    }
+  };
   import_react4.useEffect(() => {
-    const timer = setTimeout(() => handleLaunchApp(), 1400);
-    return () => clearTimeout(timer);
-  }, [user]);
+    if (userRole === "user") {
+      const timer = setTimeout(() => handleLaunchApp(), 1600);
+      return () => clearTimeout(timer);
+    }
+  }, [userRole]);
   return /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
     children: [
       /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
@@ -19972,7 +20494,7 @@ function AuthenticatedCard({ user, onSignOut, onNotify }) {
           }, undefined, false, undefined, this),
           /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("p", {
             style: { margin: "4px 0 0", fontSize: ".88rem", color: "var(--ink-500)" },
-            children: "Redirecting to your dashboard…"
+            children: userRole === "admin" ? "Administrative session established" : "Redirecting to your dashboard…"
           }, undefined, false, undefined, this)
         ]
       }, undefined, true, undefined, this),
@@ -19992,7 +20514,7 @@ function AuthenticatedCard({ user, onSignOut, onNotify }) {
               width: "40px",
               height: "40px",
               borderRadius: "50%",
-              background: "linear-gradient(135deg, var(--blue-500), var(--indigo-500))",
+              background: userRole === "admin" ? "linear-gradient(135deg, #7047eb, #818cf8)" : "linear-gradient(135deg, var(--blue-500), var(--indigo-500))",
               color: "#fff",
               fontWeight: 700,
               fontSize: "1rem",
@@ -20015,7 +20537,7 @@ function AuthenticatedCard({ user, onSignOut, onNotify }) {
                   /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
                     style: { width: "6px", height: "6px", borderRadius: "50%", background: "#16a34a" }
                   }, undefined, false, undefined, this),
-                  "Active SSO Session"
+                  userRole === "admin" ? "Enterprise Admin Session" : "Active SSO Session"
                 ]
               }, undefined, true, undefined, this)
             ]
@@ -20025,6 +20547,7 @@ function AuthenticatedCard({ user, onSignOut, onNotify }) {
       /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
         style: { marginBottom: "24px" },
         children: [
+          { label: "Assigned Role", value: userRole === "admin" ? "Enterprise Admin" : "End User", color: userRole === "admin" ? "#7047eb" : "inherit" },
           { label: "Session Token", value: sessionToken },
           { label: "Verified At", value: loginTime },
           { label: "Encryption", value: "256-bit SSL / SAML 2.0", color: "#16a34a" }
@@ -20051,39 +20574,101 @@ function AuthenticatedCard({ user, onSignOut, onNotify }) {
           ]
         }, item.label, true, undefined, this))
       }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("button", {
-        type: "button",
-        className: "btn",
-        onClick: handleLaunchApp,
+      /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
+        style: { display: "grid", gap: "8px" },
         children: [
-          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
-            children: "Continue to Dashboard"
-          }, undefined, false, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("svg", {
-            viewBox: "0 0 24 24",
-            style: { width: 18, height: 18, fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" },
-            children: /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("path", {
-              d: "M5 12h14M12 5l7 7-7 7"
-            }, undefined, false, undefined, this)
-          }, undefined, false, undefined, this)
-        ]
-      }, undefined, true, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("button", {
-        type: "button",
-        className: "btn btn--ghost",
-        onClick: onSignOut,
-        style: { marginTop: "8px" },
-        children: [
-          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("svg", {
-            viewBox: "0 0 24 24",
-            style: { width: 18, height: 18, fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" },
-            children: /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("path", {
-              d: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"
-            }, undefined, false, undefined, this)
-          }, undefined, false, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
-            children: "Sign out"
-          }, undefined, false, undefined, this)
+          userRole === "admin" && /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("button", {
+            type: "button",
+            className: "btn",
+            onClick: handleLaunchAdmin,
+            style: {
+              background: "linear-gradient(135deg, #7047eb, #4f46e5)",
+              boxShadow: "0 8px 20px -6px rgba(112, 71, 235, 0.55)"
+            },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
+                children: "Launch Admin Dashboard"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("svg", {
+                viewBox: "0 0 24 24",
+                style: { width: 18, height: 18, fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("path", {
+                    d: "M12 2L4 5.5V11.5C4 16.5 7.5 21 12 22C16.5 21 20 16.5 20 11.5V5.5L12 2Z"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("path", {
+                    d: "m9 12 2 2 4-4"
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("button", {
+            type: "button",
+            className: userRole === "admin" ? "btn btn--ghost" : "btn",
+            onClick: handleLaunchApp,
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
+                children: "Continue to User Dashboard"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("svg", {
+                viewBox: "0 0 24 24",
+                style: { width: 18, height: 18, fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" },
+                children: /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("path", {
+                  d: "M5 12h14M12 5l7 7-7 7"
+                }, undefined, false, undefined, this)
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("button", {
+            type: "button",
+            className: "btn btn--ghost",
+            onClick: handleRegisterPasskey,
+            disabled: isRegisteringPasskey || passkeyRegistered,
+            style: {
+              borderColor: passkeyRegistered ? "var(--success)" : "var(--ink-200)",
+              color: passkeyRegistered ? "var(--success)" : "var(--ink-900)"
+            },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("svg", {
+                viewBox: "0 0 24 24",
+                style: { width: 18, height: 18, fill: "none", stroke: passkeyRegistered ? "#16a34a" : "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("path", {
+                    d: "m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("path", {
+                    d: "m21 2-9.6 9.6"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("circle", {
+                    cx: "7.5",
+                    cy: "15.5",
+                    r: "5.5"
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
+                children: passkeyRegistered ? "Passkey Registered on Device ✓" : isRegisteringPasskey ? "Registering Passkey…" : "Register Passkey on this Device"
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("button", {
+            type: "button",
+            className: "btn btn--ghost",
+            onClick: onSignOut,
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("svg", {
+                viewBox: "0 0 24 24",
+                style: { width: 18, height: 18, fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" },
+                children: /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("path", {
+                  d: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"
+                }, undefined, false, undefined, this)
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
+                children: "Sign out"
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
         ]
       }, undefined, true, undefined, this)
     ]
@@ -20727,7 +21312,11 @@ function App() {
   }, []);
   const handleLoginSuccess = (userData) => {
     setPendingUser(userData);
-    setAuthStep("otp");
+    if (userData?.passkeyVerified) {
+      setAuthStep("authenticated");
+    } else {
+      setAuthStep("otp");
+    }
   };
   const handleOtpVerifySuccess = (userData) => {
     setPendingUser((prev) => ({ ...prev, ...userData }));
@@ -20795,12 +21384,5588 @@ function App() {
   }, undefined, true, undefined, this);
 }
 
-// src/main.jsx
+// src/components/admin/AdminDashboard.jsx
+var import_react20 = __toESM(require_react(), 1);
+
+// src/components/admin/AdminSidebar.jsx
+var import_react12 = __toESM(require_react(), 1);
+// node_modules/lucide-react/dist/esm/createLucideIcon.mjs
+var import_react11 = __toESM(require_react(), 1);
+
+// node_modules/lucide-react/dist/esm/shared/src/utils/toKebabCase.mjs
+var toKebabCase = (string) => string?.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
+
+// node_modules/lucide-react/dist/esm/shared/src/utils/toLucideIconData.mjs
+function toLucideIconData(iconName, iconNode, aliases = []) {
+  if (iconNode == null) {
+    throw new Error("[lucide]: iconNode is required when icon name is used");
+  }
+  return {
+    name: toKebabCase(iconName),
+    size: 24,
+    node: iconNode,
+    ...aliases.length > 0 ? { aliases } : {}
+  };
+}
+
+// node_modules/lucide-react/dist/esm/shared/src/utils/toCamelCase.mjs
+var toCamelCase = (string) => {
+  let out = "";
+  let upperNext = false;
+  for (const ch of string) {
+    if (ch === "-" || ch === "_" || ch <= " ") {
+      upperNext = out.length > 0;
+      continue;
+    }
+    if (out.length === 0) {
+      out += ch.toLowerCase();
+    } else {
+      out += upperNext ? ch.toUpperCase() : ch;
+    }
+    upperNext = false;
+  }
+  return out;
+};
+
+// node_modules/lucide-react/dist/esm/shared/src/utils/toPascalCase.mjs
+var toPascalCase = (string) => {
+  const camelCase = toCamelCase(string);
+  return camelCase.charAt(0).toUpperCase() + camelCase.slice(1);
+};
+
+// node_modules/lucide-react/dist/esm/Icon.mjs
+var import_react10 = __toESM(require_react(), 1);
+
+// node_modules/lucide-react/dist/esm/shared/src/utils/mergeClasses.mjs
+var mergeClasses = (...classes) => classes.filter((className, index, array) => {
+  return Boolean(className) && className.trim() !== "" && array.indexOf(className) === index;
+}).join(" ").trim();
+
+// node_modules/lucide-react/dist/esm/shared/src/build/defaultAttributes.mjs
+var defaultAttributes = {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: 24,
+  height: 24,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  "stroke-width": 2,
+  "stroke-linecap": "round",
+  "stroke-linejoin": "round"
+};
+
+// node_modules/lucide-react/dist/esm/shared/src/build/buildLucideIconNode.mjs
+function isDefined(value) {
+  return value !== null && value !== undefined;
+}
+function buildLucideIconNode(icon, params = {}) {
+  const attributeNames = params.attributeNames ?? {};
+  const getAttributeName = (attributeName) => attributeNames[attributeName] ?? attributeName;
+  const viewBoxWidth = icon.size ?? icon.width ?? defaultAttributes["width"];
+  const viewBoxHeight = icon.size ?? icon.height ?? defaultAttributes["height"];
+  const aliasClassNames = icon.aliases?.filter((alias) => typeof alias === "string" && alias.trim() !== "").map((alias) => `lucide-${alias}`) ?? [];
+  const iconClassNames = [...icon.name ? [`lucide-${icon.name}`] : [], ...aliasClassNames];
+  const classNamesFromClassName = params.className?.split(" ").filter(Boolean) ?? [];
+  const className = params.includeDefaultClasses === false ? mergeClasses(...classNamesFromClassName) : mergeClasses("lucide", ...iconClassNames, ...classNamesFromClassName);
+  const calculatedStrokeWidth = params.absoluteStrokeWidth ? Number(params.strokeWidth ?? defaultAttributes["stroke-width"]) * Number(icon.size ?? icon.width ?? defaultAttributes["width"]) / Number(params.size ?? params.width ?? defaultAttributes["width"]) : params.strokeWidth ?? defaultAttributes["stroke-width"];
+  const attributes = {
+    ...Object.entries(defaultAttributes).reduce((attrs, [attrName, value]) => {
+      attrs[getAttributeName(attrName)] = value;
+      return attrs;
+    }, {}),
+    ..."color" in params && params.color && {
+      [getAttributeName("stroke")]: params.color
+    },
+    ..."size" in params && isDefined(params.size) && {
+      [getAttributeName("width")]: params.size,
+      [getAttributeName("height")]: params.size
+    },
+    ..."width" in params && isDefined(params.width) && {
+      [getAttributeName("width")]: params.width
+    },
+    ..."height" in params && isDefined(params.height) && {
+      [getAttributeName("height")]: params.height
+    },
+    [getAttributeName("stroke-width")]: calculatedStrokeWidth,
+    ...className && {
+      [getAttributeName("class")]: className
+    },
+    [getAttributeName("viewBox")]: `0 0 ${viewBoxWidth} ${viewBoxHeight}`,
+    ...params.hasA11yProp === false ? {
+      [getAttributeName("aria-hidden")]: "true"
+    } : {},
+    ..."attributes" in params && params.attributes
+  };
+  return [
+    "svg",
+    attributes,
+    icon.node.map((child) => {
+      const [name, attrs, children] = child;
+      const nextAttrs = params.nonScalingStroke ? { [getAttributeName("vector-effect")]: "non-scaling-stroke", ...attrs } : attrs;
+      return children ? [name, nextAttrs, children] : [name, nextAttrs];
+    })
+  ];
+}
+
+// node_modules/lucide-react/dist/esm/shared/src/build/buildLucideIconForReact.mjs
+function buildLucideIconForReact(icon, params = {}) {
+  return buildLucideIconNode(icon, {
+    ...params,
+    attributeNames: {
+      ...params.attributeNames,
+      class: "className",
+      "stroke-width": "strokeWidth",
+      "stroke-linecap": "strokeLinecap",
+      "stroke-linejoin": "strokeLinejoin",
+      "vector-effect": "vectorEffect"
+    }
+  });
+}
+
+// node_modules/lucide-react/dist/esm/shared/src/utils/hasA11yProp.mjs
+var hasA11yProp = (props) => {
+  for (const prop in props) {
+    if (prop.startsWith("aria-") || prop === "role" || prop === "title") {
+      return true;
+    }
+  }
+  return false;
+};
+
+// node_modules/lucide-react/dist/esm/context.mjs
+var import_react9 = __toESM(require_react(), 1);
+"use client";
+var LucideContext = import_react9.createContext({});
+var useLucideContext = () => import_react9.useContext(LucideContext);
+
+// node_modules/lucide-react/dist/esm/Icon.mjs
+"use client";
+var Icon = import_react10.forwardRef(({
+  color,
+  size,
+  width,
+  height,
+  strokeWidth,
+  absoluteStrokeWidth,
+  nonScalingStroke,
+  className = "",
+  children,
+  iconNode = [],
+  icon = {
+    node: iconNode,
+    aliases: [],
+    size: 24
+  },
+  ...rest
+}, ref) => {
+  const {
+    size: contextSize = 24,
+    strokeWidth: contextStrokeWidth = 2,
+    absoluteStrokeWidth: contextAbsoluteStrokeWidth = false,
+    nonScalingStroke: contextNonScalingStroke = false,
+    color: contextColor = "currentColor",
+    className: contextClass = ""
+  } = useLucideContext() ?? {};
+  const hasAccessibleProp = Boolean(children) || hasA11yProp(rest);
+  const [name, svgAttributes, builtIconNode = []] = buildLucideIconForReact(icon, {
+    color: color ?? contextColor,
+    width: width ?? size ?? contextSize,
+    height: height ?? size ?? contextSize,
+    strokeWidth: strokeWidth ?? contextStrokeWidth,
+    absoluteStrokeWidth: absoluteStrokeWidth ?? contextAbsoluteStrokeWidth,
+    nonScalingStroke: nonScalingStroke ?? contextNonScalingStroke,
+    className: mergeClasses(contextClass, className),
+    hasA11yProp: hasAccessibleProp,
+    attributes: rest
+  });
+  return import_react10.createElement(name, {
+    ref,
+    ...svgAttributes
+  }, [
+    ...builtIconNode.map(([tag, attrs]) => import_react10.createElement(tag, attrs)),
+    ...Array.isArray(children) ? children : [children]
+  ]);
+});
+
+// node_modules/lucide-react/dist/esm/createLucideIcon.mjs
+function createLucideIcon(iconDataOrName, iconNode = [], aliases = []) {
+  const iconData = typeof iconDataOrName === "string" ? toLucideIconData(iconDataOrName, iconNode, aliases) : iconDataOrName;
+  const Component = import_react11.forwardRef(({ className, ...props }, ref) => import_react11.createElement(Icon, {
+    ref,
+    icon: iconData,
+    className,
+    ...props
+  }));
+  if (iconData.name) {
+    Component.displayName = toPascalCase(iconData.name);
+  }
+  return Component;
+}
+
+// node_modules/lucide-react/dist/esm/icons/circle-check.mjs
+var __iconData = {
+  name: "circle-check",
+  size: 24,
+  node: [
+    ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+    ["path", { d: "m16 9-5.5 5.5L8 12", key: "xofnsj" }]
+  ],
+  aliases: ["check-circle-2"]
+};
+__iconData.node;
+var CircleCheck = createLucideIcon(__iconData);
+// node_modules/lucide-react/dist/esm/icons/circle-x.mjs
+var __iconData2 = {
+  name: "circle-x",
+  size: 24,
+  node: [
+    ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+    ["path", { d: "m15 9-6 6", key: "1uzhvr" }],
+    ["path", { d: "m9 9 6 6", key: "z0biqf" }]
+  ],
+  aliases: ["x-circle"]
+};
+__iconData2.node;
+var CircleX = createLucideIcon(__iconData2);
+// node_modules/lucide-react/dist/esm/icons/funnel.mjs
+var __iconData3 = {
+  name: "funnel",
+  size: 24,
+  node: [
+    [
+      "path",
+      {
+        d: "M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z",
+        key: "sc7q7i"
+      }
+    ]
+  ],
+  aliases: ["filter"]
+};
+__iconData3.node;
+var Funnel = createLucideIcon(__iconData3);
+// node_modules/lucide-react/dist/esm/icons/octagon-alert.mjs
+var __iconData4 = {
+  name: "octagon-alert",
+  size: 24,
+  node: [
+    ["path", { d: "M12 16h.01", key: "1drbdi" }],
+    ["path", { d: "M12 8v4", key: "1got3b" }],
+    [
+      "path",
+      {
+        d: "M15.312 2a2 2 0 0 1 1.414.586l4.688 4.688A2 2 0 0 1 22 8.688v6.624a2 2 0 0 1-.586 1.414l-4.688 4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586l-4.688-4.688A2 2 0 0 1 2 15.312V8.688a2 2 0 0 1 .586-1.414l4.688-4.688A2 2 0 0 1 8.688 2z",
+        key: "1fd625"
+      }
+    ]
+  ],
+  aliases: ["alert-octagon"]
+};
+__iconData4.node;
+var OctagonAlert = createLucideIcon(__iconData4);
+// node_modules/lucide-react/dist/esm/icons/pen.mjs
+var __iconData5 = {
+  name: "pen",
+  size: 24,
+  node: [
+    [
+      "path",
+      {
+        d: "M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z",
+        key: "1a8usu"
+      }
+    ]
+  ],
+  aliases: ["edit-2"]
+};
+__iconData5.node;
+var Pen = createLucideIcon(__iconData5);
+// node_modules/lucide-react/dist/esm/icons/trash.mjs
+var __iconData6 = {
+  name: "trash",
+  size: 24,
+  node: [
+    ["path", { d: "M10 11v6", key: "nco0om" }],
+    ["path", { d: "M14 11v6", key: "outv1u" }],
+    ["path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6", key: "miytrc" }],
+    ["path", { d: "M3 6h18", key: "d0wm0j" }],
+    ["path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2", key: "e791ji" }]
+  ],
+  aliases: ["trash-2"]
+};
+__iconData6.node;
+var Trash = createLucideIcon(__iconData6);
+// node_modules/lucide-react/dist/esm/icons/triangle-alert.mjs
+var __iconData7 = {
+  name: "triangle-alert",
+  size: 24,
+  node: [
+    [
+      "path",
+      {
+        d: "m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3",
+        key: "wmoenq"
+      }
+    ],
+    ["path", { d: "M12 9v4", key: "juzpu7" }],
+    ["path", { d: "M12 17h.01", key: "p32p05" }]
+  ],
+  aliases: ["alert-triangle"]
+};
+__iconData7.node;
+var TriangleAlert = createLucideIcon(__iconData7);
+// node_modules/lucide-react/dist/esm/icons/activity.mjs
+var __iconData8 = {
+  name: "activity",
+  size: 24,
+  node: [
+    [
+      "path",
+      {
+        d: "M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2",
+        key: "169zse"
+      }
+    ]
+  ]
+};
+__iconData8.node;
+var Activity = createLucideIcon(__iconData8);
+// node_modules/lucide-react/dist/esm/icons/arrow-right.mjs
+var __iconData9 = {
+  name: "arrow-right",
+  size: 24,
+  node: [
+    ["path", { d: "M5 12h14", key: "1ays0h" }],
+    ["path", { d: "m12 5 7 7-7 7", key: "xquz4c" }]
+  ]
+};
+__iconData9.node;
+var ArrowRight = createLucideIcon(__iconData9);
+// node_modules/lucide-react/dist/esm/icons/calendar.mjs
+var __iconData10 = {
+  name: "calendar",
+  size: 24,
+  node: [
+    ["path", { d: "M8 2v3", key: "1ioesn" }],
+    ["path", { d: "M16 2v3", key: "otl347" }],
+    ["rect", { x: "3", y: "3", width: "18", height: "18", rx: "2", key: "h1oib" }],
+    ["path", { d: "M3 9h18", key: "1pudct" }]
+  ]
+};
+__iconData10.node;
+var Calendar = createLucideIcon(__iconData10);
+// node_modules/lucide-react/dist/esm/icons/check.mjs
+var __iconData11 = {
+  name: "check",
+  size: 24,
+  node: [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]]
+};
+__iconData11.node;
+var Check = createLucideIcon(__iconData11);
+// node_modules/lucide-react/dist/esm/icons/chevron-left.mjs
+var __iconData12 = {
+  name: "chevron-left",
+  size: 24,
+  node: [["path", { d: "m15 18-6-6 6-6", key: "1wnfg3" }]]
+};
+__iconData12.node;
+var ChevronLeft = createLucideIcon(__iconData12);
+// node_modules/lucide-react/dist/esm/icons/chevron-right.mjs
+var __iconData13 = {
+  name: "chevron-right",
+  size: 24,
+  node: [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]]
+};
+__iconData13.node;
+var ChevronRight = createLucideIcon(__iconData13);
+// node_modules/lucide-react/dist/esm/icons/clock.mjs
+var __iconData14 = {
+  name: "clock",
+  size: 24,
+  node: [
+    ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+    ["path", { d: "M12 6v6l4 2", key: "mmk7yg" }]
+  ]
+};
+__iconData14.node;
+var Clock = createLucideIcon(__iconData14);
+// node_modules/lucide-react/dist/esm/icons/external-link.mjs
+var __iconData15 = {
+  name: "external-link",
+  size: 24,
+  node: [
+    ["path", { d: "M15 3h6v6", key: "1q9fwt" }],
+    ["path", { d: "M10 14 21 3", key: "gplh6r" }],
+    ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", key: "a6xqqp" }]
+  ]
+};
+__iconData15.node;
+var ExternalLink = createLucideIcon(__iconData15);
+// node_modules/lucide-react/dist/esm/icons/eye.mjs
+var __iconData16 = {
+  name: "eye",
+  size: 24,
+  node: [
+    [
+      "path",
+      {
+        d: "M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0",
+        key: "1nclc0"
+      }
+    ],
+    ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
+  ]
+};
+__iconData16.node;
+var Eye = createLucideIcon(__iconData16);
+// node_modules/lucide-react/dist/esm/icons/file-text.mjs
+var __iconData17 = {
+  name: "file-text",
+  size: 24,
+  node: [
+    [
+      "path",
+      {
+        d: "M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z",
+        key: "1oefj6"
+      }
+    ],
+    ["path", { d: "M14 2v5a1 1 0 0 0 1 1h5", key: "wfsgrz" }],
+    ["path", { d: "M10 9H8", key: "b1mrlr" }],
+    ["path", { d: "M16 13H8", key: "t4e002" }],
+    ["path", { d: "M16 17H8", key: "z1uh3a" }]
+  ]
+};
+__iconData17.node;
+var FileText = createLucideIcon(__iconData17);
+// node_modules/lucide-react/dist/esm/icons/flame.mjs
+var __iconData18 = {
+  name: "flame",
+  size: 24,
+  node: [
+    [
+      "path",
+      {
+        d: "M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4",
+        key: "1slcih"
+      }
+    ]
+  ]
+};
+__iconData18.node;
+var Flame = createLucideIcon(__iconData18);
+// node_modules/lucide-react/dist/esm/icons/globe.mjs
+var __iconData19 = {
+  name: "globe",
+  size: 24,
+  node: [
+    ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+    ["path", { d: "M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20", key: "13o1zl" }],
+    ["path", { d: "M2 12h20", key: "9i4pu4" }]
+  ]
+};
+__iconData19.node;
+var Globe = createLucideIcon(__iconData19);
+// node_modules/lucide-react/dist/esm/icons/info.mjs
+var __iconData20 = {
+  name: "info",
+  size: 24,
+  node: [
+    ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+    ["path", { d: "M12 16v-4", key: "1dtifu" }],
+    ["path", { d: "M12 8h.01", key: "e9boi3" }]
+  ]
+};
+__iconData20.node;
+var Info = createLucideIcon(__iconData20);
+// node_modules/lucide-react/dist/esm/icons/key-round.mjs
+var __iconData21 = {
+  name: "key-round",
+  size: 24,
+  node: [
+    [
+      "path",
+      {
+        d: "M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z",
+        key: "1s6t7t"
+      }
+    ],
+    ["circle", { cx: "16.5", cy: "7.5", r: ".5", fill: "currentColor", key: "w0ekpg" }]
+  ]
+};
+__iconData21.node;
+var KeyRound = createLucideIcon(__iconData21);
+// node_modules/lucide-react/dist/esm/icons/key.mjs
+var __iconData22 = {
+  name: "key",
+  size: 24,
+  node: [
+    ["path", { d: "m2 21 9.6-9.6", key: "9l79m3" }],
+    [
+      "path",
+      { d: "m7.5 15.5 2.3 2.3a1 1 0 0 1 0 1.4l-2.1 2.1a1 1 0 0 1-1.4 0L4 19", key: "fw8biw" }
+    ],
+    ["circle", { cx: "15.5", cy: "7.5", r: "5.5", key: "4wxmhb" }]
+  ]
+};
+__iconData22.node;
+var Key = createLucideIcon(__iconData22);
+// node_modules/lucide-react/dist/esm/icons/laptop.mjs
+var __iconData23 = {
+  name: "laptop",
+  size: 24,
+  node: [
+    [
+      "path",
+      {
+        d: "M18 5a2 2 0 0 1 2 2v8.526a2 2 0 0 0 .212.897l1.068 2.127a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45l1.068-2.127A2 2 0 0 0 4 15.526V7a2 2 0 0 1 2-2z",
+        key: "1pdavp"
+      }
+    ],
+    ["path", { d: "M20.054 15.987H3.946", key: "14rxg9" }]
+  ]
+};
+__iconData23.node;
+var Laptop = createLucideIcon(__iconData23);
+// node_modules/lucide-react/dist/esm/icons/layout-dashboard.mjs
+var __iconData24 = {
+  name: "layout-dashboard",
+  size: 24,
+  node: [
+    ["rect", { width: "7", height: "9", x: "3", y: "3", rx: "1", key: "10lvy0" }],
+    ["rect", { width: "7", height: "5", x: "14", y: "3", rx: "1", key: "16une8" }],
+    ["rect", { width: "7", height: "9", x: "14", y: "12", rx: "1", key: "1hutg5" }],
+    ["rect", { width: "7", height: "5", x: "3", y: "16", rx: "1", key: "ldoo1y" }]
+  ]
+};
+__iconData24.node;
+var LayoutDashboard = createLucideIcon(__iconData24);
+// node_modules/lucide-react/dist/esm/icons/lock.mjs
+var __iconData25 = {
+  name: "lock",
+  size: 24,
+  node: [
+    ["rect", { width: "18", height: "11", x: "3", y: "11", rx: "2", ry: "2", key: "1w4ew1" }],
+    ["path", { d: "M7 11V7a5 5 0 0 1 10 0v4", key: "fwvmzm" }]
+  ]
+};
+__iconData25.node;
+var Lock = createLucideIcon(__iconData25);
+// node_modules/lucide-react/dist/esm/icons/log-out.mjs
+var __iconData26 = {
+  name: "log-out",
+  size: 24,
+  node: [
+    ["path", { d: "m16 17 5-5-5-5", key: "1bji2h" }],
+    ["path", { d: "M21 12H9", key: "dn1m92" }],
+    ["path", { d: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4", key: "1uf3rs" }]
+  ]
+};
+__iconData26.node;
+var LogOut = createLucideIcon(__iconData26);
+// node_modules/lucide-react/dist/esm/icons/mail.mjs
+var __iconData27 = {
+  name: "mail",
+  size: 24,
+  node: [
+    ["path", { d: "m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7", key: "132q7q" }],
+    ["rect", { x: "2", y: "4", width: "20", height: "16", rx: "2", key: "izxlao" }]
+  ]
+};
+__iconData27.node;
+var Mail = createLucideIcon(__iconData27);
+// node_modules/lucide-react/dist/esm/icons/menu.mjs
+var __iconData28 = {
+  name: "menu",
+  size: 24,
+  node: [
+    ["path", { d: "M4 5h16", key: "1tepv9" }],
+    ["path", { d: "M4 12h16", key: "1lakjw" }],
+    ["path", { d: "M4 19h16", key: "1djgab" }]
+  ]
+};
+__iconData28.node;
+var Menu = createLucideIcon(__iconData28);
+// node_modules/lucide-react/dist/esm/icons/monitor.mjs
+var __iconData29 = {
+  name: "monitor",
+  size: 24,
+  node: [
+    ["rect", { width: "20", height: "14", x: "2", y: "3", rx: "2", key: "48i651" }],
+    ["line", { x1: "8", x2: "16", y1: "21", y2: "21", key: "1svkeh" }],
+    ["line", { x1: "12", x2: "12", y1: "17", y2: "21", key: "vw1qmm" }]
+  ]
+};
+__iconData29.node;
+var Monitor = createLucideIcon(__iconData29);
+// node_modules/lucide-react/dist/esm/icons/refresh-cw.mjs
+var __iconData30 = {
+  name: "refresh-cw",
+  size: 24,
+  node: [
+    ["path", { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8", key: "v9h5vc" }],
+    ["path", { d: "M21 3v5h-5", key: "1q7to0" }],
+    ["path", { d: "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16", key: "3uifl3" }],
+    ["path", { d: "M8 16H3v5", key: "1cv678" }]
+  ]
+};
+__iconData30.node;
+var RefreshCw = createLucideIcon(__iconData30);
+// node_modules/lucide-react/dist/esm/icons/save.mjs
+var __iconData31 = {
+  name: "save",
+  size: 24,
+  node: [
+    [
+      "path",
+      {
+        d: "M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z",
+        key: "1c8476"
+      }
+    ],
+    ["path", { d: "M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7", key: "1ydtos" }],
+    ["path", { d: "M7 3v4a1 1 0 0 0 1 1h7", key: "t51u73" }]
+  ]
+};
+__iconData31.node;
+var Save = createLucideIcon(__iconData31);
+// node_modules/lucide-react/dist/esm/icons/search.mjs
+var __iconData32 = {
+  name: "search",
+  size: 24,
+  node: [
+    ["path", { d: "m21 21-4.34-4.34", key: "14j7rj" }],
+    ["circle", { cx: "11", cy: "11", r: "8", key: "4ej97u" }]
+  ]
+};
+__iconData32.node;
+var Search = createLucideIcon(__iconData32);
+// node_modules/lucide-react/dist/esm/icons/server.mjs
+var __iconData33 = {
+  name: "server",
+  size: 24,
+  node: [
+    ["rect", { width: "20", height: "8", x: "2", y: "2", rx: "2", ry: "2", key: "ngkwjq" }],
+    ["rect", { width: "20", height: "8", x: "2", y: "14", rx: "2", ry: "2", key: "iecqi9" }],
+    ["line", { x1: "6", x2: "6.01", y1: "6", y2: "6", key: "16zg32" }],
+    ["line", { x1: "6", x2: "6.01", y1: "18", y2: "18", key: "nzw8ys" }]
+  ]
+};
+__iconData33.node;
+var Server = createLucideIcon(__iconData33);
+// node_modules/lucide-react/dist/esm/icons/settings.mjs
+var __iconData34 = {
+  name: "settings",
+  size: 24,
+  node: [
+    [
+      "path",
+      {
+        d: "M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915",
+        key: "1i5ecw"
+      }
+    ],
+    ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
+  ]
+};
+__iconData34.node;
+var Settings = createLucideIcon(__iconData34);
+// node_modules/lucide-react/dist/esm/icons/shield-alert.mjs
+var __iconData35 = {
+  name: "shield-alert",
+  size: 24,
+  node: [
+    [
+      "path",
+      {
+        d: "M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z",
+        key: "oel41y"
+      }
+    ],
+    ["path", { d: "M12 8v4", key: "1got3b" }],
+    ["path", { d: "M12 16h.01", key: "1drbdi" }]
+  ]
+};
+__iconData35.node;
+var ShieldAlert = createLucideIcon(__iconData35);
+// node_modules/lucide-react/dist/esm/icons/shield-check.mjs
+var __iconData36 = {
+  name: "shield-check",
+  size: 24,
+  node: [
+    [
+      "path",
+      {
+        d: "M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z",
+        key: "oel41y"
+      }
+    ],
+    ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
+  ]
+};
+__iconData36.node;
+var ShieldCheck = createLucideIcon(__iconData36);
+// node_modules/lucide-react/dist/esm/icons/shield.mjs
+var __iconData37 = {
+  name: "shield",
+  size: 24,
+  node: [
+    [
+      "path",
+      {
+        d: "M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z",
+        key: "oel41y"
+      }
+    ]
+  ]
+};
+__iconData37.node;
+var Shield = createLucideIcon(__iconData37);
+// node_modules/lucide-react/dist/esm/icons/smartphone.mjs
+var __iconData38 = {
+  name: "smartphone",
+  size: 24,
+  node: [
+    ["rect", { width: "14", height: "20", x: "5", y: "2", rx: "2", ry: "2", key: "1yt0o3" }],
+    ["path", { d: "M12 18h.01", key: "mhygvu" }]
+  ]
+};
+__iconData38.node;
+var Smartphone = createLucideIcon(__iconData38);
+// node_modules/lucide-react/dist/esm/icons/user-check.mjs
+var __iconData39 = {
+  name: "user-check",
+  size: 24,
+  node: [
+    ["path", { d: "m16 11 2 2 4-4", key: "9rsbq5" }],
+    ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
+    ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }]
+  ]
+};
+__iconData39.node;
+var UserCheck = createLucideIcon(__iconData39);
+// node_modules/lucide-react/dist/esm/icons/user-plus.mjs
+var __iconData40 = {
+  name: "user-plus",
+  size: 24,
+  node: [
+    ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
+    ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }],
+    ["line", { x1: "19", x2: "19", y1: "8", y2: "14", key: "1bvyxn" }],
+    ["line", { x1: "22", x2: "16", y1: "11", y2: "11", key: "1shjgl" }]
+  ]
+};
+__iconData40.node;
+var UserPlus = createLucideIcon(__iconData40);
+// node_modules/lucide-react/dist/esm/icons/user.mjs
+var __iconData41 = {
+  name: "user",
+  size: 24,
+  node: [
+    ["path", { d: "M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2", key: "975kel" }],
+    ["circle", { cx: "12", cy: "7", r: "4", key: "17ys0d" }]
+  ]
+};
+__iconData41.node;
+var User = createLucideIcon(__iconData41);
+// node_modules/lucide-react/dist/esm/icons/users.mjs
+var __iconData42 = {
+  name: "users",
+  size: 24,
+  node: [
+    ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
+    ["path", { d: "M16 3.128a4 4 0 0 1 0 7.744", key: "16gr8j" }],
+    ["path", { d: "M22 21v-2a4 4 0 0 0-3-3.87", key: "kshegd" }],
+    ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }]
+  ]
+};
+__iconData42.node;
+var Users = createLucideIcon(__iconData42);
+// src/components/admin/AdminSidebar.jsx
 var jsx_dev_runtime9 = __toESM(require_jsx_dev_runtime(), 1);
+function AdminSidebar({
+  activePage,
+  onNavigate,
+  isCollapsed,
+  onToggleCollapse,
+  adminUser,
+  onLogout
+}) {
+  const navItems = [
+    { id: "overview", label: "Overview", icon: LayoutDashboard },
+    { id: "users", label: "User Management", icon: Users },
+    { id: "roles", label: "Role & Permissions", icon: ShieldCheck },
+    { id: "sessions", label: "Active Sessions", icon: Monitor },
+    { id: "activity", label: "Login Activity", icon: Activity },
+    { id: "audit", label: "Security & Audit Logs", icon: FileText },
+    { id: "settings", label: "System Settings", icon: Settings }
+  ];
+  const username = adminUser?.username || "Admin";
+  const initials = username.substring(0, 2).toUpperCase();
+  return /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("aside", {
+    className: `admin-sidebar ${isCollapsed ? "collapsed" : ""}`,
+    style: {
+      width: isCollapsed ? "72px" : "260px",
+      minHeight: "100vh",
+      backgroundColor: "var(--sidebar-bg, #111827)",
+      color: "var(--sidebar-text, #9ca3af)",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "space-between",
+      borderRight: "1px solid #1f2937",
+      transition: "width 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+      position: "sticky",
+      top: 0,
+      zIndex: 40,
+      flexShrink: 0
+    },
+    children: [
+      /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
+            style: {
+              padding: isCollapsed ? "20px 12px" : "20px 20px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: isCollapsed ? "center" : "space-between",
+              borderBottom: "1px solid rgba(255, 255, 255, 0.07)"
+            },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
+                style: {
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  cursor: "pointer"
+                },
+                onClick: () => onNavigate("overview"),
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
+                    style: {
+                      width: "38px",
+                      height: "38px",
+                      borderRadius: "10px",
+                      background: "linear-gradient(135deg, #7047eb, #4f46e5)",
+                      display: "grid",
+                      placeItems: "center",
+                      flexShrink: 0,
+                      boxShadow: "0 4px 12px rgba(112, 71, 235, 0.35)"
+                    },
+                    children: /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(Shield, {
+                      size: 20,
+                      color: "#ffffff",
+                      strokeWidth: 2.2
+                    }, undefined, false, undefined, this)
+                  }, undefined, false, undefined, this),
+                  !isCollapsed && /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
+                        style: { display: "flex", alignItems: "center", gap: "6px" },
+                        children: [
+                          /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("span", {
+                            style: { color: "#fff", fontWeight: 700, fontSize: "1.05rem", letterSpacing: "-0.01em" },
+                            children: [
+                              "VaultAuth",
+                              /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("span", {
+                                style: { color: "#a5b4fc" },
+                                children: "SSO"
+                              }, undefined, false, undefined, this)
+                            ]
+                          }, undefined, true, undefined, this),
+                          /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("span", {
+                            style: {
+                              fontSize: "0.68rem",
+                              fontWeight: 700,
+                              padding: "2px 6px",
+                              borderRadius: "4px",
+                              background: "rgba(112, 71, 235, 0.25)",
+                              color: "#c7d2fe",
+                              border: "1px solid rgba(199, 210, 254, 0.2)",
+                              letterSpacing: "0.04em"
+                            },
+                            children: "ADMIN"
+                          }, undefined, false, undefined, this)
+                        ]
+                      }, undefined, true, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
+                        style: { fontSize: "0.74rem", color: "#6b7280", marginTop: "2px" },
+                        children: "IAM CONTROL CENTER"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              !isCollapsed && /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("button", {
+                onClick: onToggleCollapse,
+                "aria-label": "Collapse sidebar",
+                style: {
+                  background: "rgba(255, 255, 255, 0.05)",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  borderRadius: "6px",
+                  color: "#9ca3af",
+                  padding: "5px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.15s"
+                },
+                onMouseEnter: (e) => e.currentTarget.style.color = "#fff",
+                onMouseLeave: (e) => e.currentTarget.style.color = "#9ca3af",
+                children: /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(ChevronLeft, {
+                  size: 16
+                }, undefined, false, undefined, this)
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          isCollapsed && /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
+            style: { textAlign: "center", padding: "10px 0" },
+            children: /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("button", {
+              onClick: onToggleCollapse,
+              "aria-label": "Expand sidebar",
+              style: {
+                background: "transparent",
+                border: "none",
+                color: "#9ca3af",
+                cursor: "pointer",
+                padding: "6px"
+              },
+              children: /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(ChevronRight, {
+                size: 18
+              }, undefined, false, undefined, this)
+            }, undefined, false, undefined, this)
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("nav", {
+            style: { padding: isCollapsed ? "16px 8px" : "16px 12px" },
+            children: [
+              !isCollapsed && /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
+                style: {
+                  fontSize: "0.7rem",
+                  fontWeight: 700,
+                  color: "#6b7280",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  padding: "0 10px 10px"
+                },
+                children: "Management"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("ul", {
+                style: { listStyle: "none", padding: 0, margin: 0, display: "grid", gap: "4px" },
+                children: navItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activePage === item.id;
+                  return /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("li", {
+                    children: /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("button", {
+                      onClick: () => onNavigate(item.id),
+                      title: isCollapsed ? item.label : undefined,
+                      style: {
+                        width: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: isCollapsed ? "center" : "flex-start",
+                        gap: "12px",
+                        padding: isCollapsed ? "10px" : "10px 14px",
+                        borderRadius: "8px",
+                        border: "none",
+                        background: isActive ? "#1f2937" : "transparent",
+                        color: isActive ? "#ffffff" : "#9ca3af",
+                        fontWeight: isActive ? 600 : 500,
+                        fontSize: "0.88rem",
+                        cursor: "pointer",
+                        position: "relative",
+                        transition: "all 0.15s ease",
+                        borderLeft: isActive ? "3px solid #7047eb" : "3px solid transparent"
+                      },
+                      onMouseEnter: (e) => {
+                        if (!isActive) {
+                          e.currentTarget.style.background = "rgba(255, 255, 255, 0.04)";
+                          e.currentTarget.style.color = "#e5e7eb";
+                        }
+                      },
+                      onMouseLeave: (e) => {
+                        if (!isActive) {
+                          e.currentTarget.style.background = "transparent";
+                          e.currentTarget.style.color = "#9ca3af";
+                        }
+                      },
+                      children: [
+                        /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(Icon, {
+                          size: 18,
+                          color: isActive ? "#818cf8" : "currentColor"
+                        }, undefined, false, undefined, this),
+                        !isCollapsed && /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("span", {
+                          children: item.label
+                        }, undefined, false, undefined, this)
+                      ]
+                    }, undefined, true, undefined, this)
+                  }, item.id, false, undefined, this);
+                })
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
+                style: { marginTop: "24px" },
+                children: [
+                  !isCollapsed && /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
+                    style: {
+                      fontSize: "0.7rem",
+                      fontWeight: 700,
+                      color: "#6b7280",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      padding: "0 10px 8px"
+                    },
+                    children: "Portals"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("a", {
+                    href: "/DASHBOARD/index.html",
+                    title: "Switch to End User Dashboard",
+                    style: {
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: isCollapsed ? "center" : "space-between",
+                      padding: isCollapsed ? "10px" : "10px 14px",
+                      borderRadius: "8px",
+                      color: "#a5b4fc",
+                      textDecoration: "none",
+                      fontSize: "0.84rem",
+                      fontWeight: 500,
+                      background: "rgba(112, 71, 235, 0.08)",
+                      border: "1px solid rgba(165, 180, 252, 0.15)",
+                      transition: "all 0.15s"
+                    },
+                    onMouseEnter: (e) => e.currentTarget.style.background = "rgba(112, 71, 235, 0.18)",
+                    onMouseLeave: (e) => e.currentTarget.style.background = "rgba(112, 71, 235, 0.08)",
+                    children: /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
+                      style: { display: "flex", alignItems: "center", gap: "10px" },
+                      children: [
+                        /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(ExternalLink, {
+                          size: 16
+                        }, undefined, false, undefined, this),
+                        !isCollapsed && /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("span", {
+                          children: "User Dashboard"
+                        }, undefined, false, undefined, this)
+                      ]
+                    }, undefined, true, undefined, this)
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
+        style: {
+          padding: isCollapsed ? "14px 8px" : "16px",
+          borderTop: "1px solid rgba(255, 255, 255, 0.07)",
+          background: "rgba(0, 0, 0, 0.2)"
+        },
+        children: !isCollapsed ? /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
+          style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" },
+          children: [
+            /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
+              style: { display: "flex", alignItems: "center", gap: "10px", minWidth: 0 },
+              children: [
+                /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
+                  style: {
+                    width: "34px",
+                    height: "34px",
+                    borderRadius: "50%",
+                    background: "linear-gradient(135deg, #7047eb, #6366f1)",
+                    color: "#fff",
+                    display: "grid",
+                    placeItems: "center",
+                    fontWeight: 700,
+                    fontSize: "0.85rem",
+                    flexShrink: 0
+                  },
+                  children: initials
+                }, undefined, false, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
+                  style: { minWidth: 0 },
+                  children: [
+                    /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
+                      style: {
+                        color: "#fff",
+                        fontSize: "0.86rem",
+                        fontWeight: 600,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis"
+                      },
+                      children: username
+                    }, undefined, false, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
+                      style: { color: "#10b981", fontSize: "0.72rem", display: "flex", alignItems: "center", gap: "4px" },
+                      children: [
+                        /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("span", {
+                          style: { width: "5px", height: "5px", borderRadius: "50%", backgroundColor: "#10b981" }
+                        }, undefined, false, undefined, this),
+                        "Enterprise Admin"
+                      ]
+                    }, undefined, true, undefined, this)
+                  ]
+                }, undefined, true, undefined, this)
+              ]
+            }, undefined, true, undefined, this),
+            /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("button", {
+              onClick: onLogout,
+              title: "Sign Out",
+              "aria-label": "Logout",
+              style: {
+                background: "transparent",
+                border: "none",
+                color: "#9ca3af",
+                cursor: "pointer",
+                padding: "6px",
+                borderRadius: "6px",
+                display: "flex",
+                alignItems: "center",
+                transition: "color 0.15s, background 0.15s"
+              },
+              onMouseEnter: (e) => {
+                e.currentTarget.style.color = "#f87171";
+                e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)";
+              },
+              onMouseLeave: (e) => {
+                e.currentTarget.style.color = "#9ca3af";
+                e.currentTarget.style.background = "transparent";
+              },
+              children: /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(LogOut, {
+                size: 17
+              }, undefined, false, undefined, this)
+            }, undefined, false, undefined, this)
+          ]
+        }, undefined, true, undefined, this) : /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
+          style: { textAlign: "center" },
+          children: /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("button", {
+            onClick: onLogout,
+            title: "Sign Out",
+            "aria-label": "Logout",
+            style: {
+              background: "transparent",
+              border: "none",
+              color: "#9ca3af",
+              cursor: "pointer",
+              padding: "8px"
+            },
+            onMouseEnter: (e) => e.currentTarget.style.color = "#f87171",
+            onMouseLeave: (e) => e.currentTarget.style.color = "#9ca3af",
+            children: /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(LogOut, {
+              size: 18
+            }, undefined, false, undefined, this)
+          }, undefined, false, undefined, this)
+        }, undefined, false, undefined, this)
+      }, undefined, false, undefined, this)
+    ]
+  }, undefined, true, undefined, this);
+}
+
+// src/components/admin/AdminOverview.jsx
+var import_react13 = __toESM(require_react(), 1);
+var jsx_dev_runtime10 = __toESM(require_jsx_dev_runtime(), 1);
+function AdminOverview({
+  stats,
+  recentActivity = [],
+  loading,
+  onRefresh,
+  onNavigate,
+  onOpenAddUser
+}) {
+  const statCards = [
+    {
+      id: "total_users",
+      label: "Total Users",
+      value: stats?.total_users ?? 0,
+      subtext: "Registered directory accounts",
+      icon: Users,
+      color: "#4f46e5",
+      bgColor: "#eef2ff",
+      accentBorder: "#6366f1",
+      targetPage: "users"
+    },
+    {
+      id: "active_users",
+      label: "Active Users",
+      value: stats?.active_users ?? 0,
+      subtext: "Currently enabled accounts",
+      icon: UserCheck,
+      color: "#16a34a",
+      bgColor: "#f0fdf4",
+      accentBorder: "#22c55e",
+      targetPage: "users"
+    },
+    {
+      id: "administrators",
+      label: "Administrators",
+      value: stats?.administrators ?? 0,
+      subtext: "Elevated IAM role permissions",
+      icon: ShieldAlert,
+      color: "#7047eb",
+      bgColor: "#f5f3ff",
+      accentBorder: "#8b5cf6",
+      targetPage: "roles"
+    },
+    {
+      id: "active_sessions",
+      label: "Active Sessions",
+      value: stats?.active_sessions ?? 0,
+      subtext: "Valid non-revoked sessions",
+      icon: Monitor,
+      color: "#0284c7",
+      bgColor: "#f0f9ff",
+      accentBorder: "#38bdf8",
+      targetPage: "sessions"
+    },
+    {
+      id: "failed_logins",
+      label: "Failed Logins (24h)",
+      value: stats?.failed_logins_24h ?? 0,
+      subtext: "Unsuccessful login attempts",
+      icon: TriangleAlert,
+      color: "#ea580c",
+      bgColor: "#fff7ed",
+      accentBorder: "#fb923c",
+      targetPage: "activity"
+    },
+    {
+      id: "suspicious",
+      label: "Suspicious Events (24h)",
+      value: stats?.suspicious_activities_24h ?? 0,
+      subtext: "Anomalous or blocked actions",
+      icon: Flame,
+      color: "#dc2626",
+      bgColor: "#fef2f2",
+      accentBorder: "#f87171",
+      targetPage: "audit"
+    }
+  ];
+  return /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+    className: "admin-page-container",
+    style: { display: "grid", gap: "24px" },
+    children: [
+      /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+        style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("h1", {
+                style: { fontSize: "1.5rem", fontWeight: 700, color: "#111827", margin: 0, letterSpacing: "-0.02em" },
+                children: "IAM Overview & Health"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("p", {
+                style: { margin: "4px 0 0", color: "#6b7280", fontSize: "0.88rem" },
+                children: "Real-time identity lifecycle, authentication telemetry, and active workloads."
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+            style: { display: "flex", gap: "10px" },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("button", {
+                onClick: onRefresh,
+                className: "btn btn--ghost",
+                style: {
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "8px 14px",
+                  height: "38px",
+                  fontSize: "0.86rem"
+                },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(RefreshCw, {
+                    size: 15,
+                    className: loading ? "animate-spin" : ""
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("span", {
+                    children: "Refresh"
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("button", {
+                onClick: onOpenAddUser,
+                className: "btn",
+                style: {
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "8px 16px",
+                  height: "38px",
+                  fontSize: "0.86rem",
+                  background: "linear-gradient(135deg, #7047eb, #4f46e5)"
+                },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(UserPlus, {
+                    size: 16
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("span", {
+                    children: "Add User"
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+        style: {
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+          gap: "16px"
+        },
+        children: statCards.map((card) => {
+          const Icon = card.icon;
+          return /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+            onClick: () => onNavigate(card.targetPage),
+            style: {
+              background: "#ffffff",
+              border: "1px solid #e5e7eb",
+              borderLeft: `4px solid ${card.accentBorder}`,
+              borderRadius: "12px",
+              padding: "20px 18px",
+              boxShadow: "0 1px 3px rgba(15, 23, 42, 0.05)",
+              cursor: "pointer",
+              transition: "transform 0.15s ease, box-shadow 0.15s ease"
+            },
+            onMouseEnter: (e) => {
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 8px 20px -6px rgba(15, 23, 42, 0.12)";
+            },
+            onMouseLeave: (e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 1px 3px rgba(15, 23, 42, 0.05)";
+            },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+                style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("span", {
+                    style: { fontSize: "0.84rem", fontWeight: 600, color: "#64748b" },
+                    children: card.label
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+                    style: {
+                      width: "36px",
+                      height: "36px",
+                      borderRadius: "8px",
+                      backgroundColor: card.bgColor,
+                      display: "grid",
+                      placeItems: "center"
+                    },
+                    children: /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(Icon, {
+                      size: 18,
+                      color: card.color
+                    }, undefined, false, undefined, this)
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+                style: { fontSize: "1.85rem", fontWeight: 700, color: "#111827", lineHeight: 1.1 },
+                children: loading ? "…" : card.value
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+                style: { fontSize: "0.76rem", color: "#94a3b8", marginTop: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("span", {
+                    children: card.subtext
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(ArrowRight, {
+                    size: 13,
+                    color: "#94a3b8"
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, card.id, true, undefined, this);
+        })
+      }, undefined, false, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+        style: { display: "grid", gridTemplateColumns: "minmax(0, 2fr) minmax(0, 1.1fr)", gap: "20px" },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+            style: {
+              background: "#ffffff",
+              border: "1px solid #e5e7eb",
+              borderRadius: "14px",
+              padding: "22px",
+              boxShadow: "0 1px 3px rgba(15, 23, 42, 0.05)"
+            },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+                style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+                    style: { display: "flex", alignItems: "center", gap: "8px" },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(Clock, {
+                        size: 18,
+                        color: "#7047eb"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("h2", {
+                        style: { fontSize: "1.05rem", fontWeight: 700, margin: 0, color: "#111827" },
+                        children: "Recent Authentication Stream"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("button", {
+                    onClick: () => onNavigate("activity"),
+                    className: "btn btn--ghost",
+                    style: {
+                      fontSize: "0.78rem",
+                      padding: "4px 10px",
+                      height: "28px",
+                      border: "none",
+                      color: "#7047eb",
+                      fontWeight: 600
+                    },
+                    children: "View All Activity →"
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              recentActivity.length === 0 ? /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+                style: { textAlign: "center", padding: "36px 16px", color: "#9ca3af" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(CircleCheck, {
+                    size: 32,
+                    color: "#10b981",
+                    style: { margin: "0 auto 8px" }
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("p", {
+                    style: { margin: 0, fontSize: "0.88rem" },
+                    children: "No recent logins logged in this period."
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this) : /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+                style: { overflowX: "auto" },
+                children: /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("table", {
+                  style: { width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" },
+                  children: [
+                    /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("thead", {
+                      children: /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("tr", {
+                        style: { borderBottom: "1px solid #f1f5f9", textAlign: "left", color: "#64748b" },
+                        children: [
+                          /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("th", {
+                            style: { padding: "8px 10px", fontWeight: 600 },
+                            children: "User / Email"
+                          }, undefined, false, undefined, this),
+                          /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("th", {
+                            style: { padding: "8px 10px", fontWeight: 600 },
+                            children: "Device & Browser"
+                          }, undefined, false, undefined, this),
+                          /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("th", {
+                            style: { padding: "8px 10px", fontWeight: 600 },
+                            children: "IP Address"
+                          }, undefined, false, undefined, this),
+                          /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("th", {
+                            style: { padding: "8px 10px", fontWeight: 600 },
+                            children: "Status"
+                          }, undefined, false, undefined, this),
+                          /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("th", {
+                            style: { padding: "8px 10px", fontWeight: 600 },
+                            children: "Time"
+                          }, undefined, false, undefined, this)
+                        ]
+                      }, undefined, true, undefined, this)
+                    }, undefined, false, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("tbody", {
+                      children: recentActivity.slice(0, 7).map((item) => {
+                        const isSuccess = (item.status || "").toLowerCase() === "success";
+                        return /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("tr", {
+                          style: {
+                            borderBottom: "1px solid #f8fafc",
+                            transition: "background 0.1s"
+                          },
+                          children: [
+                            /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("td", {
+                              style: { padding: "10px 10px", color: "#111827", fontWeight: 600 },
+                              children: [
+                                /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+                                  children: item.username || "Anonymous"
+                                }, undefined, false, undefined, this),
+                                /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+                                  style: { fontSize: "0.75rem", color: "#94a3b8", fontWeight: 400 },
+                                  children: item.email || "—"
+                                }, undefined, false, undefined, this)
+                              ]
+                            }, undefined, true, undefined, this),
+                            /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("td", {
+                              style: { padding: "10px 10px", color: "#475569" },
+                              children: [
+                                /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+                                  children: item.device_name || "Web Client"
+                                }, undefined, false, undefined, this),
+                                /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+                                  style: { fontSize: "0.75rem", color: "#94a3b8" },
+                                  children: [
+                                    item.browser,
+                                    " • ",
+                                    item.os
+                                  ]
+                                }, undefined, true, undefined, this)
+                              ]
+                            }, undefined, true, undefined, this),
+                            /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("td", {
+                              style: { padding: "10px 10px", color: "#64748b", fontFamily: "monospace", fontSize: "0.82rem" },
+                              children: item.ip_address || "127.0.0.1"
+                            }, undefined, false, undefined, this),
+                            /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("td", {
+                              style: { padding: "10px 10px" },
+                              children: /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("span", {
+                                style: {
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "4px",
+                                  padding: "2px 8px",
+                                  borderRadius: "9999px",
+                                  fontSize: "0.74rem",
+                                  fontWeight: 600,
+                                  backgroundColor: isSuccess ? "#ecfdf5" : "#fef2f2",
+                                  color: isSuccess ? "#15803d" : "#b91c1c",
+                                  border: `1px solid ${isSuccess ? "#bbf7d0" : "#fecaca"}`
+                                },
+                                children: [
+                                  isSuccess ? /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(CircleCheck, {
+                                    size: 12
+                                  }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(CircleX, {
+                                    size: 12
+                                  }, undefined, false, undefined, this),
+                                  item.status
+                                ]
+                              }, undefined, true, undefined, this)
+                            }, undefined, false, undefined, this),
+                            /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("td", {
+                              style: { padding: "10px 10px", color: "#64748b", fontSize: "0.78rem" },
+                              children: item.created_at || "Just now"
+                            }, undefined, false, undefined, this)
+                          ]
+                        }, item.id, true, undefined, this);
+                      })
+                    }, undefined, false, undefined, this)
+                  ]
+                }, undefined, true, undefined, this)
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+            style: {
+              background: "#ffffff",
+              border: "1px solid #e5e7eb",
+              borderRadius: "14px",
+              padding: "22px",
+              boxShadow: "0 1px 3px rgba(15, 23, 42, 0.05)",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between"
+            },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+                    style: { display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(Shield, {
+                        size: 18,
+                        color: "#16a34a"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("h2", {
+                        style: { fontSize: "1.05rem", fontWeight: 700, margin: 0, color: "#111827" },
+                        children: "IAM Security Posture"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("p", {
+                    style: { fontSize: "0.84rem", color: "#64748b", lineHeight: 1.5, margin: "0 0 16px" },
+                    children: "VaultAuth SSO protects enterprise credentials with salted SHA-256 hashes, rate-limited sliding window OTPs, and strict RBAC authorization."
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+                    style: { display: "grid", gap: "10px", marginBottom: "20px" },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+                        style: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", background: "#f8fafc", borderRadius: "8px" },
+                        children: [
+                          /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("span", {
+                            style: { fontSize: "0.82rem", fontWeight: 600, color: "#334155" },
+                            children: "RBAC Enforcement"
+                          }, undefined, false, undefined, this),
+                          /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("span", {
+                            style: { fontSize: "0.74rem", fontWeight: 700, color: "#15803d", background: "#dcfce7", padding: "2px 8px", borderRadius: "4px" },
+                            children: "Active (Strict)"
+                          }, undefined, false, undefined, this)
+                        ]
+                      }, undefined, true, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+                        style: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", background: "#f8fafc", borderRadius: "8px" },
+                        children: [
+                          /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("span", {
+                            style: { fontSize: "0.82rem", fontWeight: 600, color: "#334155" },
+                            children: "Token Secret Signatures"
+                          }, undefined, false, undefined, this),
+                          /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("span", {
+                            style: { fontSize: "0.74rem", fontWeight: 700, color: "#15803d", background: "#dcfce7", padding: "2px 8px", borderRadius: "4px" },
+                            children: "Verified"
+                          }, undefined, false, undefined, this)
+                        ]
+                      }, undefined, true, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+                        style: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", background: "#f8fafc", borderRadius: "8px" },
+                        children: [
+                          /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("span", {
+                            style: { fontSize: "0.82rem", fontWeight: 600, color: "#334155" },
+                            children: "Session Invalidation Hook"
+                          }, undefined, false, undefined, this),
+                          /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("span", {
+                            style: { fontSize: "0.74rem", fontWeight: 700, color: "#15803d", background: "#dcfce7", padding: "2px 8px", borderRadius: "4px" },
+                            children: "Synchronized"
+                          }, undefined, false, undefined, this)
+                        ]
+                      }, undefined, true, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+                style: { display: "grid", gap: "8px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("button", {
+                    onClick: () => onNavigate("sessions"),
+                    className: "btn btn--ghost",
+                    style: {
+                      width: "100%",
+                      height: "38px",
+                      fontSize: "0.84rem",
+                      justifyContent: "center"
+                    },
+                    children: "Inspect Active Sessions"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("button", {
+                    onClick: () => onNavigate("audit"),
+                    className: "btn btn--ghost",
+                    style: {
+                      width: "100%",
+                      height: "38px",
+                      fontSize: "0.84rem",
+                      justifyContent: "center"
+                    },
+                    children: "Open Security Audit Logs"
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this)
+    ]
+  }, undefined, true, undefined, this);
+}
+
+// src/components/admin/AdminUsers.jsx
+var import_react14 = __toESM(require_react(), 1);
+var jsx_dev_runtime11 = __toESM(require_jsx_dev_runtime(), 1);
+function AdminUsers({
+  users = [],
+  total = 0,
+  page = 1,
+  perPage = 20,
+  totalPages = 1,
+  search = "",
+  roleFilter = "all",
+  statusFilter = "all",
+  onSearchChange,
+  onRoleFilterChange,
+  onStatusFilterChange,
+  onPageChange,
+  onOpenAddUser,
+  onOpenEditUser,
+  onToggleStatus,
+  onDeleteUser,
+  currentAdminUid,
+  loading
+}) {
+  const [selectedUser, setSelectedUser] = import_react14.useState(null);
+  const [deleteConfirmUser, setDeleteConfirmUser] = import_react14.useState(null);
+  return /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+    className: "admin-page-container",
+    style: { display: "grid", gap: "20px" },
+    children: [
+      /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+        style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("h1", {
+                style: { fontSize: "1.45rem", fontWeight: 700, color: "#111827", margin: 0 },
+                children: "User Directory & Access Control"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("p", {
+                style: { margin: "4px 0 0", color: "#6b7280", fontSize: "0.86rem" },
+                children: "Manage registered employee accounts, provision credentials, enforce roles and deactivate access."
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("button", {
+            onClick: onOpenAddUser,
+            className: "btn",
+            style: {
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "8px 16px",
+              height: "40px",
+              fontSize: "0.88rem",
+              background: "linear-gradient(135deg, #7047eb, #4f46e5)",
+              boxShadow: "0 4px 14px rgba(112, 71, 235, 0.35)"
+            },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime11.jsxDEV(UserPlus, {
+                size: 16
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("span", {
+                children: "Provision New User"
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+        style: {
+          background: "#ffffff",
+          border: "1px solid #e5e7eb",
+          borderRadius: "12px",
+          padding: "16px",
+          display: "flex",
+          gap: "14px",
+          flexWrap: "wrap",
+          alignItems: "center",
+          justifyContent: "space-between",
+          boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)"
+        },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+            style: { display: "flex", gap: "12px", flex: 1, minWidth: "280px", flexWrap: "wrap" },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+                style: { position: "relative", flex: 1, minWidth: "220px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime11.jsxDEV(Search, {
+                    size: 16,
+                    color: "#9ca3af",
+                    style: { position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("input", {
+                    type: "text",
+                    placeholder: "Search by name, email, or user ID...",
+                    value: search,
+                    onChange: (e) => onSearchChange(e.target.value),
+                    style: {
+                      width: "100%",
+                      height: "38px",
+                      paddingLeft: "36px",
+                      paddingRight: "12px",
+                      borderRadius: "8px",
+                      border: "1px solid #d1d5db",
+                      fontSize: "0.88rem",
+                      color: "#111827",
+                      outline: "none",
+                      transition: "border-color 0.15s"
+                    }
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+                style: { display: "flex", alignItems: "center", gap: "8px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime11.jsxDEV(Funnel, {
+                    size: 15,
+                    color: "#6b7280"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("select", {
+                    value: roleFilter,
+                    onChange: (e) => onRoleFilterChange(e.target.value),
+                    style: {
+                      height: "38px",
+                      padding: "0 12px",
+                      borderRadius: "8px",
+                      border: "1px solid #d1d5db",
+                      fontSize: "0.86rem",
+                      backgroundColor: "#fff",
+                      color: "#374151",
+                      cursor: "pointer"
+                    },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("option", {
+                        value: "all",
+                        children: "All Roles"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("option", {
+                        value: "admin",
+                        children: "Admin"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("option", {
+                        value: "user",
+                        children: "End User"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+                children: /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("select", {
+                  value: statusFilter,
+                  onChange: (e) => onStatusFilterChange(e.target.value),
+                  style: {
+                    height: "38px",
+                    padding: "0 12px",
+                    borderRadius: "8px",
+                    border: "1px solid #d1d5db",
+                    fontSize: "0.86rem",
+                    backgroundColor: "#fff",
+                    color: "#374151",
+                    cursor: "pointer"
+                  },
+                  children: [
+                    /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("option", {
+                      value: "all",
+                      children: "All Statuses"
+                    }, undefined, false, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("option", {
+                      value: "active",
+                      children: "Active Only"
+                    }, undefined, false, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("option", {
+                      value: "inactive",
+                      children: "Deactivated"
+                    }, undefined, false, undefined, this)
+                  ]
+                }, undefined, true, undefined, this)
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+            style: { fontSize: "0.82rem", color: "#6b7280" },
+            children: [
+              "Showing ",
+              /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("strong", {
+                children: users.length
+              }, undefined, false, undefined, this),
+              " of ",
+              /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("strong", {
+                children: total
+              }, undefined, false, undefined, this),
+              " users"
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+        style: {
+          background: "#ffffff",
+          border: "1px solid #e5e7eb",
+          borderRadius: "14px",
+          overflow: "hidden",
+          boxShadow: "0 1px 3px rgba(15, 23, 42, 0.05)"
+        },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+            style: { overflowX: "auto" },
+            children: /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("table", {
+              style: { width: "100%", borderCollapse: "collapse", fontSize: "0.86rem", textAlign: "left" },
+              children: [
+                /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("thead", {
+                  children: /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("tr", {
+                    style: { background: "#f8fafc", borderBottom: "1px solid #e2e8f0", color: "#64748b" },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("th", {
+                        style: { padding: "12px 16px", fontWeight: 600 },
+                        children: "UID"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("th", {
+                        style: { padding: "12px 16px", fontWeight: 600 },
+                        children: "Name & Username"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("th", {
+                        style: { padding: "12px 16px", fontWeight: 600 },
+                        children: "Email Address"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("th", {
+                        style: { padding: "12px 16px", fontWeight: 600 },
+                        children: "Role"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("th", {
+                        style: { padding: "12px 16px", fontWeight: 600 },
+                        children: "Status"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("th", {
+                        style: { padding: "12px 16px", fontWeight: 600 },
+                        children: "Registration Date"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("th", {
+                        style: { padding: "12px 16px", fontWeight: 600, textAlign: "right" },
+                        children: "Actions"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this)
+                }, undefined, false, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("tbody", {
+                  children: loading ? /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("tr", {
+                    children: /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("td", {
+                      colSpan: 7,
+                      style: { textAlign: "center", padding: "40px 16px", color: "#9ca3af" },
+                      children: "Loading employee accounts..."
+                    }, undefined, false, undefined, this)
+                  }, undefined, false, undefined, this) : users.length === 0 ? /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("tr", {
+                    children: /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("td", {
+                      colSpan: 7,
+                      style: { textAlign: "center", padding: "48px 16px", color: "#9ca3af" },
+                      children: [
+                        /* @__PURE__ */ jsx_dev_runtime11.jsxDEV(User, {
+                          size: 32,
+                          style: { margin: "0 auto 8px", color: "#cbd5e1" }
+                        }, undefined, false, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("p", {
+                          style: { margin: 0, fontWeight: 500 },
+                          children: "No users found matching query."
+                        }, undefined, false, undefined, this)
+                      ]
+                    }, undefined, true, undefined, this)
+                  }, undefined, false, undefined, this) : users.map((u) => {
+                    const isAdmin = (u.role || "").toLowerCase() === "admin";
+                    const isActive = u.is_active !== false;
+                    const isSelf = u.uid === currentAdminUid;
+                    return /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("tr", {
+                      style: {
+                        borderBottom: "1px solid #f1f5f9",
+                        transition: "background 0.1s"
+                      },
+                      onMouseEnter: (e) => e.currentTarget.style.backgroundColor = "#fcfdfd",
+                      onMouseLeave: (e) => e.currentTarget.style.backgroundColor = "transparent",
+                      children: [
+                        /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("td", {
+                          style: { padding: "14px 16px", fontFamily: "monospace", color: "#64748b", fontWeight: 600 },
+                          children: [
+                            "#",
+                            u.uid
+                          ]
+                        }, undefined, true, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("td", {
+                          style: { padding: "14px 16px" },
+                          children: /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+                            style: { display: "flex", alignItems: "center", gap: "10px" },
+                            children: [
+                              /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+                                style: {
+                                  width: "32px",
+                                  height: "32px",
+                                  borderRadius: "50%",
+                                  background: isAdmin ? "linear-gradient(135deg, #7047eb, #818cf8)" : "linear-gradient(135deg, #3b82f6, #60a5fa)",
+                                  color: "#fff",
+                                  display: "grid",
+                                  placeItems: "center",
+                                  fontWeight: 700,
+                                  fontSize: "0.78rem",
+                                  flexShrink: 0
+                                },
+                                children: (u.full_name || u.username || "U").substring(0, 1).toUpperCase()
+                              }, undefined, false, undefined, this),
+                              /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+                                children: [
+                                  /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+                                    style: { fontWeight: 600, color: "#111827" },
+                                    children: [
+                                      u.full_name || u.username,
+                                      isSelf && /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("span", {
+                                        style: { marginLeft: "6px", fontSize: "0.7rem", color: "#7047eb", background: "#f5f3ff", padding: "1px 6px", borderRadius: "4px" },
+                                        children: "You"
+                                      }, undefined, false, undefined, this)
+                                    ]
+                                  }, undefined, true, undefined, this),
+                                  /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+                                    style: { fontSize: "0.76rem", color: "#94a3b8" },
+                                    children: [
+                                      "@",
+                                      u.username
+                                    ]
+                                  }, undefined, true, undefined, this)
+                                ]
+                              }, undefined, true, undefined, this)
+                            ]
+                          }, undefined, true, undefined, this)
+                        }, undefined, false, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("td", {
+                          style: { padding: "14px 16px", color: "#475569" },
+                          children: u.email
+                        }, undefined, false, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("td", {
+                          style: { padding: "14px 16px" },
+                          children: /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("span", {
+                            style: {
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "5px",
+                              padding: "3px 10px",
+                              borderRadius: "9999px",
+                              fontSize: "0.76rem",
+                              fontWeight: 600,
+                              backgroundColor: isAdmin ? "#f5f3ff" : "#eff6ff",
+                              color: isAdmin ? "#7047eb" : "#1d4ed8",
+                              border: `1px solid ${isAdmin ? "#ddd6fe" : "#bfdbfe"}`
+                            },
+                            children: [
+                              isAdmin ? /* @__PURE__ */ jsx_dev_runtime11.jsxDEV(Shield, {
+                                size: 12
+                              }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime11.jsxDEV(User, {
+                                size: 12
+                              }, undefined, false, undefined, this),
+                              u.role_title || (isAdmin ? "Enterprise Admin" : "End User")
+                            ]
+                          }, undefined, true, undefined, this)
+                        }, undefined, false, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("td", {
+                          style: { padding: "14px 16px" },
+                          children: /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("span", {
+                            style: {
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "5px",
+                              padding: "3px 10px",
+                              borderRadius: "9999px",
+                              fontSize: "0.76rem",
+                              fontWeight: 600,
+                              backgroundColor: isActive ? "#ecfdf5" : "#fef2f2",
+                              color: isActive ? "#15803d" : "#b91c1c",
+                              border: `1px solid ${isActive ? "#bbf7d0" : "#fecaca"}`
+                            },
+                            children: [
+                              isActive ? /* @__PURE__ */ jsx_dev_runtime11.jsxDEV(CircleCheck, {
+                                size: 12
+                              }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime11.jsxDEV(CircleX, {
+                                size: 12
+                              }, undefined, false, undefined, this),
+                              isActive ? "Active" : "Deactivated"
+                            ]
+                          }, undefined, true, undefined, this)
+                        }, undefined, false, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("td", {
+                          style: { padding: "14px 16px", color: "#64748b", fontSize: "0.82rem" },
+                          children: u.c_date || "—"
+                        }, undefined, false, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("td", {
+                          style: { padding: "14px 16px", textAlign: "right" },
+                          children: /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+                            style: { display: "inline-flex", alignItems: "center", gap: "6px" },
+                            children: [
+                              /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("button", {
+                                onClick: () => setSelectedUser(u),
+                                title: "View Profile Details",
+                                style: {
+                                  background: "none",
+                                  border: "1px solid #e2e8f0",
+                                  borderRadius: "6px",
+                                  padding: "5px 7px",
+                                  cursor: "pointer",
+                                  color: "#64748b"
+                                },
+                                children: /* @__PURE__ */ jsx_dev_runtime11.jsxDEV(Eye, {
+                                  size: 14
+                                }, undefined, false, undefined, this)
+                              }, undefined, false, undefined, this),
+                              /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("button", {
+                                onClick: () => onOpenEditUser(u),
+                                title: "Edit User",
+                                style: {
+                                  background: "none",
+                                  border: "1px solid #e2e8f0",
+                                  borderRadius: "6px",
+                                  padding: "5px 7px",
+                                  cursor: "pointer",
+                                  color: "#7047eb"
+                                },
+                                children: /* @__PURE__ */ jsx_dev_runtime11.jsxDEV(Pen, {
+                                  size: 14
+                                }, undefined, false, undefined, this)
+                              }, undefined, false, undefined, this),
+                              /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("button", {
+                                onClick: () => onToggleStatus(u.uid, !isActive),
+                                disabled: isSelf,
+                                title: isActive ? "Deactivate Account" : "Activate Account",
+                                style: {
+                                  background: "none",
+                                  border: `1px solid ${isActive ? "#fed7aa" : "#bbf7d0"}`,
+                                  borderRadius: "6px",
+                                  padding: "5px 7px",
+                                  cursor: isSelf ? "not-allowed" : "pointer",
+                                  color: isActive ? "#ea580c" : "#16a34a",
+                                  opacity: isSelf ? 0.4 : 1
+                                },
+                                children: isActive ? /* @__PURE__ */ jsx_dev_runtime11.jsxDEV(CircleX, {
+                                  size: 14
+                                }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime11.jsxDEV(CircleCheck, {
+                                  size: 14
+                                }, undefined, false, undefined, this)
+                              }, undefined, false, undefined, this),
+                              /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("button", {
+                                onClick: () => setDeleteConfirmUser(u),
+                                disabled: isSelf,
+                                title: isSelf ? "Cannot delete own account" : "Delete User",
+                                style: {
+                                  background: "none",
+                                  border: "1px solid #fecaca",
+                                  borderRadius: "6px",
+                                  padding: "5px 7px",
+                                  cursor: isSelf ? "not-allowed" : "pointer",
+                                  color: "#dc2626",
+                                  opacity: isSelf ? 0.4 : 1
+                                },
+                                children: /* @__PURE__ */ jsx_dev_runtime11.jsxDEV(Trash, {
+                                  size: 14
+                                }, undefined, false, undefined, this)
+                              }, undefined, false, undefined, this)
+                            ]
+                          }, undefined, true, undefined, this)
+                        }, undefined, false, undefined, this)
+                      ]
+                    }, u.uid, true, undefined, this);
+                  })
+                }, undefined, false, undefined, this)
+              ]
+            }, undefined, true, undefined, this)
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+            style: {
+              padding: "12px 18px",
+              borderTop: "1px solid #e5e7eb",
+              background: "#f8fafc",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "10px"
+            },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+                style: { fontSize: "0.82rem", color: "#64748b" },
+                children: [
+                  "Page ",
+                  /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("strong", {
+                    children: page
+                  }, undefined, false, undefined, this),
+                  " of ",
+                  /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("strong", {
+                    children: totalPages || 1
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+                style: { display: "flex", gap: "6px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("button", {
+                    onClick: () => onPageChange(page - 1),
+                    disabled: page <= 1,
+                    className: "btn btn--ghost",
+                    style: {
+                      height: "32px",
+                      padding: "0 10px",
+                      fontSize: "0.8rem",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px"
+                    },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime11.jsxDEV(ChevronLeft, {
+                        size: 14
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("span", {
+                        children: "Previous"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("button", {
+                    onClick: () => onPageChange(page + 1),
+                    disabled: page >= totalPages,
+                    className: "btn btn--ghost",
+                    style: {
+                      height: "32px",
+                      padding: "0 10px",
+                      fontSize: "0.8rem",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px"
+                    },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("span", {
+                        children: "Next"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime11.jsxDEV(ChevronRight, {
+                        size: 14
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      selectedUser && /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+        className: "modal-overlay",
+        style: {
+          position: "fixed",
+          inset: 0,
+          backgroundColor: "rgba(15, 23, 42, 0.6)",
+          backdropFilter: "blur(4px)",
+          display: "grid",
+          placeItems: "center",
+          zIndex: 100,
+          padding: "16px"
+        },
+        onClick: () => setSelectedUser(null),
+        children: /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+          className: "card",
+          style: { width: "100%", maxWidth: "480px", padding: "28px" },
+          onClick: (e) => e.stopPropagation(),
+          children: [
+            /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+              style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" },
+              children: [
+                /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+                  style: { display: "flex", alignItems: "center", gap: "12px" },
+                  children: [
+                    /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+                      style: {
+                        width: "48px",
+                        height: "48px",
+                        borderRadius: "50%",
+                        background: "linear-gradient(135deg, #7047eb, #818cf8)",
+                        color: "#fff",
+                        display: "grid",
+                        placeItems: "center",
+                        fontWeight: 700,
+                        fontSize: "1.1rem"
+                      },
+                      children: (selectedUser.full_name || selectedUser.username).substring(0, 1).toUpperCase()
+                    }, undefined, false, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+                      children: [
+                        /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("h3", {
+                          style: { margin: 0, fontSize: "1.1rem", color: "#111827" },
+                          children: selectedUser.full_name || selectedUser.username
+                        }, undefined, false, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+                          style: { fontSize: "0.82rem", color: "#64748b" },
+                          children: [
+                            "UID #",
+                            selectedUser.uid,
+                            " • @",
+                            selectedUser.username
+                          ]
+                        }, undefined, true, undefined, this)
+                      ]
+                    }, undefined, true, undefined, this)
+                  ]
+                }, undefined, true, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("button", {
+                  onClick: () => setSelectedUser(null),
+                  style: { background: "none", border: "none", fontSize: "1.2rem", cursor: "pointer", color: "#94a3b8" },
+                  children: "✕"
+                }, undefined, false, undefined, this)
+              ]
+            }, undefined, true, undefined, this),
+            /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+              style: { display: "grid", gap: "12px", margin: "20px 0" },
+              children: [
+                /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+                  style: { padding: "10px 14px", background: "#f8fafc", borderRadius: "8px", display: "flex", justifyContent: "space-between" },
+                  children: [
+                    /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("span", {
+                      style: { fontSize: "0.84rem", color: "#64748b" },
+                      children: "Email:"
+                    }, undefined, false, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("span", {
+                      style: { fontSize: "0.84rem", fontWeight: 600, color: "#111827" },
+                      children: selectedUser.email
+                    }, undefined, false, undefined, this)
+                  ]
+                }, undefined, true, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+                  style: { padding: "10px 14px", background: "#f8fafc", borderRadius: "8px", display: "flex", justifyContent: "space-between" },
+                  children: [
+                    /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("span", {
+                      style: { fontSize: "0.84rem", color: "#64748b" },
+                      children: "Phone:"
+                    }, undefined, false, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("span", {
+                      style: { fontSize: "0.84rem", fontWeight: 600, color: "#111827" },
+                      children: selectedUser.phone || "Not set"
+                    }, undefined, false, undefined, this)
+                  ]
+                }, undefined, true, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+                  style: { padding: "10px 14px", background: "#f8fafc", borderRadius: "8px", display: "flex", justifyContent: "space-between" },
+                  children: [
+                    /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("span", {
+                      style: { fontSize: "0.84rem", color: "#64748b" },
+                      children: "Assigned Role:"
+                    }, undefined, false, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("span", {
+                      style: { fontSize: "0.84rem", fontWeight: 600, color: selectedUser.role === "admin" ? "#7047eb" : "#1d4ed8" },
+                      children: selectedUser.role_title || selectedUser.role
+                    }, undefined, false, undefined, this)
+                  ]
+                }, undefined, true, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+                  style: { padding: "10px 14px", background: "#f8fafc", borderRadius: "8px", display: "flex", justifyContent: "space-between" },
+                  children: [
+                    /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("span", {
+                      style: { fontSize: "0.84rem", color: "#64748b" },
+                      children: "Account Status:"
+                    }, undefined, false, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("span", {
+                      style: { fontSize: "0.84rem", fontWeight: 600, color: selectedUser.is_active !== false ? "#16a34a" : "#dc2626" },
+                      children: selectedUser.is_active !== false ? "Active & Authorized" : "Deactivated"
+                    }, undefined, false, undefined, this)
+                  ]
+                }, undefined, true, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+                  style: { padding: "10px 14px", background: "#f8fafc", borderRadius: "8px", display: "flex", justifyContent: "space-between" },
+                  children: [
+                    /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("span", {
+                      style: { fontSize: "0.84rem", color: "#64748b" },
+                      children: "Registered Date:"
+                    }, undefined, false, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("span", {
+                      style: { fontSize: "0.84rem", fontWeight: 600, color: "#111827" },
+                      children: selectedUser.c_date || "—"
+                    }, undefined, false, undefined, this)
+                  ]
+                }, undefined, true, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+                  style: { padding: "10px 14px", background: "#f8fafc", borderRadius: "8px", display: "flex", justifyContent: "space-between" },
+                  children: [
+                    /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("span", {
+                      style: { fontSize: "0.84rem", color: "#64748b" },
+                      children: "FIDO2 / WebAuthn:"
+                    }, undefined, false, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("span", {
+                      style: { fontSize: "0.84rem", fontWeight: 600, color: "#16a34a" },
+                      children: "Passkey Login Supported"
+                    }, undefined, false, undefined, this)
+                  ]
+                }, undefined, true, undefined, this)
+              ]
+            }, undefined, true, undefined, this),
+            /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+              style: { display: "flex", justifyContent: "flex-end", gap: "10px" },
+              children: [
+                /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("button", {
+                  className: "btn btn--ghost",
+                  onClick: () => setSelectedUser(null),
+                  style: { height: "38px" },
+                  children: "Close"
+                }, undefined, false, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("button", {
+                  className: "btn",
+                  onClick: () => {
+                    const target = selectedUser;
+                    setSelectedUser(null);
+                    onOpenEditUser(target);
+                  },
+                  style: { height: "38px", background: "#7047eb" },
+                  children: "Edit User"
+                }, undefined, false, undefined, this)
+              ]
+            }, undefined, true, undefined, this)
+          ]
+        }, undefined, true, undefined, this)
+      }, undefined, false, undefined, this),
+      deleteConfirmUser && /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+        className: "modal-overlay",
+        style: {
+          position: "fixed",
+          inset: 0,
+          backgroundColor: "rgba(15, 23, 42, 0.6)",
+          backdropFilter: "blur(4px)",
+          display: "grid",
+          placeItems: "center",
+          zIndex: 100,
+          padding: "16px"
+        },
+        onClick: () => setDeleteConfirmUser(null),
+        children: /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+          className: "card",
+          style: { width: "100%", maxWidth: "440px", padding: "28px" },
+          onClick: (e) => e.stopPropagation(),
+          children: [
+            /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+              style: { textAlign: "center", marginBottom: "16px" },
+              children: [
+                /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+                  style: {
+                    width: "52px",
+                    height: "52px",
+                    borderRadius: "50%",
+                    backgroundColor: "#fee2e2",
+                    color: "#dc2626",
+                    display: "grid",
+                    placeItems: "center",
+                    margin: "0 auto 12px"
+                  },
+                  children: /* @__PURE__ */ jsx_dev_runtime11.jsxDEV(TriangleAlert, {
+                    size: 26
+                  }, undefined, false, undefined, this)
+                }, undefined, false, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("h3", {
+                  style: { margin: 0, fontSize: "1.2rem", color: "#111827" },
+                  children: "Delete User Permanently?"
+                }, undefined, false, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("p", {
+                  style: { margin: "8px 0 0", fontSize: "0.86rem", color: "#64748b" },
+                  children: [
+                    "Are you sure you want to delete user ",
+                    /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("strong", {
+                      children: [
+                        '"',
+                        deleteConfirmUser.username,
+                        '"'
+                      ]
+                    }, undefined, true, undefined, this),
+                    " (#",
+                    deleteConfirmUser.uid,
+                    ")? This action will delete all active sessions, security settings, and login logs. This cannot be undone."
+                  ]
+                }, undefined, true, undefined, this)
+              ]
+            }, undefined, true, undefined, this),
+            /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("div", {
+              style: { display: "flex", gap: "10px", marginTop: "24px" },
+              children: [
+                /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("button", {
+                  className: "btn btn--ghost",
+                  onClick: () => setDeleteConfirmUser(null),
+                  style: { flex: 1, height: "40px" },
+                  children: "Cancel"
+                }, undefined, false, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime11.jsxDEV("button", {
+                  className: "btn",
+                  onClick: () => {
+                    const uid = deleteConfirmUser.uid;
+                    setDeleteConfirmUser(null);
+                    onDeleteUser(uid);
+                  },
+                  style: {
+                    flex: 1,
+                    height: "40px",
+                    background: "#dc2626",
+                    color: "#fff",
+                    boxShadow: "0 4px 12px rgba(220, 38, 38, 0.35)"
+                  },
+                  children: "Yes, Delete"
+                }, undefined, false, undefined, this)
+              ]
+            }, undefined, true, undefined, this)
+          ]
+        }, undefined, true, undefined, this)
+      }, undefined, false, undefined, this)
+    ]
+  }, undefined, true, undefined, this);
+}
+
+// src/components/admin/AdminRoles.jsx
+var import_react15 = __toESM(require_react(), 1);
+var jsx_dev_runtime12 = __toESM(require_jsx_dev_runtime(), 1);
+function AdminRoles({
+  rolesData,
+  onAssignRole,
+  usersList = [],
+  loading
+}) {
+  const [selectedUid, setSelectedUid] = import_react15.useState("");
+  const [selectedRole, setSelectedRole] = import_react15.useState("user");
+  const [submitting, setSubmitting] = import_react15.useState(false);
+  const defaultRoles = [
+    {
+      key: "admin",
+      title: "Enterprise Admin",
+      description: "Full system administration, IAM policy management, user provisioning, and audit oversight.",
+      badge: "Highest Privilege",
+      color: "#7047eb",
+      bgColor: "#f5f3ff",
+      borderColor: "#ddd6fe",
+      permissions: [
+        "users.view",
+        "users.create",
+        "users.edit",
+        "users.delete",
+        "roles.view",
+        "roles.manage",
+        "sessions.view",
+        "sessions.revoke",
+        "audit.view",
+        "settings.manage"
+      ]
+    },
+    {
+      key: "manager",
+      title: "Security Manager",
+      description: "Supervisory role capable of monitoring sessions, reviewing telemetry and managing team access.",
+      badge: "Elevated Audit",
+      color: "#0284c7",
+      bgColor: "#f0f9ff",
+      borderColor: "#bae6fd",
+      permissions: [
+        "users.view",
+        "roles.view",
+        "sessions.view",
+        "sessions.revoke",
+        "audit.view"
+      ]
+    },
+    {
+      key: "user",
+      title: "End User",
+      description: "Standard employee SSO credential with access to personal security settings and connected apps.",
+      badge: "Standard Access",
+      color: "#16a34a",
+      bgColor: "#f0fdf4",
+      borderColor: "#bbf7d0",
+      permissions: ["users.view"]
+    }
+  ];
+  const allPermissions = [
+    { key: "users.view", label: "View User Directory", category: "Users" },
+    { key: "users.create", label: "Provision New Users", category: "Users" },
+    { key: "users.edit", label: "Modify User Records", category: "Users" },
+    { key: "users.delete", label: "Permanently Delete Users", category: "Users" },
+    { key: "roles.view", label: "Inspect RBAC Hierarchy", category: "RBAC" },
+    { key: "roles.manage", label: "Reassign IAM Roles", category: "RBAC" },
+    { key: "sessions.view", label: "Inspect Global Sessions", category: "Sessions" },
+    { key: "sessions.revoke", label: "Revoke Active Sessions", category: "Sessions" },
+    { key: "audit.view", label: "Read Security Audit Logs", category: "Security" },
+    { key: "settings.manage", label: "Modify System Settings", category: "System" }
+  ];
+  const handleRoleSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedUid)
+      return;
+    setSubmitting(true);
+    try {
+      await onAssignRole(Number(selectedUid), selectedRole);
+      setSelectedUid("");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+  return /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("div", {
+    className: "admin-page-container",
+    style: { display: "grid", gap: "24px" },
+    children: [
+      /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("div", {
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("h1", {
+            style: { fontSize: "1.45rem", fontWeight: 700, color: "#111827", margin: 0 },
+            children: "Role-Based Access Control (RBAC)"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("p", {
+            style: { margin: "4px 0 0", color: "#6b7280", fontSize: "0.86rem" },
+            children: "Server-side enforced privilege layers, granular capability mappings, and atomic role delegations."
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("div", {
+        style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "18px" },
+        children: defaultRoles.map((role) => /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("div", {
+          style: {
+            background: "#ffffff",
+            border: `1px solid ${role.borderColor}`,
+            borderRadius: "14px",
+            padding: "22px",
+            boxShadow: "0 1px 3px rgba(15, 23, 42, 0.05)",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between"
+          },
+          children: /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("div", {
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("div", {
+                style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("div", {
+                    style: {
+                      width: "40px",
+                      height: "40px",
+                      borderRadius: "10px",
+                      backgroundColor: role.bgColor,
+                      display: "grid",
+                      placeItems: "center"
+                    },
+                    children: /* @__PURE__ */ jsx_dev_runtime12.jsxDEV(ShieldCheck, {
+                      size: 20,
+                      color: role.color
+                    }, undefined, false, undefined, this)
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("span", {
+                    style: {
+                      fontSize: "0.72rem",
+                      fontWeight: 700,
+                      padding: "3px 8px",
+                      borderRadius: "9999px",
+                      backgroundColor: role.bgColor,
+                      color: role.color,
+                      border: `1px solid ${role.borderColor}`
+                    },
+                    children: role.badge
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("h2", {
+                style: { fontSize: "1.1rem", fontWeight: 700, color: "#111827", margin: 0 },
+                children: role.title
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("p", {
+                style: { fontSize: "0.83rem", color: "#64748b", margin: "6px 0 16px", lineHeight: 1.45 },
+                children: role.description
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("div", {
+                style: { borderTop: "1px solid #f1f5f9", paddingTop: "14px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("div", {
+                    style: { fontSize: "0.75rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", marginBottom: "10px" },
+                    children: [
+                      "Granted Capabilities (",
+                      role.permissions.length,
+                      ")"
+                    ]
+                  }, undefined, true, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("div", {
+                    style: { display: "flex", flexWrap: "wrap", gap: "6px" },
+                    children: role.permissions.map((perm) => /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("span", {
+                      style: {
+                        fontSize: "0.74rem",
+                        fontFamily: "monospace",
+                        padding: "3px 8px",
+                        borderRadius: "6px",
+                        backgroundColor: "#f8fafc",
+                        color: "#334155",
+                        border: "1px solid #e2e8f0",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px"
+                      },
+                      children: [
+                        /* @__PURE__ */ jsx_dev_runtime12.jsxDEV(Check, {
+                          size: 11,
+                          color: "#16a34a"
+                        }, undefined, false, undefined, this),
+                        perm
+                      ]
+                    }, perm, true, undefined, this))
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
+        }, role.key, false, undefined, this))
+      }, undefined, false, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("div", {
+        style: { display: "grid", gridTemplateColumns: "minmax(0, 1.2fr) minmax(0, 1.8fr)", gap: "20px" },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("div", {
+            style: {
+              background: "#ffffff",
+              border: "1px solid #e5e7eb",
+              borderRadius: "14px",
+              padding: "22px",
+              boxShadow: "0 1px 3px rgba(15, 23, 42, 0.05)"
+            },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("div", {
+                style: { display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime12.jsxDEV(Key, {
+                    size: 18,
+                    color: "#7047eb"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("h2", {
+                    style: { fontSize: "1.05rem", fontWeight: 700, margin: 0, color: "#111827" },
+                    children: "Assign Role to User"
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("p", {
+                style: { fontSize: "0.83rem", color: "#64748b", marginBottom: "18px", lineHeight: 1.45 },
+                children: "Select an active user from your directory and apply new authorization privileges. Changes take effect on the user's next request."
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("form", {
+                onSubmit: handleRoleSubmit,
+                style: { display: "grid", gap: "14px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("div", {
+                    className: "field",
+                    style: { margin: 0 },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("label", {
+                        style: { display: "block", fontSize: "0.82rem", fontWeight: 600, color: "#374151", marginBottom: "6px" },
+                        children: "Target User"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("select", {
+                        value: selectedUid,
+                        onChange: (e) => setSelectedUid(e.target.value),
+                        required: true,
+                        style: {
+                          width: "100%",
+                          height: "40px",
+                          borderRadius: "8px",
+                          border: "1.5px solid #d1d5db",
+                          padding: "0 12px",
+                          fontSize: "0.88rem",
+                          backgroundColor: "#fff",
+                          color: "#111827",
+                          outline: "none"
+                        },
+                        children: [
+                          /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("option", {
+                            value: "",
+                            children: "-- Choose User Account --"
+                          }, undefined, false, undefined, this),
+                          usersList.map((u) => /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("option", {
+                            value: u.uid,
+                            children: [
+                              "#",
+                              u.uid,
+                              " - ",
+                              u.full_name || u.username,
+                              " (",
+                              u.email,
+                              ") [Current: ",
+                              u.role,
+                              "]"
+                            ]
+                          }, u.uid, true, undefined, this))
+                        ]
+                      }, undefined, true, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("div", {
+                    className: "field",
+                    style: { margin: 0 },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("label", {
+                        style: { display: "block", fontSize: "0.82rem", fontWeight: 600, color: "#374151", marginBottom: "6px" },
+                        children: "New Role Assignment"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("select", {
+                        value: selectedRole,
+                        onChange: (e) => setSelectedRole(e.target.value),
+                        style: {
+                          width: "100%",
+                          height: "40px",
+                          borderRadius: "8px",
+                          border: "1.5px solid #d1d5db",
+                          padding: "0 12px",
+                          fontSize: "0.88rem",
+                          backgroundColor: "#fff",
+                          color: "#111827",
+                          outline: "none"
+                        },
+                        children: [
+                          /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("option", {
+                            value: "user",
+                            children: "End User (Standard Access)"
+                          }, undefined, false, undefined, this),
+                          /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("option", {
+                            value: "admin",
+                            children: "Enterprise Admin (Full System Privileges)"
+                          }, undefined, false, undefined, this)
+                        ]
+                      }, undefined, true, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("div", {
+                    style: {
+                      padding: "10px 12px",
+                      background: "#f0fdf4",
+                      border: "1px solid #bbf7d0",
+                      borderRadius: "8px",
+                      fontSize: "0.78rem",
+                      color: "#166534",
+                      display: "flex",
+                      gap: "8px",
+                      alignItems: "flex-start"
+                    },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime12.jsxDEV(Info, {
+                        size: 15,
+                        style: { flexShrink: 0, marginTop: "2px" }
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("span", {
+                        children: "Lockout Protection: The backend will reject demoting the last remaining administrator account."
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("button", {
+                    type: "submit",
+                    disabled: !selectedUid || submitting,
+                    className: "btn",
+                    style: {
+                      height: "42px",
+                      marginTop: "4px",
+                      background: "linear-gradient(135deg, #7047eb, #4f46e5)",
+                      fontSize: "0.88rem"
+                    },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime12.jsxDEV(UserCheck, {
+                        size: 16
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("span", {
+                        children: submitting ? "Updating Role..." : "Save Role Assignment"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("div", {
+            style: {
+              background: "#ffffff",
+              border: "1px solid #e5e7eb",
+              borderRadius: "14px",
+              padding: "22px",
+              boxShadow: "0 1px 3px rgba(15, 23, 42, 0.05)"
+            },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("div", {
+                style: { display: "flex", alignItems: "center", gap: "10px", marginBottom: "14px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime12.jsxDEV(Lock, {
+                    size: 18,
+                    color: "#475569"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("h2", {
+                    style: { fontSize: "1.05rem", fontWeight: 700, margin: 0, color: "#111827" },
+                    children: "Granular Permission Matrix"
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("div", {
+                style: { overflowX: "auto" },
+                children: /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("table", {
+                  style: { width: "100%", borderCollapse: "collapse", fontSize: "0.82rem" },
+                  children: [
+                    /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("thead", {
+                      children: /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("tr", {
+                        style: { borderBottom: "1px solid #f1f5f9", textAlign: "left", color: "#64748b" },
+                        children: [
+                          /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("th", {
+                            style: { padding: "8px 10px", fontWeight: 600 },
+                            children: "Permission Key"
+                          }, undefined, false, undefined, this),
+                          /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("th", {
+                            style: { padding: "8px 10px", fontWeight: 600 },
+                            children: "Category"
+                          }, undefined, false, undefined, this),
+                          /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("th", {
+                            style: { padding: "8px 10px", fontWeight: 600, textAlign: "center" },
+                            children: "Admin"
+                          }, undefined, false, undefined, this),
+                          /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("th", {
+                            style: { padding: "8px 10px", fontWeight: 600, textAlign: "center" },
+                            children: "User"
+                          }, undefined, false, undefined, this)
+                        ]
+                      }, undefined, true, undefined, this)
+                    }, undefined, false, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("tbody", {
+                      children: allPermissions.map((p) => {
+                        const hasAdmin = true;
+                        const hasUser = p.key === "users.view";
+                        return /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("tr", {
+                          style: { borderBottom: "1px solid #f8fafc" },
+                          children: [
+                            /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("td", {
+                              style: { padding: "8px 10px", fontFamily: "monospace", color: "#1e293b", fontWeight: 600 },
+                              children: p.key
+                            }, undefined, false, undefined, this),
+                            /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("td", {
+                              style: { padding: "8px 10px", color: "#64748b" },
+                              children: p.category
+                            }, undefined, false, undefined, this),
+                            /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("td", {
+                              style: { padding: "8px 10px", textAlign: "center" },
+                              children: /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("span", {
+                                style: { color: "#16a34a", fontWeight: 700 },
+                                children: "✓"
+                              }, undefined, false, undefined, this)
+                            }, undefined, false, undefined, this),
+                            /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("td", {
+                              style: { padding: "8px 10px", textAlign: "center" },
+                              children: hasUser ? /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("span", {
+                                style: { color: "#16a34a", fontWeight: 700 },
+                                children: "✓"
+                              }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime12.jsxDEV("span", {
+                                style: { color: "#cbd5e1" },
+                                children: "—"
+                              }, undefined, false, undefined, this)
+                            }, undefined, false, undefined, this)
+                          ]
+                        }, p.key, true, undefined, this);
+                      })
+                    }, undefined, false, undefined, this)
+                  ]
+                }, undefined, true, undefined, this)
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this)
+    ]
+  }, undefined, true, undefined, this);
+}
+
+// src/components/admin/AdminSessions.jsx
+var import_react16 = __toESM(require_react(), 1);
+var jsx_dev_runtime13 = __toESM(require_jsx_dev_runtime(), 1);
+function AdminSessions({
+  sessions = [],
+  total = 0,
+  page = 1,
+  totalPages = 1,
+  search = "",
+  statusFilter = "all",
+  onSearchChange,
+  onStatusFilterChange,
+  onPageChange,
+  onRevokeSession,
+  onRevokeAllUserSessions,
+  onRefresh,
+  loading
+}) {
+  const [selectedUserForRevokeAll, setSelectedUserForRevokeAll] = import_react16.useState(null);
+  const getDeviceIcon = (type) => {
+    switch ((type || "").toLowerCase()) {
+      case "mobile":
+        return /* @__PURE__ */ jsx_dev_runtime13.jsxDEV(Smartphone, {
+          size: 16,
+          color: "#0284c7"
+        }, undefined, false, undefined, this);
+      case "laptop":
+        return /* @__PURE__ */ jsx_dev_runtime13.jsxDEV(Laptop, {
+          size: 16,
+          color: "#7047eb"
+        }, undefined, false, undefined, this);
+      default:
+        return /* @__PURE__ */ jsx_dev_runtime13.jsxDEV(Monitor, {
+          size: 16,
+          color: "#475569"
+        }, undefined, false, undefined, this);
+    }
+  };
+  return /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("div", {
+    className: "admin-page-container",
+    style: { display: "grid", gap: "20px" },
+    children: [
+      /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("div", {
+        style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("div", {
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("h1", {
+                style: { fontSize: "1.45rem", fontWeight: 700, color: "#111827", margin: 0 },
+                children: "Active Session Management"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("p", {
+                style: { margin: "4px 0 0", color: "#6b7280", fontSize: "0.86rem" },
+                children: "Real-time inspection of valid token sessions, client device fingerprinting, and immediate cryptographic revocation."
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("button", {
+            onClick: onRefresh,
+            className: "btn btn--ghost",
+            style: {
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "8px 14px",
+              height: "38px",
+              fontSize: "0.86rem"
+            },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime13.jsxDEV(RefreshCw, {
+                size: 15,
+                className: loading ? "animate-spin" : ""
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("span", {
+                children: "Refresh Sessions"
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("div", {
+        style: {
+          background: "#ffffff",
+          border: "1px solid #e5e7eb",
+          borderRadius: "12px",
+          padding: "16px",
+          display: "flex",
+          gap: "14px",
+          flexWrap: "wrap",
+          alignItems: "center",
+          justifyContent: "space-between",
+          boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)"
+        },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("div", {
+            style: { display: "flex", gap: "12px", flex: 1, minWidth: "280px", flexWrap: "wrap" },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("div", {
+                style: { position: "relative", flex: 1, minWidth: "220px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime13.jsxDEV(Search, {
+                    size: 16,
+                    color: "#9ca3af",
+                    style: { position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("input", {
+                    type: "text",
+                    placeholder: "Search by user, email, or device name...",
+                    value: search,
+                    onChange: (e) => onSearchChange(e.target.value),
+                    style: {
+                      width: "100%",
+                      height: "38px",
+                      paddingLeft: "36px",
+                      paddingRight: "12px",
+                      borderRadius: "8px",
+                      border: "1px solid #d1d5db",
+                      fontSize: "0.88rem",
+                      color: "#111827",
+                      outline: "none"
+                    }
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("div", {
+                style: { display: "flex", alignItems: "center", gap: "8px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime13.jsxDEV(Funnel, {
+                    size: 15,
+                    color: "#6b7280"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("select", {
+                    value: statusFilter,
+                    onChange: (e) => onStatusFilterChange(e.target.value),
+                    style: {
+                      height: "38px",
+                      padding: "0 12px",
+                      borderRadius: "8px",
+                      border: "1px solid #d1d5db",
+                      fontSize: "0.86rem",
+                      backgroundColor: "#fff",
+                      color: "#374151",
+                      cursor: "pointer"
+                    },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("option", {
+                        value: "all",
+                        children: "All Session States"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("option", {
+                        value: "active",
+                        children: "Active Only"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("option", {
+                        value: "revoked",
+                        children: "Revoked / Inactive"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("div", {
+            style: { fontSize: "0.82rem", color: "#6b7280" },
+            children: [
+              "Displaying ",
+              /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("strong", {
+                children: sessions.length
+              }, undefined, false, undefined, this),
+              " of ",
+              /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("strong", {
+                children: total
+              }, undefined, false, undefined, this),
+              " session records"
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("div", {
+        style: {
+          background: "#ffffff",
+          border: "1px solid #e5e7eb",
+          borderRadius: "14px",
+          overflow: "hidden",
+          boxShadow: "0 1px 3px rgba(15, 23, 42, 0.05)"
+        },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("div", {
+            style: { overflowX: "auto" },
+            children: /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("table", {
+              style: { width: "100%", borderCollapse: "collapse", fontSize: "0.86rem", textAlign: "left" },
+              children: [
+                /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("thead", {
+                  children: /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("tr", {
+                    style: { background: "#f8fafc", borderBottom: "1px solid #e2e8f0", color: "#64748b" },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("th", {
+                        style: { padding: "12px 16px", fontWeight: 600 },
+                        children: "Employee"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("th", {
+                        style: { padding: "12px 16px", fontWeight: 600 },
+                        children: "Device & OS"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("th", {
+                        style: { padding: "12px 16px", fontWeight: 600 },
+                        children: "Browser & IP"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("th", {
+                        style: { padding: "12px 16px", fontWeight: 600 },
+                        children: "Session Created"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("th", {
+                        style: { padding: "12px 16px", fontWeight: 600 },
+                        children: "Last Telemetry"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("th", {
+                        style: { padding: "12px 16px", fontWeight: 600 },
+                        children: "State"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("th", {
+                        style: { padding: "12px 16px", fontWeight: 600, textAlign: "right" },
+                        children: "Revocation"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this)
+                }, undefined, false, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("tbody", {
+                  children: loading ? /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("tr", {
+                    children: /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("td", {
+                      colSpan: 7,
+                      style: { textAlign: "center", padding: "36px 16px", color: "#9ca3af" },
+                      children: "Loading active sessions..."
+                    }, undefined, false, undefined, this)
+                  }, undefined, false, undefined, this) : sessions.length === 0 ? /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("tr", {
+                    children: /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("td", {
+                      colSpan: 7,
+                      style: { textAlign: "center", padding: "48px 16px", color: "#9ca3af" },
+                      children: [
+                        /* @__PURE__ */ jsx_dev_runtime13.jsxDEV(Monitor, {
+                          size: 32,
+                          style: { margin: "0 auto 8px", color: "#cbd5e1" }
+                        }, undefined, false, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("p", {
+                          style: { margin: 0 },
+                          children: "No sessions found."
+                        }, undefined, false, undefined, this)
+                      ]
+                    }, undefined, true, undefined, this)
+                  }, undefined, false, undefined, this) : sessions.map((sess) => {
+                    const isActive = sess.is_active;
+                    return /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("tr", {
+                      style: {
+                        borderBottom: "1px solid #f1f5f9",
+                        transition: "background 0.1s"
+                      },
+                      onMouseEnter: (e) => e.currentTarget.style.backgroundColor = "#fcfdfd",
+                      onMouseLeave: (e) => e.currentTarget.style.backgroundColor = "transparent",
+                      children: [
+                        /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("td", {
+                          style: { padding: "14px 16px" },
+                          children: [
+                            /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("div", {
+                              style: { fontWeight: 600, color: "#111827" },
+                              children: sess.username
+                            }, undefined, false, undefined, this),
+                            /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("div", {
+                              style: { fontSize: "0.76rem", color: "#64748b" },
+                              children: [
+                                sess.email,
+                                " • UID #",
+                                sess.uid
+                              ]
+                            }, undefined, true, undefined, this)
+                          ]
+                        }, undefined, true, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("td", {
+                          style: { padding: "14px 16px" },
+                          children: [
+                            /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("div", {
+                              style: { display: "flex", alignItems: "center", gap: "8px", fontWeight: 500, color: "#334155" },
+                              children: [
+                                getDeviceIcon(sess.device_type),
+                                /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("span", {
+                                  children: sess.device_name
+                                }, undefined, false, undefined, this)
+                              ]
+                            }, undefined, true, undefined, this),
+                            /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("div", {
+                              style: { fontSize: "0.75rem", color: "#94a3b8", marginLeft: "24px" },
+                              children: sess.os
+                            }, undefined, false, undefined, this)
+                          ]
+                        }, undefined, true, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("td", {
+                          style: { padding: "14px 16px" },
+                          children: [
+                            /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("div", {
+                              style: { color: "#334155" },
+                              children: sess.browser
+                            }, undefined, false, undefined, this),
+                            /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("div", {
+                              style: { fontSize: "0.75rem", color: "#64748b", fontFamily: "monospace" },
+                              children: sess.ip_address
+                            }, undefined, false, undefined, this)
+                          ]
+                        }, undefined, true, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("td", {
+                          style: { padding: "14px 16px", color: "#64748b", fontSize: "0.8rem" },
+                          children: sess.created_at
+                        }, undefined, false, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("td", {
+                          style: { padding: "14px 16px", color: "#64748b", fontSize: "0.8rem" },
+                          children: sess.last_activity
+                        }, undefined, false, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("td", {
+                          style: { padding: "14px 16px" },
+                          children: /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("span", {
+                            style: {
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "5px",
+                              padding: "3px 10px",
+                              borderRadius: "9999px",
+                              fontSize: "0.75rem",
+                              fontWeight: 600,
+                              backgroundColor: isActive ? "#ecfdf5" : "#f1f5f9",
+                              color: isActive ? "#15803d" : "#64748b",
+                              border: `1px solid ${isActive ? "#bbf7d0" : "#e2e8f0"}`
+                            },
+                            children: [
+                              isActive ? /* @__PURE__ */ jsx_dev_runtime13.jsxDEV(CircleCheck, {
+                                size: 12
+                              }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime13.jsxDEV(CircleX, {
+                                size: 12
+                              }, undefined, false, undefined, this),
+                              sess.status || (isActive ? "Active" : "Revoked")
+                            ]
+                          }, undefined, true, undefined, this)
+                        }, undefined, false, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("td", {
+                          style: { padding: "14px 16px", textAlign: "right" },
+                          children: /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("div", {
+                            style: { display: "inline-flex", gap: "6px" },
+                            children: [
+                              isActive && /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("button", {
+                                onClick: () => onRevokeSession(sess.session_id),
+                                title: "Revoke This Session",
+                                style: {
+                                  background: "#fff",
+                                  border: "1px solid #fecaca",
+                                  borderRadius: "6px",
+                                  padding: "4px 8px",
+                                  fontSize: "0.78rem",
+                                  fontWeight: 600,
+                                  color: "#dc2626",
+                                  cursor: "pointer",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "4px"
+                                },
+                                children: [
+                                  /* @__PURE__ */ jsx_dev_runtime13.jsxDEV(Trash, {
+                                    size: 13
+                                  }, undefined, false, undefined, this),
+                                  /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("span", {
+                                    children: "Revoke"
+                                  }, undefined, false, undefined, this)
+                                ]
+                              }, undefined, true, undefined, this),
+                              /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("button", {
+                                onClick: () => setSelectedUserForRevokeAll({ uid: sess.uid, username: sess.username }),
+                                title: "Revoke ALL sessions for this user",
+                                style: {
+                                  background: "#fff",
+                                  border: "1px solid #e2e8f0",
+                                  borderRadius: "6px",
+                                  padding: "4px 8px",
+                                  fontSize: "0.78rem",
+                                  fontWeight: 500,
+                                  color: "#64748b",
+                                  cursor: "pointer"
+                                },
+                                children: "Revoke All for User"
+                              }, undefined, false, undefined, this)
+                            ]
+                          }, undefined, true, undefined, this)
+                        }, undefined, false, undefined, this)
+                      ]
+                    }, sess.id, true, undefined, this);
+                  })
+                }, undefined, false, undefined, this)
+              ]
+            }, undefined, true, undefined, this)
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("div", {
+            style: {
+              padding: "12px 18px",
+              borderTop: "1px solid #e5e7eb",
+              background: "#f8fafc",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "10px"
+            },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("div", {
+                style: { fontSize: "0.82rem", color: "#64748b" },
+                children: [
+                  "Page ",
+                  /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("strong", {
+                    children: page
+                  }, undefined, false, undefined, this),
+                  " of ",
+                  /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("strong", {
+                    children: totalPages || 1
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("div", {
+                style: { display: "flex", gap: "6px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("button", {
+                    onClick: () => onPageChange(page - 1),
+                    disabled: page <= 1,
+                    className: "btn btn--ghost",
+                    style: { height: "32px", padding: "0 10px", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: "4px" },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime13.jsxDEV(ChevronLeft, {
+                        size: 14
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("span", {
+                        children: "Previous"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("button", {
+                    onClick: () => onPageChange(page + 1),
+                    disabled: page >= totalPages,
+                    className: "btn btn--ghost",
+                    style: { height: "32px", padding: "0 10px", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: "4px" },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("span", {
+                        children: "Next"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime13.jsxDEV(ChevronRight, {
+                        size: 14
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      selectedUserForRevokeAll && /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("div", {
+        className: "modal-overlay",
+        style: {
+          position: "fixed",
+          inset: 0,
+          backgroundColor: "rgba(15, 23, 42, 0.6)",
+          backdropFilter: "blur(4px)",
+          display: "grid",
+          placeItems: "center",
+          zIndex: 100,
+          padding: "16px"
+        },
+        onClick: () => setSelectedUserForRevokeAll(null),
+        children: /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("div", {
+          className: "card",
+          style: { width: "100%", maxWidth: "440px", padding: "28px" },
+          onClick: (e) => e.stopPropagation(),
+          children: [
+            /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("div", {
+              style: { textAlign: "center", marginBottom: "16px" },
+              children: [
+                /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("div", {
+                  style: {
+                    width: "52px",
+                    height: "52px",
+                    borderRadius: "50%",
+                    backgroundColor: "#fee2e2",
+                    color: "#dc2626",
+                    display: "grid",
+                    placeItems: "center",
+                    margin: "0 auto 12px"
+                  },
+                  children: /* @__PURE__ */ jsx_dev_runtime13.jsxDEV(OctagonAlert, {
+                    size: 26
+                  }, undefined, false, undefined, this)
+                }, undefined, false, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("h3", {
+                  style: { margin: 0, fontSize: "1.2rem", color: "#111827" },
+                  children: "Revoke All Active Sessions?"
+                }, undefined, false, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("p", {
+                  style: { margin: "8px 0 0", fontSize: "0.86rem", color: "#64748b" },
+                  children: [
+                    "Are you sure you want to invalidate all active device sessions for ",
+                    /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("strong", {
+                      children: [
+                        '"',
+                        selectedUserForRevokeAll.username,
+                        '"'
+                      ]
+                    }, undefined, true, undefined, this),
+                    " (UID #",
+                    selectedUserForRevokeAll.uid,
+                    ")? The employee will be immediately signed out on all web browsers and devices."
+                  ]
+                }, undefined, true, undefined, this)
+              ]
+            }, undefined, true, undefined, this),
+            /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("div", {
+              style: { display: "flex", gap: "10px", marginTop: "24px" },
+              children: [
+                /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("button", {
+                  className: "btn btn--ghost",
+                  onClick: () => setSelectedUserForRevokeAll(null),
+                  style: { flex: 1, height: "40px" },
+                  children: "Cancel"
+                }, undefined, false, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime13.jsxDEV("button", {
+                  className: "btn",
+                  onClick: () => {
+                    const uid = selectedUserForRevokeAll.uid;
+                    setSelectedUserForRevokeAll(null);
+                    onRevokeAllUserSessions(uid);
+                  },
+                  style: {
+                    flex: 1,
+                    height: "40px",
+                    background: "#dc2626",
+                    color: "#fff"
+                  },
+                  children: "Revoke All"
+                }, undefined, false, undefined, this)
+              ]
+            }, undefined, true, undefined, this)
+          ]
+        }, undefined, true, undefined, this)
+      }, undefined, false, undefined, this)
+    ]
+  }, undefined, true, undefined, this);
+}
+
+// src/components/admin/AdminLoginActivity.jsx
+var import_react17 = __toESM(require_react(), 1);
+var jsx_dev_runtime14 = __toESM(require_jsx_dev_runtime(), 1);
+function AdminLoginActivity({
+  activities = [],
+  total = 0,
+  page = 1,
+  totalPages = 1,
+  search = "",
+  statusFilter = "all",
+  dateFrom = "",
+  dateTo = "",
+  onSearchChange,
+  onStatusFilterChange,
+  onDateFromChange,
+  onDateToChange,
+  onPageChange,
+  onRefresh,
+  loading
+}) {
+  return /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("div", {
+    className: "admin-page-container",
+    style: { display: "grid", gap: "20px" },
+    children: [
+      /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("div", {
+        style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("div", {
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("h1", {
+                style: { fontSize: "1.45rem", fontWeight: 700, color: "#111827", margin: 0 },
+                children: "Login Activity Monitoring"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("p", {
+                style: { margin: "4px 0 0", color: "#6b7280", fontSize: "0.86rem" },
+                children: "Real-time feed of successful authentication and failed credential challenge events across all users."
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("button", {
+            onClick: onRefresh,
+            className: "btn btn--ghost",
+            style: {
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "8px 14px",
+              height: "38px",
+              fontSize: "0.86rem"
+            },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime14.jsxDEV(RefreshCw, {
+                size: 15,
+                className: loading ? "animate-spin" : ""
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("span", {
+                children: "Refresh Feed"
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("div", {
+        style: {
+          background: "#ffffff",
+          border: "1px solid #e5e7eb",
+          borderRadius: "12px",
+          padding: "16px",
+          display: "flex",
+          gap: "14px",
+          flexWrap: "wrap",
+          alignItems: "center",
+          justifyContent: "space-between",
+          boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)"
+        },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("div", {
+            style: { display: "flex", gap: "12px", flex: 1, minWidth: "280px", flexWrap: "wrap", alignItems: "center" },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("div", {
+                style: { position: "relative", flex: 1, minWidth: "200px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime14.jsxDEV(Search, {
+                    size: 16,
+                    color: "#9ca3af",
+                    style: { position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("input", {
+                    type: "text",
+                    placeholder: "Search by username or email...",
+                    value: search,
+                    onChange: (e) => onSearchChange(e.target.value),
+                    style: {
+                      width: "100%",
+                      height: "38px",
+                      paddingLeft: "36px",
+                      paddingRight: "12px",
+                      borderRadius: "8px",
+                      border: "1px solid #d1d5db",
+                      fontSize: "0.88rem",
+                      color: "#111827",
+                      outline: "none"
+                    }
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("div", {
+                style: { display: "flex", alignItems: "center", gap: "6px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime14.jsxDEV(Funnel, {
+                    size: 15,
+                    color: "#6b7280"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("select", {
+                    value: statusFilter,
+                    onChange: (e) => onStatusFilterChange(e.target.value),
+                    style: {
+                      height: "38px",
+                      padding: "0 12px",
+                      borderRadius: "8px",
+                      border: "1px solid #d1d5db",
+                      fontSize: "0.86rem",
+                      backgroundColor: "#fff",
+                      color: "#374151",
+                      cursor: "pointer"
+                    },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("option", {
+                        value: "all",
+                        children: "All Outcomes"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("option", {
+                        value: "success",
+                        children: "Success Only"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("option", {
+                        value: "failed",
+                        children: "Failed Only"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("div", {
+                style: { display: "flex", alignItems: "center", gap: "6px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime14.jsxDEV(Calendar, {
+                    size: 15,
+                    color: "#6b7280"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("input", {
+                    type: "date",
+                    value: dateFrom,
+                    onChange: (e) => onDateFromChange(e.target.value),
+                    title: "From date",
+                    style: {
+                      height: "38px",
+                      padding: "0 10px",
+                      borderRadius: "8px",
+                      border: "1px solid #d1d5db",
+                      fontSize: "0.84rem",
+                      backgroundColor: "#fff",
+                      color: "#374151"
+                    }
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("span", {
+                    style: { color: "#9ca3af", fontSize: "0.8rem" },
+                    children: "to"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("input", {
+                    type: "date",
+                    value: dateTo,
+                    onChange: (e) => onDateToChange(e.target.value),
+                    title: "To date",
+                    style: {
+                      height: "38px",
+                      padding: "0 10px",
+                      borderRadius: "8px",
+                      border: "1px solid #d1d5db",
+                      fontSize: "0.84rem",
+                      backgroundColor: "#fff",
+                      color: "#374151"
+                    }
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("div", {
+            style: { fontSize: "0.82rem", color: "#6b7280" },
+            children: [
+              "Showing ",
+              /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("strong", {
+                children: activities.length
+              }, undefined, false, undefined, this),
+              " of ",
+              /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("strong", {
+                children: total
+              }, undefined, false, undefined, this),
+              " log entries"
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("div", {
+        style: {
+          background: "#ffffff",
+          border: "1px solid #e5e7eb",
+          borderRadius: "14px",
+          overflow: "hidden",
+          boxShadow: "0 1px 3px rgba(15, 23, 42, 0.05)"
+        },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("div", {
+            style: { overflowX: "auto" },
+            children: /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("table", {
+              style: { width: "100%", borderCollapse: "collapse", fontSize: "0.86rem", textAlign: "left" },
+              children: [
+                /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("thead", {
+                  children: /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("tr", {
+                    style: { background: "#f8fafc", borderBottom: "1px solid #e2e8f0", color: "#64748b" },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("th", {
+                        style: { padding: "12px 16px", fontWeight: 600 },
+                        children: "Employee"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("th", {
+                        style: { padding: "12px 16px", fontWeight: 600 },
+                        children: "Status"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("th", {
+                        style: { padding: "12px 16px", fontWeight: 600 },
+                        children: "Device & Browser"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("th", {
+                        style: { padding: "12px 16px", fontWeight: 600 },
+                        children: "Location"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("th", {
+                        style: { padding: "12px 16px", fontWeight: 600 },
+                        children: "IP Address"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("th", {
+                        style: { padding: "12px 16px", fontWeight: 600, textAlign: "right" },
+                        children: "Timestamp"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this)
+                }, undefined, false, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("tbody", {
+                  children: loading ? /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("tr", {
+                    children: /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("td", {
+                      colSpan: 6,
+                      style: { textAlign: "center", padding: "40px 16px", color: "#9ca3af" },
+                      children: "Loading telemetry feed..."
+                    }, undefined, false, undefined, this)
+                  }, undefined, false, undefined, this) : activities.length === 0 ? /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("tr", {
+                    children: /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("td", {
+                      colSpan: 6,
+                      style: { textAlign: "center", padding: "48px 16px", color: "#9ca3af" },
+                      children: [
+                        /* @__PURE__ */ jsx_dev_runtime14.jsxDEV(Activity, {
+                          size: 32,
+                          style: { margin: "0 auto 8px", color: "#cbd5e1" }
+                        }, undefined, false, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("p", {
+                          style: { margin: 0 },
+                          children: "No login activity matches the active filter."
+                        }, undefined, false, undefined, this)
+                      ]
+                    }, undefined, true, undefined, this)
+                  }, undefined, false, undefined, this) : activities.map((item) => {
+                    const isSuccess = (item.status || "").toLowerCase() === "success";
+                    return /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("tr", {
+                      style: {
+                        borderBottom: "1px solid #f1f5f9",
+                        transition: "background 0.1s"
+                      },
+                      onMouseEnter: (e) => e.currentTarget.style.backgroundColor = "#fcfdfd",
+                      onMouseLeave: (e) => e.currentTarget.style.backgroundColor = "transparent",
+                      children: [
+                        /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("td", {
+                          style: { padding: "14px 16px" },
+                          children: [
+                            /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("div", {
+                              style: { fontWeight: 600, color: "#111827" },
+                              children: item.username
+                            }, undefined, false, undefined, this),
+                            /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("div", {
+                              style: { fontSize: "0.76rem", color: "#64748b" },
+                              children: [
+                                item.email,
+                                " • UID #",
+                                item.uid
+                              ]
+                            }, undefined, true, undefined, this)
+                          ]
+                        }, undefined, true, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("td", {
+                          style: { padding: "14px 16px" },
+                          children: /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("span", {
+                            style: {
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "5px",
+                              padding: "3px 10px",
+                              borderRadius: "9999px",
+                              fontSize: "0.75rem",
+                              fontWeight: 600,
+                              backgroundColor: isSuccess ? "#ecfdf5" : "#fef2f2",
+                              color: isSuccess ? "#15803d" : "#b91c1c",
+                              border: `1px solid ${isSuccess ? "#bbf7d0" : "#fecaca"}`
+                            },
+                            children: [
+                              isSuccess ? /* @__PURE__ */ jsx_dev_runtime14.jsxDEV(CircleCheck, {
+                                size: 12
+                              }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime14.jsxDEV(CircleX, {
+                                size: 12
+                              }, undefined, false, undefined, this),
+                              item.status
+                            ]
+                          }, undefined, true, undefined, this)
+                        }, undefined, false, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("td", {
+                          style: { padding: "14px 16px" },
+                          children: [
+                            /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("div", {
+                              style: { color: "#334155", fontWeight: 500 },
+                              children: item.device_name || "Desktop"
+                            }, undefined, false, undefined, this),
+                            /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("div", {
+                              style: { fontSize: "0.75rem", color: "#94a3b8" },
+                              children: [
+                                item.browser,
+                                " • ",
+                                item.os
+                              ]
+                            }, undefined, true, undefined, this)
+                          ]
+                        }, undefined, true, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("td", {
+                          style: { padding: "14px 16px", color: "#475569" },
+                          children: /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("div", {
+                            style: { display: "flex", alignItems: "center", gap: "6px" },
+                            children: [
+                              /* @__PURE__ */ jsx_dev_runtime14.jsxDEV(Globe, {
+                                size: 13,
+                                color: "#94a3b8"
+                              }, undefined, false, undefined, this),
+                              /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("span", {
+                                children: item.location || "Bengaluru, India"
+                              }, undefined, false, undefined, this)
+                            ]
+                          }, undefined, true, undefined, this)
+                        }, undefined, false, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("td", {
+                          style: { padding: "14px 16px", color: "#64748b", fontFamily: "monospace", fontSize: "0.82rem" },
+                          children: item.ip_address
+                        }, undefined, false, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("td", {
+                          style: { padding: "14px 16px", textAlign: "right", color: "#64748b", fontSize: "0.82rem" },
+                          children: item.created_at
+                        }, undefined, false, undefined, this)
+                      ]
+                    }, item.id, true, undefined, this);
+                  })
+                }, undefined, false, undefined, this)
+              ]
+            }, undefined, true, undefined, this)
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("div", {
+            style: {
+              padding: "12px 18px",
+              borderTop: "1px solid #e5e7eb",
+              background: "#f8fafc",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "10px"
+            },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("div", {
+                style: { fontSize: "0.82rem", color: "#64748b" },
+                children: [
+                  "Page ",
+                  /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("strong", {
+                    children: page
+                  }, undefined, false, undefined, this),
+                  " of ",
+                  /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("strong", {
+                    children: totalPages || 1
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("div", {
+                style: { display: "flex", gap: "6px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("button", {
+                    onClick: () => onPageChange(page - 1),
+                    disabled: page <= 1,
+                    className: "btn btn--ghost",
+                    style: { height: "32px", padding: "0 10px", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: "4px" },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime14.jsxDEV(ChevronLeft, {
+                        size: 14
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("span", {
+                        children: "Previous"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("button", {
+                    onClick: () => onPageChange(page + 1),
+                    disabled: page >= totalPages,
+                    className: "btn btn--ghost",
+                    style: { height: "32px", padding: "0 10px", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: "4px" },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime14.jsxDEV("span", {
+                        children: "Next"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime14.jsxDEV(ChevronRight, {
+                        size: 14
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this)
+    ]
+  }, undefined, true, undefined, this);
+}
+
+// src/components/admin/AdminAuditLogs.jsx
+var import_react18 = __toESM(require_react(), 1);
+var jsx_dev_runtime15 = __toESM(require_jsx_dev_runtime(), 1);
+function AdminAuditLogs({
+  logs = [],
+  total = 0,
+  page = 1,
+  totalPages = 1,
+  search = "",
+  eventFilter = "all",
+  onSearchChange,
+  onEventFilterChange,
+  onPageChange,
+  onRefresh,
+  loading
+}) {
+  const getEventBadgeStyle = (eventType = "") => {
+    const ev = eventType.toUpperCase();
+    if (ev.includes("WEBAUTHN") || ev.includes("PASSKEY")) {
+      return { bg: "#f0fdf4", color: "#16a34a", border: "#86efac" };
+    }
+    if (ev.includes("DELETE") || ev.includes("REVOKE") || ev.includes("BLOCKED")) {
+      return { bg: "#fef2f2", color: "#b91c1c", border: "#fecaca" };
+    }
+    if (ev.includes("CREATE") || ev.includes("SUCCESS") || ev.includes("ACTIVATE")) {
+      return { bg: "#ecfdf5", color: "#15803d", border: "#bbf7d0" };
+    }
+    if (ev.includes("ROLE") || ev.includes("PERMISSION")) {
+      return { bg: "#f5f3ff", color: "#7047eb", border: "#ddd6fe" };
+    }
+    return { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" };
+  };
+  return /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("div", {
+    className: "admin-page-container",
+    style: { display: "grid", gap: "20px" },
+    children: [
+      /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("div", {
+        style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("div", {
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("h1", {
+                style: { fontSize: "1.45rem", fontWeight: 700, color: "#111827", margin: 0 },
+                children: "Security & Audit Logs"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("p", {
+                style: { margin: "4px 0 0", color: "#6b7280", fontSize: "0.86rem" },
+                children: "Immutable administrative provenance ledger tracking lifecycle operations, privilege modifications, and security exceptions."
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("button", {
+            onClick: onRefresh,
+            className: "btn btn--ghost",
+            style: {
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "8px 14px",
+              height: "38px",
+              fontSize: "0.86rem"
+            },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime15.jsxDEV(RefreshCw, {
+                size: 15,
+                className: loading ? "animate-spin" : ""
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("span", {
+                children: "Refresh Ledger"
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("div", {
+        style: {
+          background: "#ffffff",
+          border: "1px solid #e5e7eb",
+          borderRadius: "12px",
+          padding: "16px",
+          display: "flex",
+          gap: "14px",
+          flexWrap: "wrap",
+          alignItems: "center",
+          justifyContent: "space-between",
+          boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)"
+        },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("div", {
+            style: { display: "flex", gap: "12px", flex: 1, minWidth: "280px", flexWrap: "wrap" },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("div", {
+                style: { position: "relative", flex: 1, minWidth: "220px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime15.jsxDEV(Search, {
+                    size: 16,
+                    color: "#9ca3af",
+                    style: { position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("input", {
+                    type: "text",
+                    placeholder: "Search by actor, target user, or action name...",
+                    value: search,
+                    onChange: (e) => onSearchChange(e.target.value),
+                    style: {
+                      width: "100%",
+                      height: "38px",
+                      paddingLeft: "36px",
+                      paddingRight: "12px",
+                      borderRadius: "8px",
+                      border: "1px solid #d1d5db",
+                      fontSize: "0.88rem",
+                      color: "#111827",
+                      outline: "none"
+                    }
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("div", {
+                style: { display: "flex", alignItems: "center", gap: "8px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime15.jsxDEV(Funnel, {
+                    size: 15,
+                    color: "#6b7280"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("select", {
+                    value: eventFilter,
+                    onChange: (e) => onEventFilterChange(e.target.value),
+                    style: {
+                      height: "38px",
+                      padding: "0 12px",
+                      borderRadius: "8px",
+                      border: "1px solid #d1d5db",
+                      fontSize: "0.86rem",
+                      backgroundColor: "#fff",
+                      color: "#374151",
+                      cursor: "pointer"
+                    },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("option", {
+                        value: "all",
+                        children: "All Events"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("option", {
+                        value: "USER",
+                        children: "User Lifecycle"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("option", {
+                        value: "ROLE",
+                        children: "Role & Permissions"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("option", {
+                        value: "SESSION",
+                        children: "Session Revocation"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("option", {
+                        value: "LOGIN",
+                        children: "Authentication"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("option", {
+                        value: "WEBAUTHN",
+                        children: "Passkey / WebAuthn"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("option", {
+                        value: "SETTINGS",
+                        children: "System Settings"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("div", {
+            style: { fontSize: "0.82rem", color: "#6b7280" },
+            children: [
+              "Displaying ",
+              /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("strong", {
+                children: logs.length
+              }, undefined, false, undefined, this),
+              " of ",
+              /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("strong", {
+                children: total
+              }, undefined, false, undefined, this),
+              " audit records"
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("div", {
+        style: {
+          background: "#ffffff",
+          border: "1px solid #e5e7eb",
+          borderRadius: "14px",
+          overflow: "hidden",
+          boxShadow: "0 1px 3px rgba(15, 23, 42, 0.05)"
+        },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("div", {
+            style: { overflowX: "auto" },
+            children: /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("table", {
+              style: { width: "100%", borderCollapse: "collapse", fontSize: "0.84rem", textAlign: "left" },
+              children: [
+                /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("thead", {
+                  children: /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("tr", {
+                    style: { background: "#f8fafc", borderBottom: "1px solid #e2e8f0", color: "#64748b" },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("th", {
+                        style: { padding: "12px 14px", fontWeight: 600 },
+                        children: "Event ID"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("th", {
+                        style: { padding: "12px 14px", fontWeight: 600 },
+                        children: "Action / Event"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("th", {
+                        style: { padding: "12px 14px", fontWeight: 600 },
+                        children: "Performed By"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("th", {
+                        style: { padding: "12px 14px", fontWeight: 600 },
+                        children: "Target User"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("th", {
+                        style: { padding: "12px 14px", fontWeight: 600 },
+                        children: "IP Address"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("th", {
+                        style: { padding: "12px 14px", fontWeight: 600 },
+                        children: "Status"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("th", {
+                        style: { padding: "12px 14px", fontWeight: 600 },
+                        children: "Timestamp"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("th", {
+                        style: { padding: "12px 14px", fontWeight: 600 },
+                        children: "Event Context"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this)
+                }, undefined, false, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("tbody", {
+                  children: loading ? /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("tr", {
+                    children: /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("td", {
+                      colSpan: 8,
+                      style: { textAlign: "center", padding: "40px 16px", color: "#9ca3af" },
+                      children: "Loading audit trail..."
+                    }, undefined, false, undefined, this)
+                  }, undefined, false, undefined, this) : logs.length === 0 ? /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("tr", {
+                    children: /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("td", {
+                      colSpan: 8,
+                      style: { textAlign: "center", padding: "48px 16px", color: "#9ca3af" },
+                      children: [
+                        /* @__PURE__ */ jsx_dev_runtime15.jsxDEV(FileText, {
+                          size: 32,
+                          style: { margin: "0 auto 8px", color: "#cbd5e1" }
+                        }, undefined, false, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("p", {
+                          style: { margin: 0 },
+                          children: "No audit logs found."
+                        }, undefined, false, undefined, this)
+                      ]
+                    }, undefined, true, undefined, this)
+                  }, undefined, false, undefined, this) : logs.map((log) => {
+                    const badge = getEventBadgeStyle(log.event_type);
+                    return /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("tr", {
+                      style: {
+                        borderBottom: "1px solid #f1f5f9",
+                        transition: "background 0.1s"
+                      },
+                      onMouseEnter: (e) => e.currentTarget.style.backgroundColor = "#fcfdfd",
+                      onMouseLeave: (e) => e.currentTarget.style.backgroundColor = "transparent",
+                      children: [
+                        /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("td", {
+                          style: { padding: "12px 14px", fontFamily: "monospace", color: "#94a3b8", fontWeight: 600 },
+                          children: [
+                            "#",
+                            log.id
+                          ]
+                        }, undefined, true, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("td", {
+                          style: { padding: "12px 14px" },
+                          children: /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("span", {
+                            style: {
+                              display: "inline-block",
+                              padding: "2px 8px",
+                              borderRadius: "4px",
+                              fontSize: "0.74rem",
+                              fontWeight: 700,
+                              fontFamily: "monospace",
+                              backgroundColor: badge.bg,
+                              color: badge.color,
+                              border: `1px solid ${badge.border}`
+                            },
+                            children: log.event_type
+                          }, undefined, false, undefined, this)
+                        }, undefined, false, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("td", {
+                          style: { padding: "12px 14px", fontWeight: 600, color: "#111827" },
+                          children: [
+                            log.actor_username || "System",
+                            log.actor_uid ? /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("span", {
+                              style: { fontSize: "0.74rem", color: "#94a3b8", fontWeight: 400, marginLeft: "4px" },
+                              children: [
+                                "(UID #",
+                                log.actor_uid,
+                                ")"
+                              ]
+                            }, undefined, true, undefined, this) : null
+                          ]
+                        }, undefined, true, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("td", {
+                          style: { padding: "12px 14px", color: "#475569" },
+                          children: log.target_username || (log.target_uid ? `UID #${log.target_uid}` : "—")
+                        }, undefined, false, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("td", {
+                          style: { padding: "12px 14px", fontFamily: "monospace", color: "#64748b", fontSize: "0.8rem" },
+                          children: log.ip_address
+                        }, undefined, false, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("td", {
+                          style: { padding: "12px 14px" },
+                          children: /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("span", {
+                            style: {
+                              padding: "2px 6px",
+                              borderRadius: "4px",
+                              fontSize: "0.72rem",
+                              fontWeight: 600,
+                              backgroundColor: log.status === "Success" ? "#ecfdf5" : "#fef2f2",
+                              color: log.status === "Success" ? "#16a34a" : "#dc2626"
+                            },
+                            children: log.status
+                          }, undefined, false, undefined, this)
+                        }, undefined, false, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("td", {
+                          style: { padding: "12px 14px", color: "#64748b", fontSize: "0.8rem", whiteSpace: "nowrap" },
+                          children: log.created_at
+                        }, undefined, false, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("td", {
+                          style: { padding: "12px 14px", color: "#64748b", fontSize: "0.78rem", maxWidth: "240px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+                          title: log.details,
+                          children: log.details || "—"
+                        }, undefined, false, undefined, this)
+                      ]
+                    }, log.id, true, undefined, this);
+                  })
+                }, undefined, false, undefined, this)
+              ]
+            }, undefined, true, undefined, this)
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("div", {
+            style: {
+              padding: "12px 18px",
+              borderTop: "1px solid #e5e7eb",
+              background: "#f8fafc",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "10px"
+            },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("div", {
+                style: { fontSize: "0.82rem", color: "#64748b" },
+                children: [
+                  "Page ",
+                  /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("strong", {
+                    children: page
+                  }, undefined, false, undefined, this),
+                  " of ",
+                  /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("strong", {
+                    children: totalPages || 1
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("div", {
+                style: { display: "flex", gap: "6px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("button", {
+                    onClick: () => onPageChange(page - 1),
+                    disabled: page <= 1,
+                    className: "btn btn--ghost",
+                    style: { height: "32px", padding: "0 10px", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: "4px" },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime15.jsxDEV(ChevronLeft, {
+                        size: 14
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("span", {
+                        children: "Previous"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("button", {
+                    onClick: () => onPageChange(page + 1),
+                    disabled: page >= totalPages,
+                    className: "btn btn--ghost",
+                    style: { height: "32px", padding: "0 10px", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: "4px" },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime15.jsxDEV("span", {
+                        children: "Next"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime15.jsxDEV(ChevronRight, {
+                        size: 14
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this)
+    ]
+  }, undefined, true, undefined, this);
+}
+
+// src/components/admin/AdminSettings.jsx
+var import_react19 = __toESM(require_react(), 1);
+var jsx_dev_runtime16 = __toESM(require_jsx_dev_runtime(), 1);
+function AdminSettings({
+  settings = {},
+  onSaveSettings,
+  loading
+}) {
+  const [formData, setFormData] = import_react19.useState({
+    app_name: "VaultAuth SSO",
+    session_timeout: "3600",
+    max_failed_attempts: "5",
+    password_min_length: "8",
+    mfa_required: "true",
+    otp_expiry_seconds: "300"
+  });
+  const [saving, setSaving] = import_react19.useState(false);
+  import_react19.useEffect(() => {
+    if (settings && Object.keys(settings).length > 0) {
+      setFormData((prev) => ({
+        ...prev,
+        app_name: settings.app_name || prev.app_name,
+        session_timeout: settings.session_timeout || prev.session_timeout,
+        max_failed_attempts: settings.max_failed_attempts || prev.max_failed_attempts,
+        password_min_length: settings.password_min_length || prev.password_min_length,
+        mfa_required: settings.mfa_required || prev.mfa_required,
+        otp_expiry_seconds: settings.otp_expiry_seconds || prev.otp_expiry_seconds
+      }));
+    }
+  }, [settings]);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await onSaveSettings(formData);
+    } finally {
+      setSaving(false);
+    }
+  };
+  return /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+    className: "admin-page-container",
+    style: { display: "grid", gap: "24px" },
+    children: [
+      /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("h1", {
+            style: { fontSize: "1.45rem", fontWeight: 700, color: "#111827", margin: 0 },
+            children: "System & Security Configuration"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("p", {
+            style: { margin: "4px 0 0", color: "#6b7280", fontSize: "0.86rem" },
+            children: "Tune platform authentication parameters, session lifespan thresholds, password complexity gates, and cryptographic telemetry."
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("form", {
+        onSubmit: handleSubmit,
+        style: { display: "grid", gap: "20px" },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+            style: {
+              background: "#ffffff",
+              border: "1px solid #e5e7eb",
+              borderRadius: "14px",
+              padding: "24px",
+              boxShadow: "0 1px 3px rgba(15, 23, 42, 0.05)"
+            },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                style: { display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(Server, {
+                    size: 18,
+                    color: "#7047eb"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("h2", {
+                    style: { fontSize: "1.05rem", fontWeight: 700, margin: 0, color: "#111827" },
+                    children: "Application & Runtime Overview"
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                    style: { padding: "12px", background: "#f8fafc", borderRadius: "8px", border: "1px solid #f1f5f9" },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                        style: { fontSize: "0.75rem", color: "#64748b", fontWeight: 600 },
+                        children: "PLATFORM NAME"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                        style: { fontSize: "0.95rem", fontWeight: 700, color: "#111827", marginTop: "4px" },
+                        children: "VaultAuth SSO Enterprise"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                    style: { padding: "12px", background: "#f8fafc", borderRadius: "8px", border: "1px solid #f1f5f9" },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                        style: { fontSize: "0.75rem", color: "#64748b", fontWeight: 600 },
+                        children: "ARCHITECTURE"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                        style: { fontSize: "0.95rem", fontWeight: 700, color: "#111827", marginTop: "4px" },
+                        children: "React 19 + Python Flask"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                    style: { padding: "12px", background: "#f8fafc", borderRadius: "8px", border: "1px solid #f1f5f9" },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                        style: { fontSize: "0.75rem", color: "#64748b", fontWeight: 600 },
+                        children: "PRIMARY DATABASE"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                        style: { fontSize: "0.95rem", fontWeight: 700, color: "#111827", marginTop: "4px" },
+                        children: "PostgreSQL (Prisma Accelerate)"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                    style: { padding: "12px", background: "#f8fafc", borderRadius: "8px", border: "1px solid #f1f5f9" },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                        style: { fontSize: "0.75rem", color: "#64748b", fontWeight: 600 },
+                        children: "CORS PROTECTION"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                        style: { fontSize: "0.95rem", fontWeight: 700, color: "#16a34a", marginTop: "4px" },
+                        children: "Restricted Allowed Origins"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+            style: {
+              background: "#ffffff",
+              border: "1px solid #e5e7eb",
+              borderRadius: "14px",
+              padding: "24px",
+              boxShadow: "0 1px 3px rgba(15, 23, 42, 0.05)"
+            },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                style: { display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(Clock, {
+                    size: 18,
+                    color: "#0284c7"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("h2", {
+                    style: { fontSize: "1.05rem", fontWeight: 700, margin: 0, color: "#111827" },
+                    children: "Session & Token Lifecycles"
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "18px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                    className: "field",
+                    style: { margin: 0 },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("label", {
+                        style: { display: "block", fontSize: "0.84rem", fontWeight: 600, color: "#374151", marginBottom: "6px" },
+                        children: "Session Lifetime (seconds)"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("input", {
+                        type: "number",
+                        name: "session_timeout",
+                        value: formData.session_timeout,
+                        onChange: handleChange,
+                        min: "300",
+                        max: "86400",
+                        style: {
+                          width: "100%",
+                          height: "42px",
+                          borderRadius: "8px",
+                          border: "1.5px solid #d1d5db",
+                          padding: "0 14px",
+                          fontSize: "0.9rem",
+                          color: "#111827",
+                          outline: "none"
+                        }
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("span", {
+                        style: { fontSize: "0.75rem", color: "#64748b", display: "block", marginTop: "4px" },
+                        children: "Standard: 3600s (1 hour). Maximum: 86400s (24 hours)."
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                    className: "field",
+                    style: { margin: 0 },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("label", {
+                        style: { display: "block", fontSize: "0.84rem", fontWeight: 600, color: "#374151", marginBottom: "6px" },
+                        children: "OTP Code Expiry (seconds)"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("input", {
+                        type: "number",
+                        name: "otp_expiry_seconds",
+                        value: formData.otp_expiry_seconds,
+                        onChange: handleChange,
+                        min: "60",
+                        max: "900",
+                        style: {
+                          width: "100%",
+                          height: "42px",
+                          borderRadius: "8px",
+                          border: "1.5px solid #d1d5db",
+                          padding: "0 14px",
+                          fontSize: "0.9rem",
+                          color: "#111827",
+                          outline: "none"
+                        }
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("span", {
+                        style: { fontSize: "0.75rem", color: "#64748b", display: "block", marginTop: "4px" },
+                        children: "Single-use one-time password validity window (default 300s)."
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+            style: {
+              background: "#ffffff",
+              border: "1px solid #e5e7eb",
+              borderRadius: "14px",
+              padding: "24px",
+              boxShadow: "0 1px 3px rgba(15, 23, 42, 0.05)"
+            },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                style: { display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(KeyRound, {
+                    size: 18,
+                    color: "#ea580c"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("h2", {
+                    style: { fontSize: "1.05rem", fontWeight: 700, margin: 0, color: "#111827" },
+                    children: "Password Policy & Brute-Force Defense"
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "18px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                    className: "field",
+                    style: { margin: 0 },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("label", {
+                        style: { display: "block", fontSize: "0.84rem", fontWeight: 600, color: "#374151", marginBottom: "6px" },
+                        children: "Minimum Password Length"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("input", {
+                        type: "number",
+                        name: "password_min_length",
+                        value: formData.password_min_length,
+                        onChange: handleChange,
+                        min: "8",
+                        max: "32",
+                        style: {
+                          width: "100%",
+                          height: "42px",
+                          borderRadius: "8px",
+                          border: "1.5px solid #d1d5db",
+                          padding: "0 14px",
+                          fontSize: "0.9rem",
+                          color: "#111827",
+                          outline: "none"
+                        }
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("span", {
+                        style: { fontSize: "0.75rem", color: "#64748b", display: "block", marginTop: "4px" },
+                        children: "Requires combination of lowercase, uppercase, digits, and special characters."
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                    className: "field",
+                    style: { margin: 0 },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("label", {
+                        style: { display: "block", fontSize: "0.84rem", fontWeight: 600, color: "#374151", marginBottom: "6px" },
+                        children: "Max Failed Login Attempts Before Cooldown"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("input", {
+                        type: "number",
+                        name: "max_failed_attempts",
+                        value: formData.max_failed_attempts,
+                        onChange: handleChange,
+                        min: "3",
+                        max: "10",
+                        style: {
+                          width: "100%",
+                          height: "42px",
+                          borderRadius: "8px",
+                          border: "1.5px solid #d1d5db",
+                          padding: "0 14px",
+                          fontSize: "0.9rem",
+                          color: "#111827",
+                          outline: "none"
+                        }
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("span", {
+                        style: { fontSize: "0.75rem", color: "#64748b", display: "block", marginTop: "4px" },
+                        children: "Temporary lock triggered on sliding rate limit window."
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+            style: {
+              background: "#ffffff",
+              border: "1px solid #e5e7eb",
+              borderRadius: "14px",
+              padding: "24px",
+              boxShadow: "0 1px 3px rgba(15, 23, 42, 0.05)"
+            },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                style: { display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(Mail, {
+                    size: 18,
+                    color: "#16a34a"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("h2", {
+                    style: { fontSize: "1.05rem", fontWeight: 700, margin: 0, color: "#111827" },
+                    children: "Authentication Mailer Integration (Plunk)"
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                style: {
+                  padding: "16px",
+                  background: "#f8fafc",
+                  borderRadius: "10px",
+                  border: "1px solid #e2e8f0",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: "12px"
+                },
+                children: /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                  children: [
+                    /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+                      style: { display: "flex", alignItems: "center", gap: "8px" },
+                      children: [
+                        /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("span", {
+                          style: {
+                            width: "8px",
+                            height: "8px",
+                            borderRadius: "50%",
+                            backgroundColor: settings?.otp_configured ? "#16a34a" : "#ea580c"
+                          }
+                        }, undefined, false, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("span", {
+                          style: { fontWeight: 600, color: "#111827", fontSize: "0.92rem" },
+                          children: "Plunk Transactional Email Service"
+                        }, undefined, false, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("span", {
+                          style: {
+                            fontSize: "0.72rem",
+                            fontWeight: 700,
+                            padding: "2px 8px",
+                            borderRadius: "4px",
+                            backgroundColor: settings?.otp_configured ? "#dcfce7" : "#ffedd5",
+                            color: settings?.otp_configured ? "#15803d" : "#c2410c"
+                          },
+                          children: settings?.otp_configured ? "CONNECTED & ACTIVE" : "CONFIGURED IN .ENV"
+                        }, undefined, false, undefined, this)
+                      ]
+                    }, undefined, true, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("p", {
+                      style: { margin: "4px 0 0", color: "#64748b", fontSize: "0.82rem" },
+                      children: "Delivers 6-digit cryptographic verification codes directly to employee inboxes. Credentials remain secure on the server."
+                    }, undefined, false, undefined, this)
+                  ]
+                }, undefined, true, undefined, this)
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("div", {
+            style: { display: "flex", justifyContent: "flex-end" },
+            children: /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("button", {
+              type: "submit",
+              disabled: saving,
+              className: "btn",
+              style: {
+                height: "44px",
+                padding: "0 24px",
+                width: "auto",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                background: "linear-gradient(135deg, #7047eb, #4f46e5)",
+                boxShadow: "0 4px 14px rgba(112, 71, 235, 0.35)"
+              },
+              children: [
+                /* @__PURE__ */ jsx_dev_runtime16.jsxDEV(Save, {
+                  size: 16
+                }, undefined, false, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime16.jsxDEV("span", {
+                  children: saving ? "Saving Changes..." : "Apply Security Configuration"
+                }, undefined, false, undefined, this)
+              ]
+            }, undefined, true, undefined, this)
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this)
+    ]
+  }, undefined, true, undefined, this);
+}
+
+// src/components/admin/AdminDashboard.jsx
+var jsx_dev_runtime17 = __toESM(require_jsx_dev_runtime(), 1);
+function AdminDashboard() {
+  const [activePage, setActivePage] = import_react20.useState("overview");
+  const [isCollapsed, setIsCollapsed] = import_react20.useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = import_react20.useState(false);
+  const [toast, setToast] = import_react20.useState({ message: "", type: "info" });
+  const [authStatus, setAuthStatus] = import_react20.useState("checking");
+  const [adminUser, setAdminUser] = import_react20.useState(null);
+  const [stats, setStats] = import_react20.useState(null);
+  const [recentActivity, setRecentActivity] = import_react20.useState([]);
+  const [usersData, setUsersData] = import_react20.useState({ users: [], total: 0, page: 1, pages: 1 });
+  const [rolesData, setRolesData] = import_react20.useState({ roles: [], permissions: [] });
+  const [sessionsData, setSessionsData] = import_react20.useState({ sessions: [], total: 0, page: 1, pages: 1 });
+  const [activityData, setActivityData] = import_react20.useState({ activities: [], total: 0, page: 1, pages: 1 });
+  const [auditData, setAuditData] = import_react20.useState({ logs: [], total: 0, page: 1, pages: 1 });
+  const [settingsData, setSettingsData] = import_react20.useState({});
+  const [loading, setLoading] = import_react20.useState(false);
+  const [userFilters, setUserFilters] = import_react20.useState({ search: "", role: "all", status: "all", page: 1 });
+  const [sessionFilters, setSessionFilters] = import_react20.useState({ search: "", status: "all", page: 1 });
+  const [activityFilters, setActivityFilters] = import_react20.useState({ search: "", status: "all", date_from: "", date_to: "", page: 1 });
+  const [auditFilters, setAuditFilters] = import_react20.useState({ search: "", event: "all", page: 1 });
+  const [isAddUserOpen, setIsAddUserOpen] = import_react20.useState(false);
+  const [editingUser, setEditingUser] = import_react20.useState(null);
+  const [newUserForm, setNewUserForm] = import_react20.useState({
+    username: "",
+    email: "",
+    password: "",
+    full_name: "",
+    phone: "",
+    role: "user"
+  });
+  const [editUserForm, setEditUserForm] = import_react20.useState({
+    full_name: "",
+    email: "",
+    phone: ""
+  });
+  const notify = (message, type = "info") => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast((prev) => prev.message === message ? { message: "", type: "info" } : prev);
+    }, 4500);
+  };
+  import_react20.useEffect(() => {
+    async function verifyAuth() {
+      try {
+        const res = await getCurrentUserRole();
+        if (res && res.role === "admin") {
+          setAdminUser(res);
+          setAuthStatus("authorized");
+        } else {
+          setAuthStatus("unauthorized");
+        }
+      } catch (err) {
+        if (err.status === 403) {
+          setAuthStatus("unauthorized");
+        } else {
+          setAuthStatus("unauthenticated");
+        }
+      }
+    }
+    verifyAuth();
+  }, []);
+  const loadPageData = import_react20.useCallback(async (pageId = activePage) => {
+    if (authStatus !== "authorized")
+      return;
+    setLoading(true);
+    try {
+      if (pageId === "overview") {
+        const [statsRes, actRes] = await Promise.all([
+          getAdminStats(),
+          getAdminLoginActivity({ page: 1, per_page: 8 })
+        ]);
+        setStats(statsRes);
+        setRecentActivity(actRes?.activities || []);
+      } else if (pageId === "users") {
+        const res = await getAdminUsers(userFilters);
+        setUsersData(res);
+      } else if (pageId === "roles") {
+        const [rolesRes, usersRes] = await Promise.all([
+          getAdminRoles(),
+          getAdminUsers({ page: 1, per_page: 100 })
+        ]);
+        setRolesData(rolesRes);
+        setUsersData(usersRes);
+      } else if (pageId === "sessions") {
+        const res = await getAdminSessions(sessionFilters);
+        setSessionsData(res);
+      } else if (pageId === "activity") {
+        const res = await getAdminLoginActivity(activityFilters);
+        setActivityData(res);
+      } else if (pageId === "audit") {
+        const res = await getAdminAuditLogs(auditFilters);
+        setAuditData(res);
+      } else if (pageId === "settings") {
+        const res = await getAdminSettings();
+        setSettingsData(res);
+      }
+    } catch (err) {
+      notify(err.message || "Failed to load admin data", "error");
+    } finally {
+      setLoading(false);
+    }
+  }, [authStatus, activePage, userFilters, sessionFilters, activityFilters, auditFilters]);
+  import_react20.useEffect(() => {
+    if (authStatus === "authorized") {
+      loadPageData(activePage);
+    }
+  }, [authStatus, activePage, loadPageData]);
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    try {
+      await createAdminUser(newUserForm);
+      notify(`User '${newUserForm.username}' created successfully!`, "success");
+      setIsAddUserOpen(false);
+      setNewUserForm({ username: "", email: "", password: "", full_name: "", phone: "", role: "user" });
+      loadPageData("users");
+    } catch (err) {
+      notify(err.message, "error");
+    }
+  };
+  const handleUpdateUser = async (e) => {
+    e.preventDefault();
+    if (!editingUser)
+      return;
+    try {
+      await updateAdminUser(editingUser.uid, editUserForm);
+      notify("User updated successfully!", "success");
+      setEditingUser(null);
+      loadPageData("users");
+    } catch (err) {
+      notify(err.message, "error");
+    }
+  };
+  const handleToggleStatus = async (uid, newStatus) => {
+    try {
+      await toggleUserStatus(uid, newStatus);
+      notify(`Account status updated to ${newStatus ? "Active" : "Deactivated"}`, "success");
+      loadPageData("users");
+    } catch (err) {
+      notify(err.message, "error");
+    }
+  };
+  const handleDeleteUser = async (uid) => {
+    try {
+      await deleteAdminUser(uid);
+      notify("User permanently deleted from directory", "success");
+      loadPageData("users");
+    } catch (err) {
+      notify(err.message, "error");
+    }
+  };
+  const handleAssignRole = async (uid, role) => {
+    try {
+      await updateUserRole(uid, role);
+      notify(`User role assigned to '${role}'`, "success");
+      loadPageData("roles");
+    } catch (err) {
+      notify(err.message, "error");
+    }
+  };
+  const handleRevokeSession = async (sessionId) => {
+    try {
+      await revokeAdminSession(sessionId);
+      notify("Session revoked immediately", "success");
+      loadPageData("sessions");
+    } catch (err) {
+      notify(err.message, "error");
+    }
+  };
+  const handleRevokeAllUserSessions = async (uid) => {
+    try {
+      await revokeAllUserSessions(uid);
+      notify("All sessions for user revoked", "success");
+      loadPageData("sessions");
+    } catch (err) {
+      notify(err.message, "error");
+    }
+  };
+  const handleSaveSettings = async (newSettings) => {
+    try {
+      await updateAdminSettings(newSettings);
+      notify("System settings successfully saved", "success");
+      loadPageData("settings");
+    } catch (err) {
+      notify(err.message, "error");
+    }
+  };
+  const handleLogout = async () => {
+    await adminLogout();
+    window.location.href = "/index.html?logout=1";
+  };
+  if (authStatus === "unauthenticated") {
+    return /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+      style: { minHeight: "100vh", display: "grid", placeItems: "center", background: "#f8fafc", padding: "20px" },
+      children: /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+        className: "card",
+        style: { maxWidth: "420px", textAlign: "center", padding: "36px" },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime17.jsxDEV(ShieldAlert, {
+            size: 48,
+            color: "#ea580c",
+            style: { margin: "0 auto 12px" }
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("h2", {
+            style: { fontSize: "1.3rem", fontWeight: 700, margin: "0 0 8px" },
+            children: "Authentication Required"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("p", {
+            style: { color: "#64748b", fontSize: "0.9rem", margin: "0 0 24px" },
+            children: "You must be signed in with an active administrative session to access the IAM Control Center."
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("a", {
+            href: "/index.html",
+            className: "btn",
+            style: { textDecoration: "none" },
+            children: "Sign In to VaultAuth"
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this)
+    }, undefined, false, undefined, this);
+  }
+  if (authStatus === "unauthorized") {
+    return /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+      style: { minHeight: "100vh", display: "grid", placeItems: "center", background: "#f8fafc", padding: "20px" },
+      children: /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+        className: "card",
+        style: { maxWidth: "460px", textAlign: "center", padding: "36px" },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime17.jsxDEV(Shield, {
+            size: 48,
+            color: "#dc2626",
+            style: { margin: "0 auto 12px" }
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("h2", {
+            style: { fontSize: "1.3rem", fontWeight: 700, margin: "0 0 8px", color: "#111827" },
+            children: "403 - Access Forbidden"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("p", {
+            style: { color: "#64748b", fontSize: "0.9rem", margin: "0 0 24px" },
+            children: [
+              "Your account is assigned the ",
+              /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("strong", {
+                children: "End User"
+              }, undefined, false, undefined, this),
+              " role. The Enterprise Admin Dashboard requires elevated administrator privileges."
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+            style: { display: "grid", gap: "10px" },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("a", {
+                href: "/DASHBOARD/index.html",
+                className: "btn",
+                style: { textDecoration: "none" },
+                children: "Go to End User Dashboard"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("button", {
+                onClick: handleLogout,
+                className: "btn btn--ghost",
+                children: "Sign Out & Switch Account"
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this)
+    }, undefined, false, undefined, this);
+  }
+  if (authStatus === "checking") {
+    return /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+      style: { minHeight: "100vh", display: "grid", placeItems: "center", background: "#0b1220", color: "#fff" },
+      children: /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+        style: { textAlign: "center" },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+            className: "btn__spinner",
+            style: { display: "inline-block", width: "32px", height: "32px", borderWidth: "3px", borderTopColor: "#7047eb" }
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("p", {
+            style: { marginTop: "16px", fontSize: "0.92rem", color: "#9ca3af" },
+            children: "Verifying cryptographic identity & RBAC authorizations..."
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this)
+    }, undefined, false, undefined, this);
+  }
+  return /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+    className: "admin-app-layout",
+    style: { display: "flex", minHeight: "100vh", backgroundColor: "var(--page-bg, #f8fafc)" },
+    children: [
+      /* @__PURE__ */ jsx_dev_runtime17.jsxDEV(AdminSidebar, {
+        activePage,
+        onNavigate: (p) => {
+          setActivePage(p);
+          setMobileMenuOpen(false);
+        },
+        isCollapsed,
+        onToggleCollapse: () => setIsCollapsed(!isCollapsed),
+        adminUser,
+        onLogout: handleLogout
+      }, undefined, false, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+        style: { flex: 1, display: "flex", flexDirection: "column", minWidth: 0 },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("header", {
+            style: {
+              height: "64px",
+              background: "#ffffff",
+              borderBottom: "1px solid #e5e7eb",
+              padding: "0 28px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              position: "sticky",
+              top: 0,
+              zIndex: 30,
+              boxShadow: "0 1px 2px rgba(15, 23, 42, 0.03)"
+            },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+                style: { display: "flex", alignItems: "center", gap: "12px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("button", {
+                    onClick: () => setIsCollapsed(!isCollapsed),
+                    style: {
+                      background: "none",
+                      border: "none",
+                      color: "#475569",
+                      cursor: "pointer",
+                      padding: "6px",
+                      borderRadius: "6px"
+                    },
+                    title: "Toggle Sidebar",
+                    children: /* @__PURE__ */ jsx_dev_runtime17.jsxDEV(Menu, {
+                      size: 20
+                    }, undefined, false, undefined, this)
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+                    style: { fontSize: "0.85rem", color: "#64748b" },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
+                        children: "VaultAuth SSO"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
+                        style: { margin: "0 6px" },
+                        children: "/"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("strong", {
+                        style: { color: "#111827", textTransform: "capitalize" },
+                        children: activePage === "overview" ? "IAM Overview" : activePage === "users" ? "User Management" : activePage === "roles" ? "Role & Permissions" : activePage === "sessions" ? "Active Sessions" : activePage === "activity" ? "Login Activity" : activePage === "audit" ? "Security & Audit Logs" : "System Settings"
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+                style: { display: "flex", alignItems: "center", gap: "16px" },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+                    style: {
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "4px 10px",
+                      borderRadius: "9999px",
+                      background: "#f0fdf4",
+                      border: "1px solid #bbf7d0",
+                      color: "#166534",
+                      fontSize: "0.76rem",
+                      fontWeight: 600
+                    },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
+                        style: { width: "6px", height: "6px", borderRadius: "50%", background: "#16a34a" }
+                      }, undefined, false, undefined, this),
+                      "Live Identity Telemetry"
+                    ]
+                  }, undefined, true, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+                    style: { display: "flex", alignItems: "center", gap: "10px" },
+                    children: /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+                      style: {
+                        width: "34px",
+                        height: "34px",
+                        borderRadius: "50%",
+                        background: "linear-gradient(135deg, #7047eb, #818cf8)",
+                        color: "#fff",
+                        display: "grid",
+                        placeItems: "center",
+                        fontWeight: 700,
+                        fontSize: "0.82rem"
+                      },
+                      children: (adminUser?.username || "A").substring(0, 1).toUpperCase()
+                    }, undefined, false, undefined, this)
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("main", {
+            style: { padding: "28px", flex: 1, minWidth: 0 },
+            children: [
+              activePage === "overview" && /* @__PURE__ */ jsx_dev_runtime17.jsxDEV(AdminOverview, {
+                stats,
+                recentActivity,
+                loading,
+                onRefresh: () => loadPageData("overview"),
+                onNavigate: setActivePage,
+                onOpenAddUser: () => setIsAddUserOpen(true)
+              }, undefined, false, undefined, this),
+              activePage === "users" && /* @__PURE__ */ jsx_dev_runtime17.jsxDEV(AdminUsers, {
+                users: usersData.users,
+                total: usersData.total,
+                page: usersData.page,
+                perPage: usersData.per_page,
+                totalPages: usersData.pages,
+                search: userFilters.search,
+                roleFilter: userFilters.role,
+                statusFilter: userFilters.status,
+                onSearchChange: (search) => setUserFilters((prev) => ({ ...prev, search, page: 1 })),
+                onRoleFilterChange: (role) => setUserFilters((prev) => ({ ...prev, role, page: 1 })),
+                onStatusFilterChange: (status) => setUserFilters((prev) => ({ ...prev, status, page: 1 })),
+                onPageChange: (page) => setUserFilters((prev) => ({ ...prev, page })),
+                onOpenAddUser: () => setIsAddUserOpen(true),
+                onOpenEditUser: (u) => {
+                  setEditingUser(u);
+                  setEditUserForm({
+                    full_name: u.full_name || "",
+                    email: u.email || "",
+                    phone: u.phone || ""
+                  });
+                },
+                onToggleStatus: handleToggleStatus,
+                onDeleteUser: handleDeleteUser,
+                currentAdminUid: adminUser?.uid,
+                loading
+              }, undefined, false, undefined, this),
+              activePage === "roles" && /* @__PURE__ */ jsx_dev_runtime17.jsxDEV(AdminRoles, {
+                rolesData,
+                onAssignRole: handleAssignRole,
+                usersList: usersData.users,
+                loading
+              }, undefined, false, undefined, this),
+              activePage === "sessions" && /* @__PURE__ */ jsx_dev_runtime17.jsxDEV(AdminSessions, {
+                sessions: sessionsData.sessions,
+                total: sessionsData.total,
+                page: sessionsData.page,
+                totalPages: sessionsData.pages,
+                search: sessionFilters.search,
+                statusFilter: sessionFilters.status,
+                onSearchChange: (search) => setSessionFilters((prev) => ({ ...prev, search, page: 1 })),
+                onStatusFilterChange: (status) => setSessionFilters((prev) => ({ ...prev, status, page: 1 })),
+                onPageChange: (page) => setSessionFilters((prev) => ({ ...prev, page })),
+                onRevokeSession: handleRevokeSession,
+                onRevokeAllUserSessions: handleRevokeAllUserSessions,
+                onRefresh: () => loadPageData("sessions"),
+                loading
+              }, undefined, false, undefined, this),
+              activePage === "activity" && /* @__PURE__ */ jsx_dev_runtime17.jsxDEV(AdminLoginActivity, {
+                activities: activityData.activities,
+                total: activityData.total,
+                page: activityData.page,
+                totalPages: activityData.pages,
+                search: activityFilters.search,
+                statusFilter: activityFilters.status,
+                dateFrom: activityFilters.date_from,
+                dateTo: activityFilters.date_to,
+                onSearchChange: (search) => setActivityFilters((prev) => ({ ...prev, search, page: 1 })),
+                onStatusFilterChange: (status) => setActivityFilters((prev) => ({ ...prev, status, page: 1 })),
+                onDateFromChange: (date_from) => setActivityFilters((prev) => ({ ...prev, date_from, page: 1 })),
+                onDateToChange: (date_to) => setActivityFilters((prev) => ({ ...prev, date_to, page: 1 })),
+                onPageChange: (page) => setActivityFilters((prev) => ({ ...prev, page })),
+                onRefresh: () => loadPageData("activity"),
+                loading
+              }, undefined, false, undefined, this),
+              activePage === "audit" && /* @__PURE__ */ jsx_dev_runtime17.jsxDEV(AdminAuditLogs, {
+                logs: auditData.logs,
+                total: auditData.total,
+                page: auditData.page,
+                totalPages: auditData.pages,
+                search: auditFilters.search,
+                eventFilter: auditFilters.event,
+                onSearchChange: (search) => setAuditFilters((prev) => ({ ...prev, search, page: 1 })),
+                onEventFilterChange: (event) => setAuditFilters((prev) => ({ ...prev, event, page: 1 })),
+                onPageChange: (page) => setAuditFilters((prev) => ({ ...prev, page })),
+                onRefresh: () => loadPageData("audit"),
+                loading
+              }, undefined, false, undefined, this),
+              activePage === "settings" && /* @__PURE__ */ jsx_dev_runtime17.jsxDEV(AdminSettings, {
+                settings: settingsData,
+                onSaveSettings: handleSaveSettings,
+                loading
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      isAddUserOpen && /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+        className: "modal-overlay",
+        style: {
+          position: "fixed",
+          inset: 0,
+          backgroundColor: "rgba(15, 23, 42, 0.6)",
+          backdropFilter: "blur(4px)",
+          display: "grid",
+          placeItems: "center",
+          zIndex: 100,
+          padding: "16px"
+        },
+        onClick: () => setIsAddUserOpen(false),
+        children: /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+          className: "card",
+          style: { width: "100%", maxWidth: "460px", padding: "28px" },
+          onClick: (e) => e.stopPropagation(),
+          children: [
+            /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+              style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" },
+              children: [
+                /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("h3", {
+                  style: { margin: 0, fontSize: "1.2rem", color: "#111827" },
+                  children: "Provision New Employee Account"
+                }, undefined, false, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("button", {
+                  onClick: () => setIsAddUserOpen(false),
+                  style: { background: "none", border: "none", fontSize: "1.2rem", cursor: "pointer", color: "#94a3b8" },
+                  children: "✕"
+                }, undefined, false, undefined, this)
+              ]
+            }, undefined, true, undefined, this),
+            /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("form", {
+              onSubmit: handleCreateUser,
+              style: { display: "grid", gap: "14px" },
+              children: [
+                /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+                  className: "field",
+                  style: { margin: 0 },
+                  children: [
+                    /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("label", {
+                      style: { display: "block", fontSize: "0.82rem", fontWeight: 600, color: "#374151", marginBottom: "4px" },
+                      children: "Username *"
+                    }, undefined, false, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("input", {
+                      type: "text",
+                      required: true,
+                      placeholder: "e.g. sarah.connor",
+                      value: newUserForm.username,
+                      onChange: (e) => setNewUserForm({ ...newUserForm, username: e.target.value }),
+                      style: { width: "100%", height: "40px", borderRadius: "8px", border: "1.5px solid #d1d5db", padding: "0 12px" }
+                    }, undefined, false, undefined, this)
+                  ]
+                }, undefined, true, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+                  className: "field",
+                  style: { margin: 0 },
+                  children: [
+                    /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("label", {
+                      style: { display: "block", fontSize: "0.82rem", fontWeight: 600, color: "#374151", marginBottom: "4px" },
+                      children: "Email Address *"
+                    }, undefined, false, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("input", {
+                      type: "email",
+                      required: true,
+                      placeholder: "e.g. sarah@enterprise.io",
+                      value: newUserForm.email,
+                      onChange: (e) => setNewUserForm({ ...newUserForm, email: e.target.value }),
+                      style: { width: "100%", height: "40px", borderRadius: "8px", border: "1.5px solid #d1d5db", padding: "0 12px" }
+                    }, undefined, false, undefined, this)
+                  ]
+                }, undefined, true, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+                  className: "field",
+                  style: { margin: 0 },
+                  children: [
+                    /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("label", {
+                      style: { display: "block", fontSize: "0.82rem", fontWeight: 600, color: "#374151", marginBottom: "4px" },
+                      children: "Full Name"
+                    }, undefined, false, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("input", {
+                      type: "text",
+                      placeholder: "e.g. Sarah Connor",
+                      value: newUserForm.full_name,
+                      onChange: (e) => setNewUserForm({ ...newUserForm, full_name: e.target.value }),
+                      style: { width: "100%", height: "40px", borderRadius: "8px", border: "1.5px solid #d1d5db", padding: "0 12px" }
+                    }, undefined, false, undefined, this)
+                  ]
+                }, undefined, true, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+                  className: "field",
+                  style: { margin: 0 },
+                  children: [
+                    /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("label", {
+                      style: { display: "block", fontSize: "0.82rem", fontWeight: 600, color: "#374151", marginBottom: "4px" },
+                      children: "Initial Password *"
+                    }, undefined, false, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("input", {
+                      type: "password",
+                      required: true,
+                      placeholder: "Min 8 chars with variety",
+                      value: newUserForm.password,
+                      onChange: (e) => setNewUserForm({ ...newUserForm, password: e.target.value }),
+                      style: { width: "100%", height: "40px", borderRadius: "8px", border: "1.5px solid #d1d5db", padding: "0 12px" }
+                    }, undefined, false, undefined, this)
+                  ]
+                }, undefined, true, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+                  className: "field",
+                  style: { margin: 0 },
+                  children: [
+                    /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("label", {
+                      style: { display: "block", fontSize: "0.82rem", fontWeight: 600, color: "#374151", marginBottom: "4px" },
+                      children: "Assigned IAM Role"
+                    }, undefined, false, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("select", {
+                      value: newUserForm.role,
+                      onChange: (e) => setNewUserForm({ ...newUserForm, role: e.target.value }),
+                      style: { width: "100%", height: "40px", borderRadius: "8px", border: "1.5px solid #d1d5db", padding: "0 12px", backgroundColor: "#fff" },
+                      children: [
+                        /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("option", {
+                          value: "user",
+                          children: "End User"
+                        }, undefined, false, undefined, this),
+                        /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("option", {
+                          value: "admin",
+                          children: "Enterprise Admin"
+                        }, undefined, false, undefined, this)
+                      ]
+                    }, undefined, true, undefined, this)
+                  ]
+                }, undefined, true, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+                  style: { display: "flex", gap: "10px", marginTop: "10px" },
+                  children: [
+                    /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("button", {
+                      type: "button",
+                      className: "btn btn--ghost",
+                      onClick: () => setIsAddUserOpen(false),
+                      style: { flex: 1, height: "40px" },
+                      children: "Cancel"
+                    }, undefined, false, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("button", {
+                      type: "submit",
+                      className: "btn",
+                      style: { flex: 1, height: "40px", background: "linear-gradient(135deg, #7047eb, #4f46e5)" },
+                      children: "Provision User"
+                    }, undefined, false, undefined, this)
+                  ]
+                }, undefined, true, undefined, this)
+              ]
+            }, undefined, true, undefined, this)
+          ]
+        }, undefined, true, undefined, this)
+      }, undefined, false, undefined, this),
+      editingUser && /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+        className: "modal-overlay",
+        style: {
+          position: "fixed",
+          inset: 0,
+          backgroundColor: "rgba(15, 23, 42, 0.6)",
+          backdropFilter: "blur(4px)",
+          display: "grid",
+          placeItems: "center",
+          zIndex: 100,
+          padding: "16px"
+        },
+        onClick: () => setEditingUser(null),
+        children: /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+          className: "card",
+          style: { width: "100%", maxWidth: "440px", padding: "28px" },
+          onClick: (e) => e.stopPropagation(),
+          children: [
+            /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+              style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" },
+              children: [
+                /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("h3", {
+                  style: { margin: 0, fontSize: "1.2rem", color: "#111827" },
+                  children: "Edit Employee Details"
+                }, undefined, false, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("button", {
+                  onClick: () => setEditingUser(null),
+                  style: { background: "none", border: "none", fontSize: "1.2rem", cursor: "pointer", color: "#94a3b8" },
+                  children: "✕"
+                }, undefined, false, undefined, this)
+              ]
+            }, undefined, true, undefined, this),
+            /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("form", {
+              onSubmit: handleUpdateUser,
+              style: { display: "grid", gap: "14px" },
+              children: [
+                /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+                  className: "field",
+                  style: { margin: 0 },
+                  children: [
+                    /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("label", {
+                      style: { display: "block", fontSize: "0.82rem", fontWeight: 600, color: "#374151", marginBottom: "4px" },
+                      children: "Full Name"
+                    }, undefined, false, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("input", {
+                      type: "text",
+                      value: editUserForm.full_name,
+                      onChange: (e) => setEditUserForm({ ...editUserForm, full_name: e.target.value }),
+                      style: { width: "100%", height: "40px", borderRadius: "8px", border: "1.5px solid #d1d5db", padding: "0 12px" }
+                    }, undefined, false, undefined, this)
+                  ]
+                }, undefined, true, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+                  className: "field",
+                  style: { margin: 0 },
+                  children: [
+                    /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("label", {
+                      style: { display: "block", fontSize: "0.82rem", fontWeight: 600, color: "#374151", marginBottom: "4px" },
+                      children: "Email Address"
+                    }, undefined, false, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("input", {
+                      type: "email",
+                      required: true,
+                      value: editUserForm.email,
+                      onChange: (e) => setEditUserForm({ ...editUserForm, email: e.target.value }),
+                      style: { width: "100%", height: "40px", borderRadius: "8px", border: "1.5px solid #d1d5db", padding: "0 12px" }
+                    }, undefined, false, undefined, this)
+                  ]
+                }, undefined, true, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+                  className: "field",
+                  style: { margin: 0 },
+                  children: [
+                    /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("label", {
+                      style: { display: "block", fontSize: "0.82rem", fontWeight: 600, color: "#374151", marginBottom: "4px" },
+                      children: "Phone Number"
+                    }, undefined, false, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("input", {
+                      type: "text",
+                      placeholder: "+1 555-0199",
+                      value: editUserForm.phone,
+                      onChange: (e) => setEditUserForm({ ...editUserForm, phone: e.target.value }),
+                      style: { width: "100%", height: "40px", borderRadius: "8px", border: "1.5px solid #d1d5db", padding: "0 12px" }
+                    }, undefined, false, undefined, this)
+                  ]
+                }, undefined, true, undefined, this),
+                /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+                  style: { display: "flex", gap: "10px", marginTop: "10px" },
+                  children: [
+                    /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("button", {
+                      type: "button",
+                      className: "btn btn--ghost",
+                      onClick: () => setEditingUser(null),
+                      style: { flex: 1, height: "40px" },
+                      children: "Cancel"
+                    }, undefined, false, undefined, this),
+                    /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("button", {
+                      type: "submit",
+                      className: "btn",
+                      style: { flex: 1, height: "40px", background: "#7047eb" },
+                      children: "Save Changes"
+                    }, undefined, false, undefined, this)
+                  ]
+                }, undefined, true, undefined, this)
+              ]
+            }, undefined, true, undefined, this)
+          ]
+        }, undefined, true, undefined, this)
+      }, undefined, false, undefined, this),
+      toast.message && /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("div", {
+        style: {
+          position: "fixed",
+          top: "20px",
+          right: "24px",
+          zIndex: 1000,
+          background: "#ffffff",
+          padding: "12px 18px",
+          borderRadius: "10px",
+          boxShadow: "0 10px 25px -5px rgba(15, 23, 42, 0.2)",
+          border: "1px solid #e2e8f0",
+          borderLeft: `4px solid ${toast.type === "success" ? "#16a34a" : toast.type === "error" ? "#dc2626" : "#7047eb"}`,
+          fontSize: "0.88rem",
+          fontWeight: 500,
+          color: "#111827",
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+          animation: "toast-in 0.25s ease both"
+        },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("span", {
+            children: toast.message
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime17.jsxDEV("button", {
+            onClick: () => setToast({ message: "", type: "info" }),
+            style: { background: "none", border: "none", color: "#9ca3af", cursor: "pointer", fontSize: "1rem" },
+            children: "✕"
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this)
+    ]
+  }, undefined, true, undefined, this);
+}
+
+// src/main.jsx
+var jsx_dev_runtime18 = __toESM(require_jsx_dev_runtime(), 1);
+var isPathAdmin = () => {
+  if (typeof window === "undefined")
+    return false;
+  const path = (window.location.pathname || "").toLowerCase();
+  const search = (window.location.search || "").toLowerCase();
+  const hash = (window.location.hash || "").toLowerCase();
+  return path.includes("admin") || search.includes("view=admin") || search.includes("tab=admin") || hash.includes("admin");
+};
 var container = document.getElementById("root");
 if (container) {
   const root = import_client.createRoot(container);
-  root.render(/* @__PURE__ */ jsx_dev_runtime9.jsxDEV(import_react9.default.StrictMode, {
-    children: /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(App, {}, undefined, false, undefined, this)
+  root.render(/* @__PURE__ */ jsx_dev_runtime18.jsxDEV(import_react21.default.StrictMode, {
+    children: isPathAdmin() ? /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(AdminDashboard, {}, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime18.jsxDEV(App, {}, undefined, false, undefined, this)
   }, undefined, false, undefined, this));
 }

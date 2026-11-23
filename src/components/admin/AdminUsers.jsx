@@ -517,6 +517,12 @@ export default function AdminUsers({
                 <span style={{ fontSize: "0.84rem", color: "#64748b" }}>Registered Date:</span>
                 <span style={{ fontSize: "0.84rem", fontWeight: 600, color: "#111827" }}>{selectedUser.c_date || "—"}</span>
               </div>
+              <div style={{ padding: "10px 14px", background: "#f8fafc", borderRadius: "8px", display: "flex", justifyContent: "space-between" }}>
+                <span style={{ fontSize: "0.84rem", color: "#64748b" }}>FIDO2 / WebAuthn:</span>
+                <span style={{ fontSize: "0.84rem", fontWeight: 600, color: "#16a34a" }}>
+                  Passkey Login Supported
+                </span>
+              </div>
             </div>
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>

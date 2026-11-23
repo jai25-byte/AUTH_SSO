@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { login as apiLogin, sendOtp, getUserByUsernameOrEmail } from "../services/api.js";
+import { loginWithPasskey, isWebAuthnSupported } from "../services/webauthn.js";
 
 export default function LoginCard({ onSwitchToRegister, onForgotPassword, onNotify, onLoginSuccess }) {
   const [email, setEmail] = useState("");
@@ -7,6 +8,7 @@ export default function LoginCard({ onSwitchToRegister, onForgotPassword, onNoti
   const [remember, setRemember] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
 
@@ -83,6 +85,37 @@ export default function LoginCard({ onSwitchToRegister, onForgotPassword, onNoti
       onNotify?.(msg, "error");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handlePasskeyLogin = async () => {
+    if (isPasskeyLoading || isLoading) return;
+    if (!isWebAuthnSupported()) {
+      onNotify?.("WebAuthn / Passkeys are not supported on this browser or platform.", "error");
+      return;
+    }
+
+    setIsPasskeyLoading(true);
+    try {
+      const cleanEmail = email.trim();
+      const authResult = await loginWithPasskey(cleanEmail || undefined);
+      onNotify?.(authResult.message || "Passkey verified! Successfully signed in.", "success");
+
+      if (onLoginSuccess) {
+        onLoginSuccess({
+          email: authResult.user?.email || cleanEmail,
+          username: authResult.user?.username || cleanEmail,
+          role: authResult.user?.role,
+          fullName: authResult.user?.fullName,
+          token: authResult.token,
+          passkeyVerified: true,
+        });
+      }
+    } catch (err) {
+      const msg = err.message || "Passkey authentication failed.";
+      onNotify?.(msg, "error");
+    } finally {
+      setIsPasskeyLoading(false);
     }
   };
 
@@ -197,6 +230,23 @@ export default function LoginCard({ onSwitchToRegister, onForgotPassword, onNoti
           <span className="btn__spinner" aria-hidden="true"></span>
         </button>
       </form>
+
+      <div className="divider" role="separator"><span>OR</span></div>
+
+      <button
+        type="button"
+        className="btn--passkey"
+        id="btn-passkey-login"
+        onClick={handlePasskeyLogin}
+        disabled={isLoading || isPasskeyLoading}
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/>
+          <path d="m21 2-9.6 9.6"/>
+          <circle cx="7.5" cy="15.5" r="5.5"/>
+        </svg>
+        <span>{isPasskeyLoading ? "Verifying Passkey…" : "Sign in with Passkey"}</span>
+      </button>
 
       <p className="switch">
         Don't have an account?{" "}
