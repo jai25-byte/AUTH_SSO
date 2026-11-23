@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "bun dev.js",
     "build": "bun build.js",
-    "start": "bun dev.js"
+    "start": "bun dev.js",
+    "test": "bun test"
   },
   "dependencies": {
     "@tailwindcss/cli": "^4.3.3",
