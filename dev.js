@@ -191,13 +191,24 @@ const server = Bun.serve({
 
     // Static routing
     let pathname = url.pathname;
-    if (pathname === "/" || pathname === "/landing" || pathname === "/home") {
-      pathname = "/landing.html";
-    } else if (pathname === "/login") {
-      pathname = "/login.html";
-    } else if (pathname === "/register") {
-      pathname = "/register.html";
+    if (pathname === "/" || pathname === "/login" || pathname === "/register") {
+      pathname = "/index.html";
     }
+    // Standalone / Vanilla Admin Dashboard
+    if (
+      pathname === "/admin-standalone" ||
+      pathname === "/admin-standalone/" ||
+      pathname === "/standalone-admin" ||
+      pathname === "/admin-vanilla"
+    ) {
+      const vanillaAdmin = Bun.file(join(process.cwd(), "ADMIN", "index.html"));
+      if (await vanillaAdmin.exists()) {
+        return new Response(vanillaAdmin, {
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+        });
+      }
+    }
+
     if (pathname === "/admin" || pathname === "/admin/") {
       pathname = "/ADMIN/index.html";
     }
@@ -211,6 +222,29 @@ const server = Bun.serve({
         const ext = dashboardRel.substring(dashboardRel.lastIndexOf("."));
         const contentType = MIME_TYPES[ext] || "text/html; charset=utf-8";
         return new Response(dashFile, {
+          headers: { "Content-Type": contentType },
+        });
+      }
+    }
+
+    // Serve root ADMIN static assets (/ADMIN/styles.css, /ADMIN/script.js)
+    if (pathname.startsWith("/ADMIN/") || pathname.startsWith("/admin/")) {
+      const adminRel = pathname.replace(/^\/(ADMIN|admin)\/?/, "") || "index.html";
+      const pubAdminPath = join(process.cwd(), "public", "ADMIN", adminRel);
+      const pubAdminFile = Bun.file(pubAdminPath);
+      if (await pubAdminFile.exists()) {
+        const ext = adminRel.substring(adminRel.lastIndexOf("."));
+        const contentType = MIME_TYPES[ext] || "text/html; charset=utf-8";
+        return new Response(pubAdminFile, {
+          headers: { "Content-Type": contentType },
+        });
+      }
+      const rootAdminPath = join(process.cwd(), "ADMIN", adminRel);
+      const rootAdminFile = Bun.file(rootAdminPath);
+      if (await rootAdminFile.exists()) {
+        const ext = adminRel.substring(adminRel.lastIndexOf("."));
+        const contentType = MIME_TYPES[ext] || "text/html; charset=utf-8";
+        return new Response(rootAdminFile, {
           headers: { "Content-Type": contentType },
         });
       }

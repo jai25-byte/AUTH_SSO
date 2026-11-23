@@ -9,8 +9,15 @@ import BrandingSidebar from "./components/BrandingSidebar.jsx";
 import { removeToken, checkBackendHealth } from "./services/api.js";
 
 export default function App() {
+  const getInitialTab = () => {
+    if (typeof window === "undefined") return "login";
+    const path = (window.location.pathname || "").toLowerCase();
+    const q = new URLSearchParams(window.location.search || "");
+    return path.includes("register") || q.get("tab") === "register" ? "register" : "login";
+  };
+
   const [authStep, setAuthStep] = useState("credentials"); // 'credentials' | 'otp' | 'authenticated'
-  const [activeTab, setActiveTab] = useState("login");
+  const [activeTab, setActiveTab] = useState(getInitialTab);
   const [toast, setToast] = useState({ message: "", type: "info" });
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
   const [pendingUser, setPendingUser] = useState(null);

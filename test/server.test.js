@@ -180,4 +180,59 @@ describe("Node.js Backend Server API Suite", () => {
     const res = await fetch(`${BASE}/api/admin/dashboard/stats`);
     expect(res.status).toBe(401);
   });
+
+  it("POST /api/login accepts login, username, and email keys", async () => {
+    // 1. Using { username, password }
+    const res1 = await fetch(`${BASE}/api/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "bob", password: "Password@1234!" }),
+    });
+    expect(res1.status).toBe(200);
+    const d1 = await res1.json();
+    expect(d1.user.password).toBeUndefined(); // no password leaked
+
+    // 2. Using { email, password }
+    const res2 = await fetch(`${BASE}/api/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "bob@vault.io", password: "Password@1234!" }),
+    });
+    expect(res2.status).toBe(200);
+
+    // 3. Using { login, username, password } as sent by api.js
+    const res3 = await fetch(`${BASE}/api/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ login: "bob", username: "bob", password: "Password@1234!" }),
+    });
+    expect(res3.status).toBe(200);
+  });
+
+  it("GET /api/session returns session data when authenticated", async () => {
+    const res = await fetch(`${BASE}/api/session`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.authenticated).toBe(true);
+    expect(data.user.role).toBe("admin");
+  });
+
+  it("POST /api/register assigns valid role and does not leak password hash", async () => {
+    const res = await fetch(`${BASE}/api/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: `reg_test_${Date.now()}`,
+        email: `reg_test_${Date.now()}@example.com`,
+        password: "SecurePassword123!",
+      }),
+    });
+    expect(res.status).toBe(201);
+    const data = await res.json();
+    expect(data.user.role).toBe("user");
+    expect(data.user.role_title).toBe("End User");
+    expect(data.user.password).toBeUndefined();
+  });
 });

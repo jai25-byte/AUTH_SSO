@@ -41,7 +41,6 @@ console.log(`✅ [Tailwind] CSS compiled & minified in ${Math.round(performance.
 
 // 3. Copy HTML and assets
 await cp("public/index.html", "dist/index.html");
-await cp("public/landing.html", "dist/landing.html");
 await cp("public/login.html", "dist/login.html");
 await cp("public/register.html", "dist/register.html");
 await cp("public/wallpaper.png", "dist/wallpaper.png");

@@ -177,11 +177,12 @@ export async function register({ username, password, email, fullName, name, uid 
  * Authenticate user and receive session token
  * POST /api/login
  */
-export async function login({ login: loginIdentifier, username, password }) {
-  const identifier = (loginIdentifier || username || "").trim();
+export async function login({ login: loginIdentifier, username, email, password }) {
+  const identifier = (loginIdentifier || username || email || "").trim();
   const payload = {
     login: identifier,
     username: identifier,
+    email: identifier,
     password,
   };
 
