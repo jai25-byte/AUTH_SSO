@@ -20740,16 +20740,25 @@ function ForgotPasswordModal({ isOpen, onClose, onNotify }) {
   const [isLoading, setIsLoading] = import_react6.useState(false);
   if (!isOpen)
     return null;
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email)
       return;
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const res = await fetch("/api/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim().toLowerCase() })
+      });
+      const data = await res.json().catch(() => ({}));
       setIsSubmitted(true);
-      onNotify?.(`Reset link sent to ${email}`, "success");
-    }, 800);
+      onNotify?.(data.message || `Reset instructions sent to ${email}`, "success");
+    } catch (err) {
+      onNotify?.("Failed to send reset instructions. Please try again.", "error");
+    } finally {
+      setIsLoading(false);
+    }
   };
   const handleReset = () => {
     setEmail("");
