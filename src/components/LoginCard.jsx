@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { login as apiLogin, sendOtp, getUserByUsernameOrEmail } from "../services/api.js";
-import { loginWithPasskey, isWebAuthnSupported } from "../services/webauthn.js";
+import { loginWithPasskey, isWebAuthnSupported, isPlatformAuthenticatorAvailable } from "../services/webauthn.js";
 
 export default function LoginCard({ onSwitchToRegister, onForgotPassword, onNotify, onLoginSuccess }) {
   const [email, setEmail] = useState("");
@@ -11,6 +11,12 @@ export default function LoginCard({ onSwitchToRegister, onForgotPassword, onNoti
   const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  // null = still checking, true = supported, false = not supported
+  const [passkeyAvailable, setPasskeyAvailable] = useState(null);
+
+  useEffect(() => {
+    isPlatformAuthenticatorAvailable().then(setPasskeyAvailable).catch(() => setPasskeyAvailable(false));
+  }, []);
 
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -231,22 +237,28 @@ export default function LoginCard({ onSwitchToRegister, onForgotPassword, onNoti
         </button>
       </form>
 
-      <div className="divider" role="separator"><span>OR</span></div>
+      {/* Only render passkey section when platform authenticator is available (or still checking) */}
+      {passkeyAvailable !== false && (
+        <>
+          <div className="divider" role="separator"><span>OR</span></div>
 
-      <button
-        type="button"
-        className="btn--passkey"
-        id="btn-passkey-login"
-        onClick={handlePasskeyLogin}
-        disabled={isLoading || isPasskeyLoading}
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/>
-          <path d="m21 2-9.6 9.6"/>
-          <circle cx="7.5" cy="15.5" r="5.5"/>
-        </svg>
-        <span>{isPasskeyLoading ? "Verifying Passkey…" : "Sign in with Passkey"}</span>
-      </button>
+          <button
+            type="button"
+            className="btn--passkey"
+            id="btn-passkey-login"
+            onClick={handlePasskeyLogin}
+            disabled={isLoading || isPasskeyLoading || passkeyAvailable === null}
+            aria-label="Sign in with a passkey (fingerprint, Face ID, or security key)"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/>
+              <path d="m21 2-9.6 9.6"/>
+              <circle cx="7.5" cy="15.5" r="5.5"/>
+            </svg>
+            <span>{isPasskeyLoading ? "Verifying Passkey…" : passkeyAvailable === null ? "Checking passkey support…" : "Sign in with Passkey"}</span>
+          </button>
+        </>
+      )}
 
       <p className="switch">
         Don't have an account?{" "}

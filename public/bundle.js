@@ -18799,6 +18799,18 @@ function base64urlToBuffer(base64url) {
 function isWebAuthnSupported() {
   return typeof window !== "undefined" && window.PublicKeyCredential !== undefined && typeof window.navigator?.credentials?.create === "function" && typeof window.navigator?.credentials?.get === "function";
 }
+async function isPlatformAuthenticatorAvailable() {
+  if (!isWebAuthnSupported())
+    return false;
+  try {
+    if (typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === "function") {
+      return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+    }
+  } catch {
+    return false;
+  }
+  return true;
+}
 function prepareRegistrationOptions(options) {
   const prepared = { ...options };
   if (typeof prepared.challenge === "string") {
@@ -19188,6 +19200,10 @@ function LoginCard({ onSwitchToRegister, onForgotPassword, onNotify, onLoginSucc
   const [isPasskeyLoading, setIsPasskeyLoading] = import_react.useState(false);
   const [emailError, setEmailError] = import_react.useState("");
   const [passwordError, setPasswordError] = import_react.useState("");
+  const [passkeyAvailable, setPasskeyAvailable] = import_react.useState(null);
+  import_react.useEffect(() => {
+    isPlatformAuthenticatorAvailable().then(setPasskeyAvailable).catch(() => setPasskeyAvailable(false));
+  }, []);
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
   const validate = () => {
     let valid = true;
@@ -19502,45 +19518,50 @@ function LoginCard({ onSwitchToRegister, onForgotPassword, onNotify, onLoginSucc
           }, undefined, true, undefined, this)
         ]
       }, undefined, true, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-        className: "divider",
-        role: "separator",
-        children: /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-          children: "OR"
-        }, undefined, false, undefined, this)
-      }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
-        type: "button",
-        className: "btn--passkey",
-        id: "btn-passkey-login",
-        onClick: handlePasskeyLogin,
-        disabled: isLoading || isPasskeyLoading,
+      passkeyAvailable !== false && /* @__PURE__ */ jsx_dev_runtime.jsxDEV(jsx_dev_runtime.Fragment, {
         children: [
-          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("svg", {
-            viewBox: "0 0 24 24",
-            fill: "none",
-            stroke: "currentColor",
-            strokeWidth: "2",
-            strokeLinecap: "round",
-            strokeLinejoin: "round",
-            "aria-hidden": "true",
+          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
+            className: "divider",
+            role: "separator",
+            children: /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
+              children: "OR"
+            }, undefined, false, undefined, this)
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
+            type: "button",
+            className: "btn--passkey",
+            id: "btn-passkey-login",
+            onClick: handlePasskeyLogin,
+            disabled: isLoading || isPasskeyLoading || passkeyAvailable === null,
+            "aria-label": "Sign in with a passkey (fingerprint, Face ID, or security key)",
             children: [
-              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("path", {
-                d: "m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("path", {
-                d: "m21 2-9.6 9.6"
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("circle", {
-                cx: "7.5",
-                cy: "15.5",
-                r: "5.5"
+              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("svg", {
+                viewBox: "0 0 24 24",
+                fill: "none",
+                stroke: "currentColor",
+                strokeWidth: "2",
+                strokeLinecap: "round",
+                strokeLinejoin: "round",
+                "aria-hidden": "true",
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime.jsxDEV("path", {
+                    d: "m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime.jsxDEV("path", {
+                    d: "m21 2-9.6 9.6"
+                  }, undefined, false, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime.jsxDEV("circle", {
+                    cx: "7.5",
+                    cy: "15.5",
+                    r: "5.5"
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
+                children: isPasskeyLoading ? "Verifying Passkey…" : passkeyAvailable === null ? "Checking passkey support…" : "Sign in with Passkey"
               }, undefined, false, undefined, this)
             ]
-          }, undefined, true, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-            children: isPasskeyLoading ? "Verifying Passkey…" : "Sign in with Passkey"
-          }, undefined, false, undefined, this)
+          }, undefined, true, undefined, this)
         ]
       }, undefined, true, undefined, this),
       /* @__PURE__ */ jsx_dev_runtime.jsxDEV("p", {
