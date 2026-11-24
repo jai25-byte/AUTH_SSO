@@ -333,4 +333,154 @@ export {
   deletePasskeyCredential,
 } from "./webauthn.js";
 
+/**
+ * Evaluate password complexity rules for password reset & registration
+ */
+export function validateResetPasswordPolicy(password = "") {
+  const checks = {
+    minLength: password.length >= 8,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number: /[0-9]/.test(password),
+    special: /[^A-Za-z0-9\s]/.test(password),
+  };
+
+  const errors = [];
+  if (!checks.minLength) errors.push("At least 8 characters");
+  if (!checks.uppercase) errors.push("At least one uppercase letter");
+  if (!checks.lowercase) errors.push("At least one lowercase letter");
+  if (!checks.number) errors.push("At least one number");
+  if (!checks.special) errors.push("At least one special character");
+
+  const metCount = Object.values(checks).filter(Boolean).length;
+  let score = 0;
+  if (password) {
+    if (metCount <= 2) score = 1;
+    else if (metCount <= 3) score = 2;
+    else if (metCount === 4) score = 3;
+    else score = password.length >= 12 ? 4 : 3;
+  }
+
+  const meta = [
+    { label: "Password strength: none", color: "#e2e8f0" },
+    { label: "Weak password", color: "#dc2626" },
+    { label: "Medium password", color: "#f59e0b" },
+    { label: "Strong password", color: "#2563eb" },
+    { label: "Very strong password", color: "#16a34a" },
+  ][score];
+
+  return {
+    isValid: errors.length === 0,
+    checks,
+    errors,
+    score,
+    label: meta.label,
+    color: meta.color,
+  };
+}
+
+/**
+ * Step 1: Request Forgot Password OTP
+ * POST /api/auth/forgot-password
+ */
+export async function requestPasswordReset(email) {
+  return await request("/api/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email: (email || "").trim().toLowerCase() }),
+  });
+}
+
+/**
+ * Resend Password Reset OTP (enforces 60s cooldown)
+ * POST /api/auth/resend-reset-otp
+ */
+export async function resendResetOtp(email) {
+  return await request("/api/auth/resend-reset-otp", {
+    method: "POST",
+    body: JSON.stringify({ email: (email || "").trim().toLowerCase() }),
+  });
+}
+
+/**
+ * Step 3: Verify Password Reset OTP -> returns single-use reset_token
+ * POST /api/auth/verify-reset-otp
+ */
+export async function verifyResetOtp(email, otp) {
+  return await request("/api/auth/verify-reset-otp", {
+    method: "POST",
+    body: JSON.stringify({
+      email: (email || "").trim().toLowerCase(),
+      otp: (otp || "").trim(),
+    }),
+  });
+}
+
+/**
+ * Step 5: Complete Password Reset using single-use reset_token
+ * POST /api/auth/reset-password
+ */
+export async function resetPasswordWithToken({ resetToken, newPassword, confirmPassword }) {
+  return await request("/api/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({
+      reset_token: resetToken,
+      new_password: newPassword,
+      confirm_password: confirmPassword,
+    }),
+  });
+}
+
+/**
+ * Authenticated password update
+ * POST /api/auth/change-password
+ */
+export async function changePassword({ currentPassword, newPassword, confirmPassword }) {
+  return await request("/api/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify({
+      current_password: currentPassword,
+      new_password: newPassword,
+      confirm_password: confirmPassword,
+    }),
+  });
+}
+
+// ─── End-User Dashboard APIs ─────────────────────────────────────────────────
+
+export async function getUserProfile() {
+  return await request("/api/user/profile", { method: "GET" });
+}
+
+export async function getDashboardOverview() {
+  return await request("/api/dashboard/overview", { method: "GET" });
+}
+
+export async function getLoginActivity(limit = 25) {
+  return await request(`/api/dashboard/login-activity?limit=${limit}`, { method: "GET" });
+}
+
+export async function getActiveSessions() {
+  return await request("/api/sessions", { method: "GET" });
+}
+
+export async function revokeSessionById(sessionId) {
+  return await request(`/api/sessions/${encodeURIComponent(sessionId)}`, {
+    method: "DELETE",
+  });
+}
+
+export async function revokeOtherSessions() {
+  return await request("/api/sessions/revoke-others", { method: "POST" });
+}
+
+export async function getConnectedApps() {
+  return await request("/api/connected-apps", { method: "GET" });
+}
+
+export async function disconnectConnectedApp(appId) {
+  return await request(`/api/connected-apps/${encodeURIComponent(appId)}`, {
+    method: "DELETE",
+  });
+}
+
 

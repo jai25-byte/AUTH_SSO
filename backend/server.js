@@ -11,7 +11,7 @@ import crypto from "node:crypto";
 
 // ─── Cryptographic & Token Utilities ──────────────────────────────────────────
 
-const JWT_SECRET = process.env.JWT_SECRET || "vaultauth-crypto-jwt-secret-2026-sso";
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString("hex");
 
 function hashPassword(password, salt = crypto.randomBytes(16).toString("hex")) {
   const hash = crypto.scryptSync(password, salt, 64).toString("hex");
@@ -372,20 +372,40 @@ let WEBAUTHN_CREDENTIALS = [
   },
 ];
 
-// Active OTP store (email -> { code, expiresAt, cooldownUntil })
+// Active OTP store (email -> { codeHash, expiresAt, cooldownUntil, attempts })
 const OTPS = new Map();
+// Ephemeral WebAuthn challenge store (challengeStr -> { uid, type, expiresAt })
+const WEBAUTHN_CHALLENGES = new Map();
+// Password reset records store
+let PASSWORD_RESETS = [];
+let NEXT_RESET_ID = 1;
+
+function hashResetSecret(val) {
+  return crypto.createHmac("sha256", JWT_SECRET).update(String(val)).digest("hex");
+}
+
+function validateStrictPassword(password = "") {
+  const errors = [];
+  if (password.length < 8) errors.push("Password must be at least 8 characters long.");
+  if (!/[A-Z]/.test(password)) errors.push("Password must include at least one uppercase letter.");
+  if (!/[a-z]/.test(password)) errors.push("Password must include at least one lowercase letter.");
+  if (!/[0-9]/.test(password)) errors.push("Password must include at least one number.");
+  if (!/[^A-Za-z0-9\s]/.test(password)) errors.push("Password must include at least one special character.");
+  return errors;
+}
 
 // ── Plunk Transactional Email Dispatcher ──
-const PLUNK_API_KEY = process.env.PLUNK_SECRET_KEY || "sk_0fdda029da3a78d89b5f2f0496ee2d99c21358e8bda1e224aedd09f8763dc42f";
+const PLUNK_API_KEY = process.env.PLUNK_SECRET_KEY || process.env.PLUNK_API_KEY || "";
 
 async function sendEmailPlunk(toEmail, code) {
-  const targetEmail = toEmail && toEmail.includes("@") && !toEmail.endsWith("@vaultauth.io") && !toEmail.endsWith("@vault.io") && !toEmail.endsWith("@example.com")
-    ? toEmail
-    : "amitoj0024@gmail.com";
+  if (!PLUNK_API_KEY) {
+    return { success: false, targetEmail: toEmail, error: "PLUNK_API_KEY not configured" };
+  }
+  const targetEmail = toEmail;
 
   const payload = {
     to: targetEmail,
-    from: "noreply@vaultauthsso.proplays2312.eu.org",
+    from: process.env.PLUNK_FROM || "noreply@vaultauthsso.proplays2312.eu.org",
     subject: `${code} is your Vault Auth verification code`,
     body: `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 520px; margin: 0 auto; padding: 28px; border: 1px solid #e2e8f0; border-radius: 14px; background: #ffffff;">
       <h2 style="color: #0f172a; margin-top: 0; font-size: 22px;">VaultAuth SSO Verification</h2>
@@ -393,7 +413,7 @@ async function sendEmailPlunk(toEmail, code) {
       <div style="font-size: 32px; font-weight: 700; letter-spacing: 6px; padding: 14px 24px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; display: inline-block; margin: 18px 0; color: #7047eb; font-family: monospace;">${code}</div>
       <p style="color: #64748b; font-size: 13px; line-height: 1.4;">This code is valid for 5 minutes. If you did not initiate this request, please disregard this notice.</p>
       <hr style="border: none; border-top: 1px solid #f1f5f9; margin: 20px 0;" />
-      <p style="color: #94a3b8; font-size: 12px; margin: 0;">VaultAuth Enterprise Single Sign-On · vaultauthsso.proplays2312.eu.org</p>
+      <p style="color: #94a3b8; font-size: 12px; margin: 0;">VaultAuth Enterprise Single Sign-On</p>
     </div>`,
     name: "VaultAuth SSO"
   };
@@ -415,13 +435,13 @@ async function sendEmailPlunk(toEmail, code) {
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        console.log(`\n📧 [Plunk Email Delivered] Successfully sent OTP code ${code} to ${targetEmail}`);
+        console.log(`[Plunk] OTP email dispatched to ${targetEmail}`);
         return { success: true, targetEmail, data };
       } else {
-        console.warn(`⚠️ [Plunk] Send failed on ${ep}:`, data);
+        console.warn(`[Plunk] Send failed on ${ep}:`, data);
       }
     } catch (err) {
-      console.warn(`⚠️ [Plunk] Request error to ${ep}:`, err.message);
+      console.warn(`[Plunk] Request error to ${ep}:`, err.message);
     }
   }
   return { success: false, targetEmail };
@@ -528,7 +548,14 @@ function getAuthUser(req) {
   if (jwtPayload) {
     const user = USERS.find((u) => u.uid === jwtPayload.uid || u.email === jwtPayload.email);
     if (user && user.is_active) {
-      let session = SESSIONS.find((s) => s.session_token === token && s.is_active);
+      if (user.password_changed_at && jwtPayload.iat && jwtPayload.iat < user.password_changed_at) {
+        return null;
+      }
+      const existingSession = SESSIONS.find((s) => s.session_token === token);
+      if (existingSession && !existingSession.is_active) {
+        return null;
+      }
+      let session = existingSession;
       if (!session) {
         session = {
           id: SESSIONS.length + 1,
@@ -661,7 +688,7 @@ async function requestHandler(req, res) {
       }
 
       const uid = USERS.length > 0 ? Math.max(...USERS.map((u) => u.uid)) + 1 : 1;
-      const userRole = role || (cleanEmail.includes("admin") ? "admin" : "user");
+      const userRole = "user";
       const newUser = {
         uid,
         id: uid,
@@ -724,25 +751,23 @@ async function requestHandler(req, res) {
 
       // Check if 2FA is required for this user or by global system policy
       if (ADMIN_SETTINGS.mfa_required === "true" || user.mfa_enabled || body.require_otp) {
-        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpCode = crypto.randomInt(100000, 1000000).toString();
         OTPS.set(user.email.toLowerCase(), {
-          code: otpCode,
+          codeHash: hashResetSecret(`login-otp:${user.uid}:${otpCode}`),
           expiresAt: Date.now() + 300000,
+          cooldownUntil: Date.now() + 60000,
+          attempts: 0,
         });
-        OTPS.set("amitoj0024@gmail.com", {
-          code: otpCode,
-          expiresAt: Date.now() + 300000,
-        });
-        console.log(`\n========================================\n📨 [2FA OTP DISPATCH] To: ${user.email}\n🔑 CODE: ${otpCode}\n⏰ Valid for 5 minutes\n========================================\n`);
 
         const plunkResult = await sendEmailPlunk(user.email, otpCode);
+        const masked = user.email.replace(/^(.{2})(.*)(@.*)$/, (_, a, b, c) => a + "*".repeat(Math.max(b.length, 3)) + c);
 
         return json(res, 200, {
           otp_required: true,
           identifier: user.email,
           email_sent: plunkResult.success,
-          delivery_email: plunkResult.targetEmail,
-          message: `Two-factor verification required. Code sent to ${plunkResult.targetEmail || user.email}`,
+          email_masked: masked,
+          message: `Two-factor verification required. Code sent to ${masked}`,
         }, req);
       }
 
@@ -821,44 +846,328 @@ async function requestHandler(req, res) {
   }
 
   // ── Forgot Password & Reset ──
-  if (method === "POST" && (pathname === "/api/forgot-password" || pathname === "/api/auth/forgot-password")) {
+  if (
+    method === "POST" &&
+    (pathname === "/api/forgot-password" ||
+      pathname === "/api/auth/forgot-password" ||
+      pathname === "/api/auth/resend-reset-otp")
+  ) {
+    const isResend = pathname === "/api/auth/resend-reset-otp";
     const body = await getJsonBody(req).catch(() => ({}));
     const email = (body.email || body.identifier || "").trim().toLowerCase();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+      return json(res, 400, { success: false, message: "Please enter a valid email address." }, req);
+    }
+
+    const genericResp = {
+      success: true,
+      message: "If an account with that email exists, a password reset verification code has been sent.",
+      expires_in: 300,
+      cooldown: 60,
+    };
+
+    const user = USERS.find((u) => u.email.toLowerCase() === email && u.is_active);
+    if (!user) {
+      return json(res, 200, genericResp, req);
+    }
+
+    const now = Date.now();
+    if (isResend) {
+      const latest = PASSWORD_RESETS.filter((r) => r.user_id === user.uid).sort((a, b) => b.id - a.id)[0];
+      if (latest && now - latest.created_at < 60000) {
+        const remaining = Math.max(1, Math.ceil((60000 - (now - latest.created_at)) / 1000));
+        return json(
+          res,
+          429,
+          {
+            success: false,
+            message: `Please wait ${remaining} seconds before requesting a new verification code.`,
+            retry_after: remaining,
+            cooldown: remaining,
+          },
+          req
+        );
+      }
+    }
+
+    PASSWORD_RESETS.forEach((r) => {
+      if (r.user_id === user.uid && !r.is_used) r.is_used = true;
+    });
+
+    const otpCode = crypto.randomInt(100000, 1000000).toString();
+    PASSWORD_RESETS.push({
+      id: NEXT_RESET_ID++,
+      user_id: user.uid,
+      otp_hash: hashResetSecret(`reset-otp:${user.uid}:${otpCode}`),
+      expires_at: now + 300000,
+      attempts: 0,
+      reset_token_hash: null,
+      token_expires_at: null,
+      is_used: false,
+      created_at: now,
+    });
+
+    if (PLUNK_API_KEY) {
+      sendEmailPlunk(user.email, otpCode).catch(() => {});
+    }
+
+    recordAudit("PASSWORD_RESET_OTP_SENT", user, isResend ? "Reset OTP resent" : "Reset OTP requested");
+    return json(res, 200, genericResp, req);
+  }
+
+  if (method === "POST" && pathname === "/api/auth/verify-reset-otp") {
+    const body = await getJsonBody(req).catch(() => ({}));
+    const email = (body.email || body.identifier || "").trim().toLowerCase();
+    const otp = String(body.otp || body.code || "").trim();
+
+    if (!email || !otp) {
+      return json(res, 400, { success: false, message: "Email and verification code are required." }, req);
+    }
+
+    const user = USERS.find((u) => u.email.toLowerCase() === email && u.is_active);
+    if (!user) {
+      return json(res, 400, { success: false, message: "Invalid or expired verification code." }, req);
+    }
+
+    const record = PASSWORD_RESETS.filter(
+      (r) => r.user_id === user.uid && !r.is_used && r.reset_token_hash === null
+    ).sort((a, b) => b.id - a.id)[0];
+
+    if (!record) {
+      return json(res, 400, { success: false, message: "Invalid or expired verification code." }, req);
+    }
+
+    if (record.attempts >= 5) {
+      record.is_used = true;
+      return json(
+        res,
+        429,
+        { success: false, message: "Maximum verification attempts exceeded. Please request a new verification code." },
+        req
+      );
+    }
+
+    const now = Date.now();
+    if (record.expires_at < now) {
+      record.is_used = true;
+      return json(res, 400, { success: false, message: "Verification code has expired. Please request a new code." }, req);
+    }
+
+    const expected = hashResetSecret(`reset-otp:${user.uid}:${otp}`);
+    const isMatch =
+      otp.length === 6 &&
+      /^\d{6}$/.test(otp) &&
+      crypto.timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(record.otp_hash, "hex"));
+
+    if (!isMatch) {
+      record.attempts += 1;
+      if (record.attempts >= 5) {
+        record.is_used = true;
+        return json(
+          res,
+          429,
+          { success: false, message: "Maximum verification attempts exceeded. Please request a new verification code." },
+          req
+        );
+      }
+      const remaining = 5 - record.attempts;
+      return json(
+        res,
+        400,
+        {
+          success: false,
+          message: `Invalid verification code. ${remaining} attempt(s) remaining.`,
+          attempts_remaining: remaining,
+        },
+        req
+      );
+    }
+
+    const rawResetToken = crypto.randomBytes(32).toString("base64url");
+    record.reset_token_hash = hashResetSecret(`reset-token:${rawResetToken}`);
+    record.token_expires_at = now + 600000;
+
+    return json(
+      res,
+      200,
+      {
+        success: true,
+        message: "Verification code verified. You may now create a new password.",
+        reset_token: rawResetToken,
+        expires_in: 600,
+      },
+      req
+    );
+  }
+
+  if (method === "POST" && (pathname === "/api/reset-password" || pathname === "/api/auth/reset-password")) {
+    const body = await getJsonBody(req).catch(() => ({}));
+    const resetToken = String(body.reset_token || body.token || "").trim();
+    const newPassword = body.new_password || body.password || "";
+    const confirmPassword = body.confirm_password ?? body.confirmPassword;
+
+    if (!resetToken || !newPassword) {
+      return json(
+        res,
+        400,
+        { success: false, message: "Reset authorization token and new password are required." },
+        req
+      );
+    }
+
+    if (confirmPassword !== undefined && confirmPassword !== null && newPassword !== confirmPassword) {
+      return json(res, 400, { success: false, message: "New password and confirmation do not match." }, req);
+    }
+
+    const errors = validateStrictPassword(newPassword);
+    if (errors.length > 0) {
+      return json(res, 400, { success: false, message: errors[0], errors }, req);
+    }
+
+    const tokenHash = hashResetSecret(`reset-token:${resetToken}`);
+    const record = PASSWORD_RESETS.find((r) => r.reset_token_hash === tokenHash);
+    if (!record) {
+      return json(res, 400, { success: false, message: "Invalid or expired reset authorization token." }, req);
+    }
+    if (record.is_used) {
+      return json(
+        res,
+        400,
+        { success: false, message: "This reset token has already been used. Please request a new reset." },
+        req
+      );
+    }
+    if (!record.token_expires_at || record.token_expires_at < Date.now()) {
+      record.is_used = true;
+      return json(
+        res,
+        400,
+        { success: false, message: "Your reset session has expired. Please start over." },
+        req
+      );
+    }
+
+    const user = USERS.find((u) => u.uid === record.user_id && u.is_active);
+    if (!user) {
+      return json(res, 403, { success: false, message: "Account is deactivated." }, req);
+    }
+
+    user.password = hashPassword(newPassword);
+    user.password_changed_at = Math.floor(Date.now() / 1000) + 1;
+    PASSWORD_RESETS.forEach((r) => {
+      if (r.user_id === user.uid) r.is_used = true;
+    });
+    OTPS.delete(user.email.toLowerCase());
+    SESSIONS.forEach((s) => {
+      if (s.uid === user.uid) s.is_active = false;
+    });
+
+    recordAudit("PASSWORD_RESET_SUCCESS", user, "Password reset completed and active sessions revoked");
+    return json(
+      res,
+      200,
+      {
+        success: true,
+        message: "Your password has been reset successfully. Please log in with your new password.",
+      },
+      req
+    );
+  }
+
+  // ── Authenticated Change Password ──
+  if (method === "POST" && pathname === "/api/auth/change-password") {
+    const auth = requireAuth(req, res);
+    if (!auth) return;
+
+    const body = await getJsonBody(req).catch(() => ({}));
+    const currentPassword = body.current_password || body.currentPassword || "";
+    const newPassword = body.new_password || body.newPassword || "";
+    const confirmPassword = body.confirm_password ?? body.confirmPassword;
+
+    if (!currentPassword || !newPassword) {
+      return json(res, 400, { success: false, message: "Current password and new password are required." }, req);
+    }
+    if (confirmPassword !== undefined && confirmPassword !== null && newPassword !== confirmPassword) {
+      return json(res, 400, { success: false, message: "New password and confirmation do not match." }, req);
+    }
+    if (!verifyPassword(auth.user.password, currentPassword)) {
+      return json(res, 401, { success: false, message: "Current password is incorrect." }, req);
+    }
+    const errors = validateStrictPassword(newPassword);
+    if (errors.length > 0) {
+      return json(res, 400, { success: false, message: errors[0], errors }, req);
+    }
+    if (currentPassword === newPassword) {
+      return json(res, 400, { success: false, message: "New password must differ from current password." }, req);
+    }
+
+    auth.user.password = hashPassword(newPassword);
+    auth.user.password_changed_at = Math.floor(Date.now() / 1000) + 1;
+    SESSIONS.forEach((s) => {
+      if (s.uid === auth.user.uid && s.session_token !== auth.token) {
+        s.is_active = false;
+      }
+    });
+    recordAudit("PASSWORD_CHANGED", auth.user, "Authenticated password change");
     return json(res, 200, {
       success: true,
-      message: `If an account with ${email || "that email"} exists, password reset instructions have been sent.`,
+      message: "Password updated successfully. Other active sessions have been signed out.",
     }, req);
   }
 
   // ── OTP Endpoints ──
   if (method === "POST" && (pathname === "/api/otp/send" || pathname === "/api/login/otp/send")) {
     const body = await getJsonBody(req).catch(() => ({}));
-    const ident = (body.identifier || body.email || body.username || "").trim().toLowerCase();
+    const ident = (body.identifier || body.email || body.username || body.login || "").trim().toLowerCase();
+    if (!ident) {
+      return json(res, 400, { success: false, message: "Identifier (username or email) is required." }, req);
+    }
     const user = USERS.find((u) => u.email.toLowerCase() === ident || u.username.toLowerCase() === ident);
-    const email = user ? user.email : (ident.includes("@") ? ident : "user@example.com");
-    const masked = email.replace(/^(.{2})(.*)(@.*)$/, (_, a, b, c) => a + "*".repeat(Math.max(b.length, 3)) + c);
+    if (!user) {
+      return json(res, 404, { success: false, message: "User not found" }, req);
+    }
+    if (!user.is_active) {
+      return json(res, 403, { success: false, message: "Account is deactivated. Please contact your administrator." }, req);
+    }
 
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    OTPS.set(email.toLowerCase(), {
-      code: otpCode,
-      expiresAt: Date.now() + 300000,
-    });
-    OTPS.set("amitoj0024@gmail.com", {
-      code: otpCode,
-      expiresAt: Date.now() + 300000,
-    });
-    console.log(`\n========================================\n📨 [2FA OTP DISPATCH] To: ${email}\n🔑 CODE: ${otpCode}\n⏰ Valid for 5 minutes\n========================================\n`);
+    const emailKey = user.email.toLowerCase();
+    const existingOtp = OTPS.get(emailKey);
+    if (existingOtp && existingOtp.cooldownUntil > Date.now()) {
+      const remaining = Math.max(1, Math.ceil((existingOtp.cooldownUntil - Date.now()) / 1000));
+      return json(res, 429, {
+        success: false,
+        message: `Please wait ${remaining} seconds before requesting a new OTP.`,
+        retry_after: remaining,
+        cooldown: remaining,
+      }, req);
+    }
 
-    const plunkResult = await sendEmailPlunk(email, otpCode);
+    const masked = user.email.replace(/^(.{2})(.*)(@.*)$/, (_, a, b, c) => a + "*".repeat(Math.max(b.length, 3)) + c);
+    const otpCode = crypto.randomInt(100000, 1000000).toString();
+    OTPS.set(emailKey, {
+      codeHash: hashResetSecret(`login-otp:${user.uid}:${otpCode}`),
+      expiresAt: Date.now() + 300000,
+      cooldownUntil: Date.now() + 60000,
+      attempts: 0,
+    });
+
+    const plunkResult = await sendEmailPlunk(user.email, otpCode);
+    if (!plunkResult.success) {
+      OTPS.delete(emailKey);
+      return json(res, 500, {
+        success: false,
+        email_sent: false,
+        message: `Email delivery failed: ${plunkResult.error || "Unable to send OTP email"}.`,
+      }, req);
+    }
 
     return json(res, 200, {
-      message: `OTP sent to ${plunkResult.targetEmail || masked}`,
+      message: `OTP sent to ${masked}`,
       identifier: ident,
       email_masked: masked,
-      delivery_email: plunkResult.targetEmail,
       expires_in: 300,
       cooldown: 60,
-      email_sent: plunkResult.success,
+      email_sent: true,
     }, req);
   }
 
@@ -866,22 +1175,50 @@ async function requestHandler(req, res) {
     const body = await getJsonBody(req).catch(() => ({}));
     const otp = String(body.otp || body.code || "").trim();
     const ident = (body.identifier || body.email || body.username || body.login || "").trim().toLowerCase();
-    const user = USERS.find((u) => u.email.toLowerCase() === ident || u.username.toLowerCase() === ident) || USERS[0];
-    const email = user ? user.email.toLowerCase() : (ident.includes("@") ? ident : "");
 
-    const storedOtp = email ? (OTPS.get(email) || OTPS.get("amitoj0024@gmail.com")) : OTPS.get("amitoj0024@gmail.com");
-    const isCodeMatch = (storedOtp && storedOtp.code === otp && storedOtp.expiresAt > Date.now()) || otp === "123456";
-
-    if (!isCodeMatch || otp === "000000" || otp.length !== 6) {
-      return json(res, 400, { success: false, message: "Invalid or expired OTP" }, req);
+    if (!ident || !otp) {
+      return json(res, 400, { success: false, message: "Both identifier and OTP code are required" }, req);
     }
 
-    if (email) OTPS.delete(email);
-    OTPS.delete("amitoj0024@gmail.com");
+    const user = USERS.find((u) => u.email.toLowerCase() === ident || u.username.toLowerCase() === ident);
+    if (!user) {
+      return json(res, 404, { success: false, message: "User not found" }, req);
+    }
+    if (!user.is_active) {
+      return json(res, 403, { success: false, message: "Account is deactivated" }, req);
+    }
+
+    const emailKey = user.email.toLowerCase();
+    const storedOtp = OTPS.get(emailKey);
+    if (!storedOtp || storedOtp.expiresAt <= Date.now()) {
+      OTPS.delete(emailKey);
+      return json(res, 401, { success: false, message: "Invalid or expired OTP" }, req);
+    }
+    if (storedOtp.attempts >= 5) {
+      OTPS.delete(emailKey);
+      return json(res, 401, { success: false, message: "Maximum OTP attempts exceeded. Please request a new OTP." }, req);
+    }
+
+    const expectedHash = hashResetSecret(`login-otp:${user.uid}:${otp}`);
+    const isCodeMatch =
+      otp.length === 6 &&
+      /^\d{6}$/.test(otp) &&
+      crypto.timingSafeEqual(Buffer.from(expectedHash, "hex"), Buffer.from(storedOtp.codeHash, "hex"));
+
+    if (!isCodeMatch) {
+      storedOtp.attempts += 1;
+      if (storedOtp.attempts >= 5) {
+        OTPS.delete(emailKey);
+        return json(res, 401, { success: false, message: "Maximum OTP attempts exceeded. Please request a new OTP." }, req);
+      }
+      return json(res, 401, { success: false, message: "Invalid or expired OTP" }, req);
+    }
+
+    OTPS.delete(emailKey);
     const token = makeToken(user);
     return json(res, 200, {
       success: true,
-      message: "OTP verified successfully!",
+      message: "OTP login successful",
       token,
       user: sanitizeUser(user),
     }, req);
@@ -925,8 +1262,11 @@ async function requestHandler(req, res) {
     }, req);
   }
 
-  // ── Users List (Basic & Public compatibility) ──
+  // ── Users List (Admin Only) ──
   if (method === "GET" && pathname === "/api/users") {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+
     const safeUsers = USERS.map((u) => ({
       uid: u.uid,
       id: u.uid,
@@ -939,12 +1279,18 @@ async function requestHandler(req, res) {
     return json(res, 200, safeUsers, req);
   }
 
-  // ── Users by ID ──
+  // ── Users by ID (Admin or Self Only) ──
   const userByIdMatch = pathname.match(/^\/api\/users\/([^/]+)$/);
   if (method === "GET" && userByIdMatch) {
-    const ident = userByIdMatch[1];
-    const user = USERS.find((u) => String(u.uid) === ident || u.username === ident || u.email === ident);
+    const auth = requireAuth(req, res);
+    if (!auth) return;
+
+    const ident = decodeURIComponent(userByIdMatch[1]);
+    const user = USERS.find((u) => String(u.uid) === ident || u.username === ident || u.email.toLowerCase() === ident.toLowerCase());
     if (!user) return json(res, 404, { message: "User not found" }, req);
+    if (auth.user.role !== "admin" && auth.user.uid !== user.uid) {
+      return json(res, 403, { success: false, message: "Access denied. Insufficient role permissions." }, req);
+    }
     return json(res, 200, {
       uid: user.uid,
       username: user.username,
@@ -1536,8 +1882,14 @@ async function requestHandler(req, res) {
     if (method === "POST" && pathname === "/api/webauthn/register/options") {
       const auth = requireAuth(req, res);
       if (!auth) return;
+      const challenge = crypto.randomBytes(32).toString("base64url");
+      WEBAUTHN_CHALLENGES.set(challenge, {
+        uid: auth.user.uid,
+        type: "registration",
+        expiresAt: Date.now() + 300000,
+      });
       return json(res, 200, {
-        challenge: crypto.randomBytes(32).toString("base64url"),
+        challenge,
         rp: { name: "VaultAuth SSO", id: "localhost" },
         user: {
           id: Buffer.from(String(auth.user.uid)).toString("base64url"),
@@ -1547,7 +1899,10 @@ async function requestHandler(req, res) {
         pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
         timeout: 60000,
         attestation: "none",
-        excludeCredentials: [],
+        excludeCredentials: WEBAUTHN_CREDENTIALS.filter((c) => c.uid === auth.user.uid).map((c) => ({
+          id: c.credential_id,
+          type: "public-key",
+        })),
       }, req);
     }
 
@@ -1555,36 +1910,113 @@ async function requestHandler(req, res) {
       const auth = requireAuth(req, res);
       if (!auth) return;
       const body = await getJsonBody(req).catch(() => ({}));
+      const cred = body.credential || body;
+      let clientChallenge = null;
+      try {
+        const clientData = JSON.parse(Buffer.from(cred.response?.clientDataJSON || "", "base64url").toString("utf8"));
+        clientChallenge = clientData.challenge;
+      } catch {}
+
+      const challengeRec = clientChallenge ? WEBAUTHN_CHALLENGES.get(clientChallenge) : null;
+      if (
+        !challengeRec ||
+        challengeRec.type !== "registration" ||
+        challengeRec.uid !== auth.user.uid ||
+        challengeRec.expiresAt <= Date.now()
+      ) {
+        return json(res, 400, { success: false, message: "Invalid or expired registration challenge." }, req);
+      }
+      WEBAUTHN_CHALLENGES.delete(clientChallenge);
+
+      if (!cred?.id) {
+        return json(res, 400, { success: false, message: "Missing credential ID." }, req);
+      }
       const newCred = {
         id: WEBAUTHN_CREDENTIALS.length + 1,
         uid: auth.user.uid,
-        credential_id: body.credential?.id || `cred_${Date.now()}`,
+        credential_id: cred.id,
         device_name: body.deviceName || "Passkey Authenticator",
         created_at: "Today, Just now",
         last_used_at: "Active Now",
       };
       WEBAUTHN_CREDENTIALS.push(newCred);
       recordAudit("WEBAUTHN_REGISTER_SUCCESS", auth.user, `Registered passkey: ${newCred.device_name}`);
-      return json(res, 200, { success: true, message: "Passkey registered successfully!" }, req);
+      return json(res, 200, { success: true, message: "Passkey registered successfully!", credential: newCred }, req);
     }
 
     if (method === "POST" && pathname === "/api/webauthn/login/options") {
+      const body = await getJsonBody(req).catch(() => ({}));
+      const ident = (body.identifier || body.username || body.email || "").trim().toLowerCase();
+      let targetUid = null;
+      let allowCredentials;
+      if (ident) {
+        const targetUser = USERS.find((u) => u.email.toLowerCase() === ident || u.username.toLowerCase() === ident);
+        if (targetUser) {
+          targetUid = targetUser.uid;
+          allowCredentials = WEBAUTHN_CREDENTIALS.filter((c) => c.uid === targetUid).map((c) => ({
+            id: c.credential_id,
+            type: "public-key",
+          }));
+        }
+      }
+      const challenge = crypto.randomBytes(32).toString("base64url");
+      WEBAUTHN_CHALLENGES.set(challenge, {
+        uid: targetUid,
+        type: "authentication",
+        expiresAt: Date.now() + 300000,
+      });
       return json(res, 200, {
-        challenge: crypto.randomBytes(32).toString("base64url"),
+        challenge,
         rpId: "localhost",
         timeout: 60000,
         userVerification: "preferred",
+        ...(allowCredentials ? { allowCredentials } : {}),
       }, req);
     }
 
     if (method === "POST" && pathname === "/api/webauthn/login/verify") {
-      const adminUser = USERS[0];
-      const token = makeToken(adminUser);
+      const body = await getJsonBody(req).catch(() => ({}));
+      const credPayload = body.credential || body;
+      const credId = String(credPayload?.id || credPayload?.rawId || "").trim();
+      if (!credId) {
+        return json(res, 401, { success: false, message: "Missing passkey credential ID." }, req);
+      }
+
+      const credRecord = WEBAUTHN_CREDENTIALS.find((c) => c.credential_id === credId);
+      if (!credRecord) {
+        return json(res, 401, { success: false, message: "This passkey is not recognized." }, req);
+      }
+
+      let clientChallenge = null;
+      try {
+        const clientData = JSON.parse(Buffer.from(credPayload.response?.clientDataJSON || "", "base64url").toString("utf8"));
+        clientChallenge = clientData.challenge;
+      } catch {}
+
+      const challengeRec = clientChallenge ? WEBAUTHN_CHALLENGES.get(clientChallenge) : null;
+      if (
+        !challengeRec ||
+        challengeRec.type !== "authentication" ||
+        challengeRec.expiresAt <= Date.now() ||
+        (challengeRec.uid !== null && challengeRec.uid !== credRecord.uid)
+      ) {
+        return json(res, 401, { success: false, message: "Invalid or expired authentication challenge." }, req);
+      }
+      WEBAUTHN_CHALLENGES.delete(clientChallenge);
+
+      const ownerUser = USERS.find((u) => u.uid === credRecord.uid);
+      if (!ownerUser || !ownerUser.is_active) {
+        return json(res, 401, { success: false, message: "Account not found or deactivated." }, req);
+      }
+
+      credRecord.last_used_at = "Active Now";
+      const token = makeToken(ownerUser);
+      recordAudit("WEBAUTHN_LOGIN_SUCCESS", ownerUser, `Passkey sign-in (${credRecord.device_name})`);
       return json(res, 200, {
         success: true,
         message: "Passkey verified! Successfully signed in.",
         token,
-        user: adminUser,
+        user: sanitizeUser(ownerUser),
       }, req);
     }
   }

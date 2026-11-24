@@ -44,22 +44,6 @@ export default function AdminRoles({
       ],
     },
     {
-      key: "manager",
-      title: "Security Manager",
-      description: "Supervisory role capable of monitoring sessions, reviewing telemetry and managing team access.",
-      badge: "Elevated Audit",
-      color: "#0284c7",
-      bgColor: "#f0f9ff",
-      borderColor: "#bae6fd",
-      permissions: [
-        "users.view",
-        "roles.view",
-        "sessions.view",
-        "sessions.revoke",
-        "audit.view",
-      ],
-    },
-    {
       key: "user",
       title: "End User",
       description: "Standard employee SSO credential with access to personal security settings and connected apps.",
@@ -70,6 +54,10 @@ export default function AdminRoles({
       permissions: ["users.view"],
     },
   ];
+
+  const liveCounts = Object.fromEntries(
+    (rolesData?.roles || []).map((r) => [r.key, r.count])
+  );
 
   const allPermissions = [
     { key: "users.view", label: "View User Directory", category: "Users" },
@@ -155,6 +143,11 @@ export default function AdminRoles({
 
               <h2 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#111827", margin: 0 }}>
                 {role.title}
+                {typeof liveCounts[role.key] === "number" && (
+                  <span style={{ fontSize: "0.78rem", color: "#64748b", fontWeight: 500, marginLeft: "8px" }}>
+                    ({liveCounts[role.key]} users)
+                  </span>
+                )}
               </h2>
               <p style={{ fontSize: "0.83rem", color: "#64748b", margin: "6px 0 16px", lineHeight: 1.45 }}>
                 {role.description}

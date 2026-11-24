@@ -7,6 +7,7 @@ import AdminSessions from "./AdminSessions.jsx";
 import AdminLoginActivity from "./AdminLoginActivity.jsx";
 import AdminAuditLogs from "./AdminAuditLogs.jsx";
 import AdminSettings from "./AdminSettings.jsx";
+import { useHistoryTab } from "../../services/navigation.js";
 import {
   getCurrentUserRole,
   getAdminStats,
@@ -37,9 +38,19 @@ import {
   ExternalLink,
 } from "lucide-react";
 
+const ADMIN_PAGES = new Set([
+  "overview",
+  "users",
+  "roles",
+  "sessions",
+  "activity",
+  "audit",
+  "settings",
+]);
+
 export default function AdminDashboard({ onNavigate }) {
-  // Navigation & UI State
-  const [activePage, setActivePage] = useState("overview");
+  // Navigation & UI State (synced with browser history)
+  const [activePage, setActivePage] = useHistoryTab(ADMIN_PAGES, "overview");
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [toast, setToast] = useState({ message: "", type: "info" });
@@ -89,7 +100,7 @@ export default function AdminDashboard({ onNavigate }) {
     }, 4500);
   };
 
-  // 1. Initial Authentication & Role Check
+  // 1. Initial Authentication & Role Check (strictly server-verified; never trust localStorage)
   useEffect(() => {
     async function verifyAuth() {
       try {
@@ -101,19 +112,6 @@ export default function AdminDashboard({ onNavigate }) {
           setAuthStatus("unauthorized");
         }
       } catch (err) {
-        // Check if there is already a cached admin user session in local storage
-        const cachedUserStr = typeof window !== "undefined" ? localStorage.getItem("vault_auth_user") : null;
-        if (cachedUserStr) {
-          try {
-            const cachedUser = JSON.parse(cachedUserStr);
-            if (cachedUser.role === "admin" || (cachedUser.role && cachedUser.role.toLowerCase().includes("admin"))) {
-              setAdminUser(cachedUser);
-              setAuthStatus("authorized");
-              return;
-            }
-          } catch {}
-        }
-
         if (err.status === 403) {
           setAuthStatus("unauthorized");
         } else {
@@ -267,55 +265,14 @@ export default function AdminDashboard({ onNavigate }) {
       await adminLogout();
     } catch {}
     if (onNavigate) {
-      onNavigate("/login");
+      onNavigate("/login", { replace: true });
     } else {
-      window.location.href = "/login";
+      window.location.replace("/login");
     }
   };
 
   // Unauthenticated screen
   if (authStatus === "unauthenticated") {
-    const handleDemoAdminLogin = async () => {
-      const demoAdmin = {
-        uid: 1,
-        username: "admin",
-        email: "admin@vaultauth.io",
-        full_name: "Enterprise Admin",
-        role: "admin",
-        is_active: true,
-      };
-
-      try {
-        const res = await fetch("/api/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            identifier: "admin@vaultauth.io",
-            email: "admin@vaultauth.io",
-            username: "admin",
-            login: "admin@vaultauth.io",
-            password: "Admin@1234!",
-          }),
-        });
-        const data = await res.json();
-        const activeUser = data?.user || demoAdmin;
-        const activeToken = data?.token || "tok_admin_seeded_macbook";
-
-        localStorage.setItem("vault_auth_token", activeToken);
-        localStorage.setItem("vault_auth_user", JSON.stringify(activeUser));
-        setAdminUser(activeUser);
-        setAuthStatus("authorized");
-        notify("Authenticated as Enterprise Administrator", "success");
-      } catch (e) {
-        // Fallback for offline demo mode
-        localStorage.setItem("vault_auth_token", "tok_admin_seeded_macbook");
-        localStorage.setItem("vault_auth_user", JSON.stringify(demoAdmin));
-        setAdminUser(demoAdmin);
-        setAuthStatus("authorized");
-        notify("Enterprise Admin Demo Mode Activated", "info");
-      }
-    };
-
     return (
       <div
         style={{
@@ -364,7 +321,14 @@ export default function AdminDashboard({ onNavigate }) {
           </p>
           <div style={{ display: "grid", gap: "10px" }}>
             <button
-              onClick={handleDemoAdminLogin}
+              type="button"
+              onClick={() => {
+                if (onNavigate) {
+                  onNavigate("/login", { replace: true });
+                } else {
+                  window.location.replace("/login");
+                }
+              }}
               className="btn btn--primary"
               style={{
                 width: "100%",
@@ -377,29 +341,6 @@ export default function AdminDashboard({ onNavigate }) {
                 fontWeight: 600,
                 fontSize: "0.94rem",
                 boxShadow: "0 4px 14px rgba(112, 71, 235, 0.4)",
-              }}
-            >
-              Sign In as Demo Admin
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (onNavigate) {
-                  onNavigate("/login");
-                } else {
-                  window.location.href = "/login";
-                }
-              }}
-              style={{
-                width: "100%",
-                padding: "12px",
-                background: "transparent",
-                color: "#cbd5e1",
-                border: "1px solid #334155",
-                borderRadius: "10px",
-                cursor: "pointer",
-                fontWeight: 500,
-                fontSize: "0.9rem",
               }}
             >
               Sign In to VaultAuth SSO

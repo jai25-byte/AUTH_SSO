@@ -143,16 +143,23 @@ const server = Bun.serve({
     // Proxy API requests to backend server (Vault Auth API at http://127.0.0.1:5000)
     if (url.pathname.startsWith("/api/")) {
       const backendBase = process.env.BACKEND_URL || "http://127.0.0.1:5000";
+      const reqOrigin = req.headers.get("origin");
 
       if (req.method === "OPTIONS") {
+        const optHeaders = {
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization, Cookie",
+        };
+        if (reqOrigin) {
+          optHeaders["Access-Control-Allow-Origin"] = reqOrigin;
+          optHeaders["Access-Control-Allow-Credentials"] = "true";
+          optHeaders["Vary"] = "Origin";
+        } else {
+          optHeaders["Access-Control-Allow-Origin"] = "*";
+        }
         return new Response(null, {
           status: 204,
-          headers: {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, Authorization, Cookie",
-            "Access-Control-Allow-Credentials": "true",
-          },
+          headers: optHeaders,
         });
       }
 
@@ -181,8 +188,14 @@ const server = Bun.serve({
 
           const backendRes = await fetch(proxyReq);
           const resHeaders = new Headers(backendRes.headers);
-          resHeaders.set("Access-Control-Allow-Origin", "*");
-          resHeaders.set("Access-Control-Allow-Credentials", "true");
+          if (reqOrigin) {
+            resHeaders.set("Access-Control-Allow-Origin", reqOrigin);
+            resHeaders.set("Access-Control-Allow-Credentials", "true");
+            resHeaders.set("Vary", "Origin");
+          } else {
+            resHeaders.set("Access-Control-Allow-Origin", "*");
+            resHeaders.delete("Access-Control-Allow-Credentials");
+          }
 
           return new Response(backendRes.body, {
             status: backendRes.status,
@@ -241,12 +254,7 @@ const server = Bun.serve({
     }
 
     if (pathname === "/dashboard-vanilla" || pathname === "/vanilla-dashboard") {
-      const vanillaDash = Bun.file(join(process.cwd(), "DASHBOARD", "index.html"));
-      if (await vanillaDash.exists()) {
-        return new Response(vanillaDash, {
-          headers: { "Content-Type": "text/html; charset=utf-8" },
-        });
-      }
+      return Response.redirect(new URL(`/DASHBOARD/index.html${url.search}`, url.origin), 302);
     }
 
     // Serve DASHBOARD static assets if path starts with /DASHBOARD or /dashboard

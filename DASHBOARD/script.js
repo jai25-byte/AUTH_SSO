@@ -20,7 +20,14 @@
     const urlToken = params.get("token");
     if (urlToken) {
       localStorage.setItem("vault_auth_token", urlToken);
-      window.history.replaceState({}, document.title, window.location.pathname);
+      const cleanParams = new URLSearchParams(window.location.search);
+      cleanParams.delete("token");
+      const cleanSearch = cleanParams.toString();
+      window.history.replaceState(
+        window.history.state || {},
+        document.title,
+        window.location.pathname + (cleanSearch ? `?${cleanSearch}` : "")
+      );
       return urlToken;
     }
     // 2. Check localStorage
@@ -71,7 +78,7 @@
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
         ${type === "success" ? '<polyline points="20 6 9 17 4 12"/>' : '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'}
       </svg>
-      <span>${message}</span>
+      <span>${escapeHtml(message)}</span>
     `;
 
     stack.appendChild(el);
@@ -277,21 +284,61 @@
   }
 
   // ===== 5. Navigation & Page Switching =====
-  function navigateTo(pageId) {
+  let currentPageId = "overview";
+
+  function isValidPage(pageId) {
+    return Boolean(pageId && document.getElementById(`page-${pageId}`));
+  }
+
+  function getTabFromUrl(fallback = "overview") {
+    try {
+      const tab = new URLSearchParams(window.location.search).get("tab");
+      return isValidPage(tab) ? tab : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
+  function buildTabUrl(pageId) {
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", pageId);
+      return `${url.pathname}${url.search}${url.hash}`;
+    } catch {
+      return `${window.location.pathname}?tab=${encodeURIComponent(pageId)}`;
+    }
+  }
+
+  function navigateTo(pageId, options = {}) {
+    const { skipHistory = false, replaceHistory = false } = options;
+    const resolvedPage = isValidPage(pageId) ? pageId : "overview";
+
     document.querySelectorAll(".page").forEach((p) => (p.style.display = "none"));
 
-    const target = document.getElementById(`page-${pageId}`);
+    const target = document.getElementById(`page-${resolvedPage}`);
     if (target) {
       target.style.display = "block";
     }
 
     document.querySelectorAll(".nav-item").forEach((item) => {
-      if (item.getAttribute("data-page") === pageId) {
+      if (item.getAttribute("data-page") === resolvedPage) {
         item.classList.add("active");
       } else {
         item.classList.remove("active");
       }
     });
+
+    if (!skipHistory) {
+      try {
+        const nextUrl = buildTabUrl(resolvedPage);
+        if (replaceHistory) {
+          window.history.replaceState({ tab: resolvedPage }, "", nextUrl);
+        } else if (resolvedPage !== currentPageId) {
+          window.history.pushState({ tab: resolvedPage }, "", nextUrl);
+        }
+      } catch {}
+    }
+    currentPageId = resolvedPage;
 
     // Close mobile menu if open
     document.getElementById("sidebar")?.classList.remove("open");
@@ -300,12 +347,18 @@
     // Close user dropdown if open
     document.getElementById("user-dropdown-menu")?.classList.remove("show");
 
-    if (pageId === "security") {
+    if (resolvedPage === "security") {
       loadUserPasskeys();
     }
 
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
+
+  window.addEventListener("popstate", (event) => {
+    const stateTab = event?.state?.tab;
+    const nextPage = isValidPage(stateTab) ? stateTab : getTabFromUrl("overview");
+    navigateTo(nextPage, { skipHistory: true });
+  });
 
   // Bind Sidebar items
   document.querySelectorAll(".nav-item").forEach((btn) => {
@@ -499,20 +552,20 @@
     container.innerHTML = filtered
       .map(
         (app) => `
-        <div class="app-card-horizontal" data-app-id="${app.id}">
+        <div class="app-card-horizontal" data-app-id="${escapeHtml(app.id)}">
           <div class="app-card-left">
-            <div class="app-card-icon" style="background: ${app.bg};">
-              ${app.logo}
+            <div class="app-card-icon" style="background: ${escapeHtml(app.bg)};">
+              ${escapeHtml(app.logo)}
             </div>
             <div class="app-card-details">
               <div class="app-card-name-row">
-                <span class="app-card-name">${app.name}</span>
+                <span class="app-card-name">${escapeHtml(app.name)}</span>
               </div>
-              <p class="app-card-desc">${app.desc}</p>
+              <p class="app-card-desc">${escapeHtml(app.desc)}</p>
               <div class="app-card-permissions">
                 <strong>Permissions:</strong>
                 ${app.permissions
-                  .map((perm, idx) => `<span>${perm}</span>${idx < app.permissions.length - 1 ? '<span class="app-perm-bullet">•</span>' : ""}`)
+                  .map((perm, idx) => `<span>${escapeHtml(perm)}</span>${idx < app.permissions.length - 1 ? '<span class="app-perm-bullet">•</span>' : ""}`)
                   .join("")}
               </div>
             </div>
@@ -521,16 +574,16 @@
           <div class="app-card-right">
             <div class="app-card-meta">
               <span class="badge ${app.status === "Active" ? "badge-success" : "badge-failed"}">
-                <span class="badge-dot"></span>${app.status}
+                <span class="badge-dot"></span>${escapeHtml(app.status)}
               </span>
-              <span class="app-connected-date">Connected on ${app.connectedDate}</span>
+              <span class="app-connected-date">Connected on ${escapeHtml(app.connectedDate)}</span>
             </div>
 
             <div class="app-card-actions">
-              <button class="btn btn-outline btn-sm btn-manage-app" data-app-id="${app.id}">
+              <button class="btn btn-outline btn-sm btn-manage-app" data-app-id="${escapeHtml(app.id)}">
                 Manage access
               </button>
-              <button class="btn btn-danger-outline btn-sm btn-disconnect-app" data-app-id="${app.id}">
+              <button class="btn btn-danger-outline btn-sm btn-disconnect-app" data-app-id="${escapeHtml(app.id)}">
                 Revoke access
               </button>
             </div>
@@ -692,14 +745,14 @@
           <div style="display: flex; align-items: center; gap: 12px;">
             <div class="table-device-icon">${getDeviceIconSvg(item.deviceType)}</div>
             <div>
-              <strong style="font-size: 0.88rem; color: var(--text-primary); display: block;">${item.device}</strong>
-              <span style="font-size: 0.76rem; color: var(--text-muted);">${item.browser} • ${item.location}</span>
+              <strong style="font-size: 0.88rem; color: var(--text-primary); display: block;">${escapeHtml(item.device)}</strong>
+              <span style="font-size: 0.76rem; color: var(--text-muted);">${escapeHtml(item.browser)} • ${escapeHtml(item.location)}</span>
             </div>
           </div>
           <div style="text-align: right;">
-            <span style="font-size: 0.76rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">${item.time}</span>
+            <span style="font-size: 0.76rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">${escapeHtml(item.time)}</span>
             <span class="badge ${item.status === "Success" ? "badge-success" : item.status === "Blocked" ? "badge-blocked" : "badge-failed"}">
-              <span class="badge-dot"></span>${item.status}
+              <span class="badge-dot"></span>${escapeHtml(item.status)}
             </span>
           </div>
         </div>
@@ -717,10 +770,15 @@
     const nextBtn = document.getElementById("btn-next-page");
     if (!tbody) return;
 
+    const normalizedFilter =
+      activityStatusFilter.toLowerCase() === "successful"
+        ? "success"
+        : activityStatusFilter.toLowerCase();
+
     // Filter
     const filtered = loginActivities.filter((item) => {
       const matchesFilter =
-        activityStatusFilter === "all" || item.status.toLowerCase() === activityStatusFilter.toLowerCase();
+        normalizedFilter === "all" || item.status.toLowerCase() === normalizedFilter;
       const matchesSearch =
         item.device.toLowerCase().includes(activitySearchQuery) ||
         item.browser.toLowerCase().includes(activitySearchQuery) ||
@@ -761,24 +819,24 @@
     tbody.innerHTML = paginated
       .map(
         (item) => `
-        <tr data-event-id="${item.id}">
+        <tr data-event-id="${escapeHtml(item.id)}">
           <td>
             <div class="table-device-cell">
               <div class="table-device-icon">${getDeviceIconSvg(item.deviceType)}</div>
-              <span class="table-device-name">${item.device}</span>
+              <span class="table-device-name">${escapeHtml(item.device)}</span>
             </div>
           </td>
-          <td>${item.browser}</td>
-          <td>${item.location}</td>
-          <td>${item.time}</td>
-          <td><span class="table-ip-code">${item.ip}</span></td>
+          <td>${escapeHtml(item.browser)}</td>
+          <td>${escapeHtml(item.location)}</td>
+          <td>${escapeHtml(item.time)}</td>
+          <td><span class="table-ip-code">${escapeHtml(item.ip)}</span></td>
           <td>
             <span class="badge ${item.status === "Success" ? "badge-success" : item.status === "Blocked" ? "badge-blocked" : "badge-failed"}">
-              <span class="badge-dot"></span>${item.status}
+              <span class="badge-dot"></span>${escapeHtml(item.status)}
             </span>
           </td>
           <td style="text-align: right;">
-            <button class="btn btn-outline btn-sm btn-view-event" data-event-id="${item.id}" title="View metadata">
+            <button class="btn btn-outline btn-sm btn-view-event" data-event-id="${escapeHtml(item.id)}" title="View metadata">
               View
             </button>
           </td>
@@ -791,7 +849,7 @@
     tbody.querySelectorAll(".btn-view-event").forEach((btn) => {
       btn.addEventListener("click", function () {
         const evId = this.getAttribute("data-event-id");
-        const ev = loginActivities.find((a) => a.id === evId);
+        const ev = loginActivities.find((a) => String(a.id) === String(evId));
         if (!ev) return;
 
         const content = document.getElementById("modal-activity-details-content");
@@ -799,33 +857,33 @@
           content.innerHTML = `
             <div style="display: flex; justify-content: space-between; padding: 8px 12px; background: #f8fafc; border-radius: 6px;">
               <span style="color: var(--text-secondary);">Device Name:</span>
-              <strong style="color: var(--text-primary);">${ev.device}</strong>
+              <strong style="color: var(--text-primary);">${escapeHtml(ev.device)}</strong>
             </div>
             <div style="display: flex; justify-content: space-between; padding: 8px 12px; background: #f8fafc; border-radius: 6px;">
               <span style="color: var(--text-secondary);">Browser &amp; OS:</span>
-              <strong>${ev.browser} (${ev.os || "Unknown OS"})</strong>
+              <strong>${escapeHtml(ev.browser)} (${escapeHtml(ev.os || "Unknown OS")})</strong>
             </div>
             <div style="display: flex; justify-content: space-between; padding: 8px 12px; background: #f8fafc; border-radius: 6px;">
               <span style="color: var(--text-secondary);">Geographic Location:</span>
-              <strong>${ev.location}</strong>
+              <strong>${escapeHtml(ev.location)}</strong>
             </div>
             <div style="display: flex; justify-content: space-between; padding: 8px 12px; background: #f8fafc; border-radius: 6px;">
               <span style="color: var(--text-secondary);">Client IP Address:</span>
-              <span class="table-ip-code">${ev.ip}</span>
+              <span class="table-ip-code">${escapeHtml(ev.ip)}</span>
             </div>
             <div style="display: flex; justify-content: space-between; padding: 8px 12px; background: #f8fafc; border-radius: 6px;">
               <span style="color: var(--text-secondary);">Authentication Time:</span>
-              <strong>${ev.time}</strong>
+              <strong>${escapeHtml(ev.time)}</strong>
             </div>
             <div style="display: flex; justify-content: space-between; padding: 8px 12px; background: #f8fafc; border-radius: 6px;">
               <span style="color: var(--text-secondary);">Result Status:</span>
               <span class="badge ${ev.status === "Success" ? "badge-success" : ev.status === "Blocked" ? "badge-blocked" : "badge-failed"}">
-                <span class="badge-dot"></span>${ev.status}
+                <span class="badge-dot"></span>${escapeHtml(ev.status)}
               </span>
             </div>
             <div style="display: flex; justify-content: space-between; padding: 8px 12px; background: #f8fafc; border-radius: 6px;">
               <span style="color: var(--text-secondary);">Auth Method:</span>
-              <strong>SAML 2.0 / Email OTP</strong>
+              <strong>Password / Email OTP</strong>
             </div>
           `;
         }
@@ -918,21 +976,21 @@
     const isMobile = s.deviceType === "mobile" || s.deviceType === "tablet";
     const typeLabel = isMobile ? "Mobile Device" : (s.deviceType === "laptop" ? "Laptop" : "Desktop PC");
     return `
-      <div class="session-item-card ${s.isCurrent ? "current-device" : ""}" data-session-id="${s.id}">
+      <div class="session-item-card ${s.isCurrent ? "current-device" : ""}" data-session-id="${escapeHtml(s.id)}">
         <div style="display: flex; align-items: center; gap: 14px;">
           <div class="table-device-icon">${getDeviceIconSvg(s.deviceType)}</div>
           <div>
             <div style="display: flex; align-items: center; gap: 8px;">
-              <strong style="font-size: 0.92rem; color: var(--text-primary);">${s.deviceName}</strong>
+              <strong style="font-size: 0.92rem; color: var(--text-primary);">${escapeHtml(s.deviceName)}</strong>
               <span class="badge" style="background: #f1f5f9; color: var(--text-secondary); font-size: 0.68rem; padding: 2px 6px;">${typeLabel}</span>
               ${s.isCurrent ? '<span class="badge badge-success" style="font-size: 0.7rem; padding: 2px 8px;"><span class="badge-dot"></span>This device</span>' : ""}
             </div>
             <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 3px 0 0;">
-              ${s.browser} • ${s.location} (${s.ip})
+              ${escapeHtml(s.browser)} • ${escapeHtml(s.location)} (${escapeHtml(s.ip)})
             </p>
             <div style="display: flex; align-items: center; gap: 12px; margin-top: 3px; font-size: 0.74rem; color: var(--text-muted);">
-              <span>Last active: ${s.lastActive}</span>
-              ${s.created_at ? `<span>• Signed in: ${s.created_at}</span>` : ""}
+              <span>Last active: ${escapeHtml(s.lastActive)}</span>
+              ${s.created_at ? `<span>• Signed in: ${escapeHtml(s.created_at)}</span>` : ""}
             </div>
           </div>
         </div>
@@ -941,7 +999,7 @@
           ${
             s.isCurrent
               ? '<span style="font-size: 0.8rem; color: var(--green); font-weight: 600;">Active Now</span>'
-              : `<button class="btn btn-danger-outline btn-sm btn-revoke-session" data-session-id="${s.id}" data-session-name="${s.deviceName}">Revoke</button>`
+              : `<button class="btn btn-danger-outline btn-sm btn-revoke-session" data-session-id="${escapeHtml(s.id)}" data-session-name="${escapeHtml(s.deviceName)}">Revoke</button>`
           }
         </div>
       </div>
@@ -1161,7 +1219,54 @@
     if (res.ok) {
       showToast("Recovery email address updated successfully.", "success");
     } else {
-      showToast(res.data?.message || "Recovery email saved locally.", "success");
+      showToast(res.data?.message || "Failed to update recovery email.", "error");
+    }
+  });
+
+  // Change password modal & handler
+  document.getElementById("btn-open-change-pwd")?.addEventListener("click", () => {
+    document.getElementById("form-change-password")?.reset();
+    openModal("modal-change-password");
+  });
+
+  document.getElementById("form-change-password")?.addEventListener("submit", async function (e) {
+    e.preventDefault();
+    const curPwd = document.getElementById("chg-current-pwd")?.value || "";
+    const newPwd = document.getElementById("chg-new-pwd")?.value || "";
+    const confirmPwd = document.getElementById("chg-confirm-pwd")?.value || "";
+    const submitBtn = document.getElementById("btn-submit-change-pwd");
+
+    if (newPwd !== confirmPwd) {
+      showToast("New password and confirmation do not match.", "error");
+      return;
+    }
+
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Updating...";
+    }
+
+    const res = await apiRequest("/api/auth/change-password", {
+      method: "POST",
+      body: JSON.stringify({
+        current_password: curPwd,
+        new_password: newPwd,
+        confirm_password: confirmPwd,
+      }),
+    });
+
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Update Password";
+    }
+
+    if (res.ok && res.data?.success) {
+      closeModal("modal-change-password");
+      this.reset();
+      showToast(res.data.message || "Password updated successfully.", "success");
+      loadActiveSessions();
+    } else {
+      showToast(res.data?.message || "Failed to update password.", "error");
     }
   });
 
@@ -1349,7 +1454,7 @@
     await apiRequest("/api/logout", { method: "POST" });
     localStorage.removeItem("vault_auth_token");
     localStorage.removeItem("vault_auth_user");
-    window.location.href = "/index.html";
+    window.location.replace("/index.html");
   }
 
   document.getElementById("btn-sidebar-signout")?.addEventListener("click", handleSignOut);
@@ -1413,6 +1518,7 @@
 
   // ===== 13. Initialization =====
   async function init() {
+    navigateTo(getTabFromUrl("overview"), { replaceHistory: true });
     await loadUserProfile();
     await loadConnectedApps();
     await loadLoginActivity();

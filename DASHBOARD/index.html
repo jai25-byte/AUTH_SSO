@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
   <!-- Dashboard Styles -->
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="/DASHBOARD/styles.css" />
 </head>
 <body>
 
@@ -421,7 +421,7 @@
       <div class="activity-filter-bar">
         <div class="activity-filter-pills" id="activity-filter-pills">
           <button class="filter-pill active" data-filter="all">All</button>
-          <button class="filter-pill" data-filter="successful">Successful</button>
+          <button class="filter-pill" data-filter="success">Successful</button>
           <button class="filter-pill" data-filter="failed">Failed</button>
           <button class="filter-pill" data-filter="blocked">Blocked</button>
         </div>
@@ -769,12 +769,42 @@
     </div>
   </div>
 
+  <!-- Modal: Change Password -->
+  <div class="modal-overlay" id="modal-change-password">
+    <div class="modal-container" style="max-width: 460px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Change Account Password</h3>
+        <button class="modal-close-btn" data-modal-close>&times;</button>
+      </div>
+      <form id="form-change-password">
+        <div class="modal-body" style="display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <label style="display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 4px;" for="chg-current-pwd">Current Password</label>
+            <input type="password" id="chg-current-pwd" class="app-search-input" style="width: 100%;" required />
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 4px;" for="chg-new-pwd">New Password</label>
+            <input type="password" id="chg-new-pwd" class="app-search-input" style="width: 100%;" placeholder="Min 8 chars (upper, lower, number, symbol)" required />
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 4px;" for="chg-confirm-pwd">Confirm New Password</label>
+            <input type="password" id="chg-confirm-pwd" class="app-search-input" style="width: 100%;" required />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-modal-close>Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-change-pwd">Update Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Toast Notification Stack -->
   <div class="toast-stack" id="toast-stack"></div>
 
   <!-- WebAuthn Client Library -->
-  <script src="webauthn.js"></script>
+  <script src="/DASHBOARD/webauthn.js"></script>
   <!-- Dashboard Controller Script -->
-  <script src="script.js"></script>
+  <script src="/DASHBOARD/script.js"></script>
 </body>
 </html>

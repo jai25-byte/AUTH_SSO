@@ -29,246 +29,320 @@ import {
   Eye,
   RefreshCw,
 } from "lucide-react";
-import { getStoredUser, removeToken } from "../../services/api.js";
+import {
+  getToken,
+  getStoredUser,
+  setStoredUser,
+  removeToken,
+  logout as apiLogout,
+  getUserProfile,
+  getDashboardOverview,
+  getLoginActivity,
+  getActiveSessions,
+  revokeSessionById,
+  revokeOtherSessions,
+  getConnectedApps,
+  disconnectConnectedApp,
+  changePassword,
+  validateResetPasswordPolicy,
+} from "../../services/api.js";
+import { useHistoryTab } from "../../services/navigation.js";
 
-// Sample Data Stores
-const INITIAL_APPS = [
-  {
-    id: 1,
-    name: "Google Workspace",
-    desc: "Gmail, Google Drive, Docs and Enterprise Calendar",
-    category: "Productivity",
-    logoText: "G",
-    bg: "#4285F4",
-    permissions: ["Read email", "Calendar access", "Drive read"],
-    status: "Active",
-    connectedDate: "Jan 10, 2025",
-  },
-  {
-    id: 2,
-    name: "Slack",
-    desc: "Team messaging and incident alerting",
-    category: "Communication",
-    logoText: "S",
-    bg: "#5865F2",
-    permissions: ["Send messages", "Read channels"],
-    status: "Active",
-    connectedDate: "Feb 02, 2025",
-  },
-  {
-    id: 3,
-    name: "Jira Software",
-    desc: "Agile project tracking and sprint planning",
-    category: "Productivity",
-    logoText: "J",
-    bg: "#0052CC",
-    permissions: ["Read issues", "Create issues"],
-    status: "Active",
-    connectedDate: "Mar 18, 2025",
-  },
-  {
-    id: 4,
-    name: "GitHub",
-    desc: "Code repositories and CI/CD developer workflows",
-    category: "Developer Tools",
-    logoText: "GH",
-    bg: "#181717",
-    permissions: ["Repo read", "Repo write", "Webhooks"],
-    status: "Active",
-    connectedDate: "Apr 22, 2025",
-  },
-  {
-    id: 5,
-    name: "Notion Enterprise",
-    desc: "Internal documentation, knowledge base & roadmaps",
-    category: "Productivity",
-    logoText: "N",
-    bg: "#000000",
-    permissions: ["Read workspace", "Edit docs"],
-    status: "Active",
-    connectedDate: "May 05, 2025",
-  },
-];
+const USER_DASHBOARD_TABS = new Set([
+  "overview",
+  "apps",
+  "activity",
+  "devices",
+  "security",
+  "profile",
+  "help",
+]);
 
-const INITIAL_ACTIVITIES = [
-  {
-    id: "act-1",
-    device: 'MacBook Pro 16"',
-    deviceType: "laptop",
-    browser: "Chrome 131",
-    os: "macOS Sequoia",
-    location: "Bengaluru, India",
-    time: "Today, 9:42 AM",
-    ip: "103.21.58.xx",
-    status: "Success",
-  },
-  {
-    id: "act-2",
-    device: "Samsung Galaxy S25 Ultra",
-    deviceType: "mobile",
-    browser: "VaultAuth mobile",
-    os: "Android 15",
-    location: "Bengaluru, India",
-    time: "Today, 8:16 AM",
-    ip: "103.21.58.xx",
-    status: "Success",
-  },
-  {
-    id: "act-3",
-    device: "Chrome on Windows",
-    deviceType: "desktop",
-    browser: "Chrome 131",
-    os: "Windows 11",
-    location: "Bengaluru, India",
-    time: "Yesterday, 6:32 PM",
-    ip: "49.37.12.xx",
-    status: "Success",
-  },
-  {
-    id: "act-4",
-    device: "Unknown Device",
-    deviceType: "desktop",
-    browser: "Firefox 132",
-    os: "Linux x86_64",
-    location: "Mumbai, India",
-    time: "Nov 9, 4:15 PM",
-    ip: "152.58.44.xx",
-    status: "Failed",
-  },
-  {
-    id: "act-5",
-    device: 'MacBook Pro 16"',
-    deviceType: "laptop",
-    browser: "Chrome 131",
-    os: "macOS Sequoia",
-    location: "Bengaluru, India",
-    time: "Nov 9, 9:10 AM",
-    ip: "103.21.58.xx",
-    status: "Success",
-  },
-  {
-    id: "act-6",
-    device: "Samsung Galaxy S25 Ultra",
-    deviceType: "mobile",
-    browser: "VaultAuth mobile",
-    os: "Android 15",
-    location: "Bengaluru, India",
-    time: "Nov 8, 7:30 PM",
-    ip: "103.21.58.xx",
-    status: "Success",
-  },
-  {
-    id: "act-7",
-    device: "Unknown Device",
-    deviceType: "desktop",
-    browser: "Safari 18",
-    os: "iOS 18.1",
-    location: "New Delhi, India",
-    time: "Nov 7, 2:45 AM",
-    ip: "203.122.1.xx",
-    status: "Blocked",
-  },
-];
+function normalizeAppItem(app) {
+  return {
+    id: app.id,
+    name: app.app_name || app.name || "Connected App",
+    desc: app.app_desc || app.desc || "",
+    category: app.category || "Enterprise App",
+    logoText: app.logo_char || app.logo || (app.app_name || app.name || "A").slice(0, 1).toUpperCase(),
+    bg: app.logo_bg || app.bg || "#4f46e5",
+    permissions: Array.isArray(app.permissions) ? app.permissions : ["Standard access"],
+    status: app.status || "Active",
+    connectedDate: app.connected_date || app.connectedDate || "Recently",
+  };
+}
 
-const INITIAL_SESSIONS = [
-  {
-    id: "sess-1",
-    device: 'MacBook Pro 16"',
-    deviceType: "laptop",
-    browser: "Chrome 131",
-    os: "macOS Sequoia",
-    ip: "103.21.58.42",
-    location: "Bengaluru, India",
-    lastActive: "Active now",
-    isCurrent: true,
-  },
-  {
-    id: "sess-2",
-    device: "Samsung Galaxy S25 Ultra",
-    deviceType: "mobile",
-    browser: "VaultAuth mobile app",
-    os: "Android 15",
-    ip: "103.21.58.42",
-    location: "Bengaluru, India",
-    lastActive: "18 minutes ago",
-    isCurrent: false,
-  },
-  {
-    id: "sess-3",
-    device: "Chrome on Windows",
-    deviceType: "desktop",
-    browser: "Chrome 131",
-    os: "Windows 11",
-    ip: "49.37.12.86",
-    location: "Bengaluru, India",
-    lastActive: "Yesterday",
-    isCurrent: false,
-  },
-];
+function normalizeActivityItem(act, idx) {
+  return {
+    id: act.id ?? `act-${idx}`,
+    device: act.device_name || act.device || "Web Browser",
+    deviceType: act.device_type || act.deviceType || "desktop",
+    browser: act.browser || "Browser",
+    os: act.os || "Unknown OS",
+    location: act.location || "Active Workspace",
+    time: act.time_formatted || act.time || act.created_at || "Recently",
+    ip: act.ip_address || act.ip || "—",
+    status: act.status || "Success",
+  };
+}
+
+function normalizeSessionItem(sess) {
+  return {
+    id: sess.session_id || sess.id,
+    device: sess.device_name || sess.device || "Active Device",
+    deviceType: sess.device_type || sess.deviceType || "desktop",
+    browser: sess.browser || "Browser",
+    os: sess.os || "Unknown OS",
+    ip: sess.ip_address || sess.ip || "—",
+    location: sess.location || "Active Workspace",
+    lastActive: sess.last_active || sess.lastActive || sess.last_activity || "Active now",
+    isCurrent: Boolean(sess.is_current ?? sess.isCurrent),
+  };
+}
 
 export default function UserDashboard({ onNavigate, onNotify }) {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, switchTab] = useHistoryTab(USER_DASHBOARD_TABS, "overview");
+  const setActiveTab = (tab) => {
+    switchTab(tab);
+    setMobileMenuOpen(false);
+  };
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
-  // User details
+  // User details & telemetry
   const [currentUser, setCurrentUser] = useState(() => {
     return getStoredUser() || {
-      username: "amitoj0024",
-      email: "amitoj0024@gmail.com",
-      full_name: "Amitoj Singh",
+      username: "",
+      email: "",
+      full_name: "",
       role: "End user",
     };
   });
+  const [authChecking, setAuthChecking] = useState(true);
+  const [overviewStats, setOverviewStats] = useState({
+    securityScore: 90,
+    scoreDesc: "Account well protected",
+    activeSessionsCount: 0,
+    connectedAppsCount: 0,
+  });
 
   // Data states
-  const [apps, setApps] = useState(INITIAL_APPS);
-  const [activities, setActivities] = useState(INITIAL_ACTIVITIES);
-  const [sessions, setSessions] = useState(INITIAL_SESSIONS);
+  const [apps, setApps] = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [sessions, setSessions] = useState([]);
 
-  // Filters
+  // Filters & search
+  const [topbarSearch, setTopbarSearch] = useState("");
   const [appsFilter, setAppsFilter] = useState("all");
   const [appsSearch, setAppsSearch] = useState("");
   const [activityStatusFilter, setActivityStatusFilter] = useState("all");
   const [activitySearch, setActivitySearch] = useState("");
+
+  // Password change state
+  const [currentPwd, setCurrentPwd] = useState("");
+  const [newPwd, setNewPwd] = useState("");
+  const [confirmNewPwd, setConfirmNewPwd] = useState("");
+  const [pwdUpdating, setPwdUpdating] = useState(false);
+  const [pwdError, setPwdError] = useState("");
 
   // Modals
   const [disconnectModalApp, setDisconnectModalApp] = useState(null);
   const [revokeModalSession, setRevokeModalSession] = useState(null);
   const [revokeAllModal, setRevokeAllModal] = useState(false);
 
-  const handleSignOut = () => {
-    removeToken();
+  const loadDashboardData = async () => {
+    const [profileRes, overviewRes, activityRes, sessionsRes, appsRes] = await Promise.all([
+      getUserProfile(),
+      getDashboardOverview().catch(() => null),
+      getLoginActivity(25).catch(() => []),
+      getActiveSessions().catch(() => []),
+      getConnectedApps().catch(() => []),
+    ]);
+
+    if (profileRes) {
+      setCurrentUser((prev) => {
+        const merged = { ...prev, ...profileRes };
+        setStoredUser(merged);
+        return merged;
+      });
+    }
+    if (Array.isArray(appsRes)) {
+      setApps(appsRes.map(normalizeAppItem));
+    }
+    if (Array.isArray(activityRes)) {
+      setActivities(activityRes.map(normalizeActivityItem));
+    }
+    if (Array.isArray(sessionsRes)) {
+      setSessions(sessionsRes.map(normalizeSessionItem));
+    }
+    if (overviewRes) {
+      setOverviewStats({
+        securityScore: overviewRes.security_score?.score ?? 90,
+        scoreDesc: overviewRes.security_score?.description || "Your account is well protected",
+        activeSessionsCount: overviewRes.active_sessions?.count ?? (Array.isArray(sessionsRes) ? sessionsRes.length : 0),
+        connectedAppsCount: overviewRes.connected_apps?.count ?? (Array.isArray(appsRes) ? appsRes.length : 0),
+      });
+    }
+  };
+
+  useEffect(() => {
+    let active = true;
+    async function bootstrap() {
+      const token = getToken();
+      if (!token) {
+        if (onNavigate) onNavigate("/login", { replace: true });
+        else window.location.replace("/login");
+        return;
+      }
+      try {
+        await loadDashboardData();
+      } catch (err) {
+        if (err?.status === 401 || !active) {
+          removeToken();
+          if (active) {
+            onNotify?.("Your session has expired. Please sign in again.", "info");
+            if (onNavigate) onNavigate("/login", { replace: true });
+            else window.location.replace("/login");
+          }
+          return;
+        }
+        onNotify?.(err?.message || "Failed to load dashboard telemetry.", "error");
+      } finally {
+        if (active) setAuthChecking(false);
+      }
+    }
+    bootstrap();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleSignOut = async () => {
+    await apiLogout();
     onNotify?.("You have been signed out.", "info");
     if (onNavigate) {
-      onNavigate("/login");
+      onNavigate("/login", { replace: true });
     } else {
-      window.location.href = "/login";
+      window.location.replace("/login");
     }
   };
 
   // Disconnect app handler
-  const handleConfirmDisconnect = () => {
+  const handleConfirmDisconnect = async () => {
     if (!disconnectModalApp) return;
-    setApps(apps.filter((a) => a.id !== disconnectModalApp.id));
-    onNotify?.(`Disconnected ${disconnectModalApp.name} from your account.`, "success");
-    setDisconnectModalApp(null);
+    const targetApp = disconnectModalApp;
+    try {
+      await disconnectConnectedApp(targetApp.id);
+      setApps((prev) => prev.filter((a) => a.id !== targetApp.id));
+      onNotify?.(`Disconnected ${targetApp.name} from your account.`, "success");
+      getDashboardOverview()
+        .then((ov) =>
+          setOverviewStats((prev) => ({
+            ...prev,
+            connectedAppsCount: ov?.connected_apps?.count ?? Math.max(0, prev.connectedAppsCount - 1),
+          }))
+        )
+        .catch(() => {});
+    } catch (err) {
+      onNotify?.(err.message || `Failed to disconnect ${targetApp.name}.`, "error");
+    } finally {
+      setDisconnectModalApp(null);
+    }
   };
 
   // Revoke session handler
-  const handleConfirmRevokeSession = () => {
+  const handleConfirmRevokeSession = async () => {
     if (!revokeModalSession) return;
-    setSessions(sessions.filter((s) => s.id !== revokeModalSession.id));
-    onNotify?.(`Session on ${revokeModalSession.device} revoked successfully.`, "success");
-    setRevokeModalSession(null);
+    const targetSess = revokeModalSession;
+    try {
+      await revokeSessionById(targetSess.id);
+      setSessions((prev) => prev.filter((s) => s.id !== targetSess.id));
+      onNotify?.(`Session on ${targetSess.device} revoked successfully.`, "success");
+      getDashboardOverview()
+        .then((ov) =>
+          setOverviewStats((prev) => ({
+            ...prev,
+            activeSessionsCount: ov?.active_sessions?.count ?? Math.max(0, prev.activeSessionsCount - 1),
+          }))
+        )
+        .catch(() => {});
+    } catch (err) {
+      onNotify?.(err.message || "Failed to revoke session.", "error");
+    } finally {
+      setRevokeModalSession(null);
+    }
   };
 
-  const handleConfirmRevokeAll = () => {
-    setSessions(sessions.filter((s) => s.isCurrent));
-    onNotify?.("All other remote device sessions have been revoked.", "success");
-    setRevokeAllModal(false);
+  const handleConfirmRevokeAll = async () => {
+    try {
+      const res = await revokeOtherSessions();
+      setSessions((prev) => prev.filter((s) => s.isCurrent));
+      onNotify?.(res?.message || "All other remote device sessions have been revoked.", "success");
+    } catch (err) {
+      onNotify?.(err.message || "Failed to revoke other sessions.", "error");
+    } finally {
+      setRevokeAllModal(false);
+    }
   };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (pwdUpdating) return;
+    setPwdError("");
+
+    const policy = validateResetPasswordPolicy(newPwd);
+    if (!policy.isValid) {
+      setPwdError(`Password complexity: ${policy.errors.join(", ")}.`);
+      return;
+    }
+    if (newPwd !== confirmNewPwd) {
+      setPwdError("New password and confirmation do not match.");
+      return;
+    }
+
+    setPwdUpdating(true);
+    try {
+      const res = await changePassword({
+        currentPassword: currentPwd,
+        newPassword: newPwd,
+        confirmPassword: confirmNewPwd,
+      });
+      setCurrentPwd("");
+      setNewPwd("");
+      setConfirmNewPwd("");
+      onNotify?.(res?.message || "Password updated successfully.", "success");
+      loadDashboardData().catch(() => {});
+    } catch (err) {
+      const msg = err.message || "Failed to update password.";
+      setPwdError(msg);
+      onNotify?.(msg, "error");
+    } finally {
+      setPwdUpdating(false);
+    }
+  };
+
+  const handleTopbarSearchKeyDown = (e) => {
+    if (e.key !== "Enter") return;
+    const q = topbarSearch.trim().toLowerCase();
+    if (!q) return;
+    if (q.includes("app") || apps.some((a) => a.name.toLowerCase().includes(q))) {
+      setAppsSearch(topbarSearch.trim());
+      setActiveTab("apps");
+    } else if (q.includes("pass") || q.includes("sec") || q.includes("mfa")) {
+      setActiveTab("security");
+    } else if (q.includes("device") || q.includes("sess")) {
+      setActiveTab("devices");
+    } else if (q.includes("profile")) {
+      setActiveTab("profile");
+    } else {
+      setActivitySearch(topbarSearch.trim());
+      setActiveTab("activity");
+    }
+  };
+
+  const isAdminRole = String(currentUser.role || "").toLowerCase().includes("admin");
+  const lastSignIn = activities[0];
 
   // Filtered Apps
   const filteredApps = apps.filter((app) => {
@@ -287,6 +361,14 @@ export default function UserDashboard({ onNavigate, onNotify }) {
       act.ip.includes(activitySearch);
     return matchesStatus && matchesSearch;
   });
+
+  if (authChecking && !currentUser.username) {
+    return (
+      <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#f8fafc", color: "#475569" }}>
+        <p style={{ fontSize: "0.95rem", fontWeight: 500 }}>Loading your VaultAuth workspace...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-container">
@@ -433,6 +515,9 @@ export default function UserDashboard({ onNavigate, onNotify }) {
                 type="text"
                 placeholder="Search settings, apps, activity..."
                 className="topbar-search-input"
+                value={topbarSearch}
+                onChange={(e) => setTopbarSearch(e.target.value)}
+                onKeyDown={handleTopbarSearchKeyDown}
               />
             </div>
           </div>
@@ -443,7 +528,20 @@ export default function UserDashboard({ onNavigate, onNotify }) {
               <span>All Systems Normal</span>
             </div>
 
-            <button type="button" className="btn-icon bell-btn" title="Notifications">
+            <button
+              type="button"
+              className="btn-icon bell-btn"
+              title="Notifications"
+              onClick={() => {
+                const failedCount = activities.filter((a) => a.status !== "Success").length;
+                onNotify?.(
+                  failedCount > 0
+                    ? `Security notice: ${failedCount} failed or blocked sign-in attempt(s) recorded.`
+                    : "All security systems normal. No anomalous login activity detected.",
+                  failedCount > 0 ? "info" : "success"
+                );
+              }}
+            >
               <Bell size={18} />
               <span className="notification-dot" />
             </button>
@@ -478,7 +576,7 @@ export default function UserDashboard({ onNavigate, onNotify }) {
                   <button type="button" onClick={() => { setActiveTab("security"); setUserDropdownOpen(false); }}>
                     <ShieldCheck size={14} /> Security Settings
                   </button>
-                  {currentUser.role === "admin" && (
+                  {isAdminRole && (
                     <button type="button" onClick={() => onNavigate?.("/admin")}>
                       <Shield size={14} /> Admin Workspace
                     </button>
@@ -514,8 +612,8 @@ export default function UserDashboard({ onNavigate, onNotify }) {
                       <Laptop size={18} />
                     </div>
                   </div>
-                  <h3 className="stat-card-value">{sessions.length} devices</h3>
-                  <span className="stat-card-desc">Signed in across {sessions.length} devices</span>
+                  <h3 className="stat-card-value">{sessions.length || overviewStats.activeSessionsCount} devices</h3>
+                  <span className="stat-card-desc">Signed in across {sessions.length || overviewStats.activeSessionsCount} devices</span>
                 </div>
 
                 <div className="stat-card" onClick={() => setActiveTab("security")}>
@@ -525,8 +623,8 @@ export default function UserDashboard({ onNavigate, onNotify }) {
                       <ShieldCheck size={18} />
                     </div>
                   </div>
-                  <h3 className="stat-card-value">94 / 100</h3>
-                  <span className="stat-card-desc" style={{ color: "#10b981" }}>✓ Account well protected</span>
+                  <h3 className="stat-card-value">{overviewStats.securityScore} / 100</h3>
+                  <span className="stat-card-desc" style={{ color: "#10b981" }}>✓ {overviewStats.scoreDesc}</span>
                 </div>
 
                 <div className="stat-card" onClick={() => setActiveTab("apps")}>
@@ -536,7 +634,7 @@ export default function UserDashboard({ onNavigate, onNotify }) {
                       <Grid size={18} />
                     </div>
                   </div>
-                  <h3 className="stat-card-value">{apps.length} apps</h3>
+                  <h3 className="stat-card-value">{apps.length || overviewStats.connectedAppsCount} apps</h3>
                   <span className="stat-card-desc">Approved enterprise services</span>
                 </div>
 
@@ -547,8 +645,8 @@ export default function UserDashboard({ onNavigate, onNotify }) {
                       <Clock size={18} />
                     </div>
                   </div>
-                  <h3 className="stat-card-value">Today, 9:42 AM</h3>
-                  <span className="stat-card-desc">From Bengaluru, India</span>
+                  <h3 className="stat-card-value">{lastSignIn?.time || "Active now"}</h3>
+                  <span className="stat-card-desc">From {lastSignIn?.location || "Workspace"}</span>
                 </div>
               </div>
 
@@ -923,26 +1021,54 @@ export default function UserDashboard({ onNavigate, onNotify }) {
                   Change Account Password
                 </h4>
                 <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    onNotify?.("Password updated successfully across all sessions.", "success");
-                  }}
+                  onSubmit={handleChangePassword}
                   style={{ display: "flex", flexDirection: "column", gap: "16px" }}
                 >
                   <div className="form-field">
                     <label>Current Password</label>
-                    <input type="password" placeholder="••••••••" required className="modal-input" />
+                    <input
+                      type="password"
+                      placeholder="••••••••"
+                      value={currentPwd}
+                      onChange={(e) => { setCurrentPwd(e.target.value); setPwdError(""); }}
+                      required
+                      className="modal-input"
+                    />
                   </div>
                   <div className="form-field">
                     <label>New Password</label>
-                    <input type="password" placeholder="Minimum 8 characters" required className="modal-input" />
+                    <input
+                      type="password"
+                      placeholder="Min 8 chars (upper, lower, number, symbol)"
+                      value={newPwd}
+                      onChange={(e) => { setNewPwd(e.target.value); setPwdError(""); }}
+                      required
+                      className="modal-input"
+                    />
                   </div>
                   <div className="form-field">
                     <label>Confirm New Password</label>
-                    <input type="password" placeholder="Re-enter new password" required className="modal-input" />
+                    <input
+                      type="password"
+                      placeholder="Re-enter new password"
+                      value={confirmNewPwd}
+                      onChange={(e) => { setConfirmNewPwd(e.target.value); setPwdError(""); }}
+                      required
+                      className="modal-input"
+                    />
                   </div>
-                  <button type="submit" className="btn-brand-primary" style={{ alignSelf: "flex-start", marginTop: "8px" }}>
-                    Update Password
+                  {pwdError && (
+                    <p style={{ color: "#dc2626", fontSize: "0.84rem", margin: 0, fontWeight: 500 }} role="alert">
+                      {pwdError}
+                    </p>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={pwdUpdating}
+                    className="btn-brand-primary"
+                    style={{ alignSelf: "flex-start", marginTop: "8px" }}
+                  >
+                    {pwdUpdating ? "Updating Password..." : "Update Password"}
                   </button>
                 </form>
               </div>

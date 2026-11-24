@@ -24,7 +24,14 @@
     const fromUrl = params.get("token");
     if (fromUrl) {
       localStorage.setItem("vault_auth_token", fromUrl);
-      window.history.replaceState({}, document.title, window.location.pathname);
+      const cleanParams = new URLSearchParams(window.location.search);
+      cleanParams.delete("token");
+      const cleanSearch = cleanParams.toString();
+      window.history.replaceState(
+        window.history.state || {},
+        document.title,
+        window.location.pathname + (cleanSearch ? `?${cleanSearch}` : "")
+      );
       return fromUrl;
     }
     return localStorage.getItem("vault_auth_token") || null;
@@ -187,19 +194,65 @@
   //  3. Page Navigation & Mobile Menu
   // ---------------------------------------------------------------------------
 
-  function switchPage(pageId) {
+  let currentAdminPage = "overview";
+
+  function isValidAdminPage(pageId) {
+    return Boolean(pageId && document.getElementById(`page-${pageId}`));
+  }
+
+  function getAdminTabFromUrl(fallback = "overview") {
+    try {
+      const tab = new URLSearchParams(window.location.search).get("tab");
+      return isValidAdminPage(tab) ? tab : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
+  function buildAdminTabUrl(pageId) {
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", pageId);
+      return `${url.pathname}${url.search}${url.hash}`;
+    } catch {
+      return `${window.location.pathname}?tab=${encodeURIComponent(pageId)}`;
+    }
+  }
+
+  function switchPage(pageId, options = {}) {
+    const { skipHistory = false, replaceHistory = false } = options;
+    const resolvedPage = isValidAdminPage(pageId) ? pageId : "overview";
+
     document.querySelectorAll(".page").forEach((p) => (p.style.display = "none"));
-    const target = document.getElementById(`page-${pageId}`);
+    const target = document.getElementById(`page-${resolvedPage}`);
     if (target) {
       target.style.display = "block";
     }
 
     document.querySelectorAll(".nav-item").forEach((link) => {
-      link.classList.toggle("active", link.dataset.page === pageId);
+      link.classList.toggle("active", link.dataset.page === resolvedPage);
     });
+
+    if (!skipHistory) {
+      try {
+        const nextUrl = buildAdminTabUrl(resolvedPage);
+        if (replaceHistory) {
+          window.history.replaceState({ tab: resolvedPage }, "", nextUrl);
+        } else if (resolvedPage !== currentAdminPage) {
+          window.history.pushState({ tab: resolvedPage }, "", nextUrl);
+        }
+      } catch {}
+    }
+    currentAdminPage = resolvedPage;
 
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
+
+  window.addEventListener("popstate", (event) => {
+    const stateTab = event?.state?.tab;
+    const nextPage = isValidAdminPage(stateTab) ? stateTab : getAdminTabFromUrl("overview");
+    switchPage(nextPage, { skipHistory: true });
+  });
 
   // Sidebar links
   document.querySelectorAll(".nav-item").forEach((link) => {
@@ -1082,7 +1135,7 @@
       e.preventDefault();
       localStorage.removeItem("vault_auth_token");
       localStorage.removeItem("vault_auth_user");
-      window.location.href = "/index.html";
+      window.location.replace("/index.html");
     });
   }
 
@@ -1124,6 +1177,7 @@
 
   function boot() {
     initTheme();
+    switchPage(getAdminTabFromUrl("overview"), { replaceHistory: true });
     loadAdminProfile();
     renderOverview();
     renderUsers();

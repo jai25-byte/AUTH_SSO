@@ -22,10 +22,13 @@ export default function AdminSettings({
     session_timeout: "3600",
     max_failed_attempts: "5",
     password_min_length: "8",
-    mfa_required: "true",
+    mfa_required: "false",
     otp_expiry_seconds: "300",
   });
   const [saving, setSaving] = useState(false);
+
+  const mailerConfigured = Boolean(settings?.smtp_configured || settings?.otp_configured);
+  const mailProviderLabel = settings?.mail_provider || (settings?.smtp_configured ? "SMTP" : settings?.otp_configured ? "Plunk" : "Unconfigured");
 
   useEffect(() => {
     if (settings && Object.keys(settings).length > 0) {
@@ -230,7 +233,7 @@ export default function AdminSettings({
 
             <div className="field" style={{ margin: 0 }}>
               <label style={{ display: "block", fontSize: "0.84rem", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>
-                Max Failed Login Attempts Before Cooldown
+                Max Failed Attempts Before Lockout
               </label>
               <input
                 type="number"
@@ -238,7 +241,7 @@ export default function AdminSettings({
                 value={formData.max_failed_attempts}
                 onChange={handleChange}
                 min="3"
-                max="10"
+                max="20"
                 style={{
                   width: "100%",
                   height: "42px",
@@ -251,7 +254,35 @@ export default function AdminSettings({
                 }}
               />
               <span style={{ fontSize: "0.75rem", color: "#64748b", display: "block", marginTop: "4px" }}>
-                Temporary lock triggered on sliding rate limit window.
+                Maximum incorrect OTP verification attempts before invalidation.
+              </span>
+            </div>
+
+            <div className="field" style={{ margin: 0 }}>
+              <label style={{ display: "block", fontSize: "0.84rem", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>
+                Require Email OTP (2FA) on Password Login
+              </label>
+              <select
+                name="mfa_required"
+                value={String(formData.mfa_required)}
+                onChange={handleChange}
+                style={{
+                  width: "100%",
+                  height: "42px",
+                  borderRadius: "8px",
+                  border: "1.5px solid #d1d5db",
+                  padding: "0 14px",
+                  fontSize: "0.9rem",
+                  color: "#111827",
+                  backgroundColor: "#ffffff",
+                  outline: "none",
+                }}
+              >
+                <option value="false">Optional (Password signs in directly)</option>
+                <option value="true">Enforced (Require 6-digit Email OTP)</option>
+              </select>
+              <span style={{ fontSize: "0.75rem", color: "#64748b", display: "block", marginTop: "4px" }}>
+                Enable only when an email delivery provider is connected and verified.
               </span>
             </div>
           </div>
@@ -270,7 +301,7 @@ export default function AdminSettings({
           <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
             <Mail size={18} color="#16a34a" />
             <h2 style={{ fontSize: "1.05rem", fontWeight: 700, margin: 0, color: "#111827" }}>
-              Authentication Mailer Integration (Plunk)
+              Transactional Mailer Integration ({mailProviderLabel})
             </h2>
           </div>
 
@@ -294,11 +325,11 @@ export default function AdminSettings({
                     width: "8px",
                     height: "8px",
                     borderRadius: "50%",
-                    backgroundColor: settings?.otp_configured ? "#16a34a" : "#ea580c",
+                    backgroundColor: mailerConfigured ? "#16a34a" : "#ea580c",
                   }}
                 />
                 <span style={{ fontWeight: 600, color: "#111827", fontSize: "0.92rem" }}>
-                  Plunk Transactional Email Service
+                  OTP &amp; Password Reset Email Service ({mailProviderLabel})
                 </span>
                 <span
                   style={{
@@ -306,11 +337,11 @@ export default function AdminSettings({
                     fontWeight: 700,
                     padding: "2px 8px",
                     borderRadius: "4px",
-                    backgroundColor: settings?.otp_configured ? "#dcfce7" : "#ffedd5",
-                    color: settings?.otp_configured ? "#15803d" : "#c2410c",
+                    backgroundColor: mailerConfigured ? "#dcfce7" : "#ffedd5",
+                    color: mailerConfigured ? "#15803d" : "#c2410c",
                   }}
                 >
-                  {settings?.otp_configured ? "CONNECTED & ACTIVE" : "CONFIGURED IN .ENV"}
+                  {mailerConfigured ? "CONNECTED & ACTIVE" : "NOT CONFIGURED IN .ENV"}
                 </span>
               </div>
               <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: "0.82rem" }}>

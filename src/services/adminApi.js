@@ -39,7 +39,7 @@ async function adminRequest(endpoint, options = {}) {
     "",
     "http://127.0.0.1:5000",
     "http://localhost:5000",
-  ].filter(Boolean);
+  ].filter((c) => c !== null && c !== undefined);
 
   const uniqueCandidates = [...new Set(candidates)];
   let lastError = null;

@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef } from "react";
 import { login as apiLogin, register as apiRegister, sendOtp, verifyOtp } from "../../services/api.js";
-import { isPlatformAuthenticatorAvailable, loginWithPasskey } from "../../services/webauthn.js";
-import { Shield, Eye, EyeOff, KeyRound, Check, AlertCircle, ArrowLeft, RefreshCw, X } from "lucide-react";
+import { loginWithPasskey } from "../../services/webauthn.js";
+import PasswordResetFlow from "./PasswordResetFlow.jsx";
 
 export default function AuthPage({ initialTab = "login", onNavigate, onNotify }) {
   const [activeTab, setActiveTab] = useState(initialTab === "register" ? "register" : "login");
-  const [authStep, setAuthStep] = useState("credentials"); // 'credentials' | 'otp'
+  // 'credentials' | 'otp' | 'forgot'
+  const [authStep, setAuthStep] = useState("credentials");
   const [isLoading, setIsLoading] = useState(false);
+  const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
   const [banner, setBanner] = useState({ text: "", type: "" });
-  const [isForgotOpen, setIsForgotOpen] = useState(false);
 
   // Form states - Login
   const [loginEmail, setLoginEmail] = useState("");
@@ -22,21 +23,31 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
   const [regUsername, setRegUsername] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
+  const [regConfirm, setRegConfirm] = useState("");
   const [showRegPass, setShowRegPass] = useState(false);
   const [regErrors, setRegErrors] = useState({});
 
   // OTP state
   const [otpValues, setOtpValues] = useState(["", "", "", "", "", ""]);
+  const [otpError, setOtpError] = useState("");
   const [pendingIdentifier, setPendingIdentifier] = useState("");
-  const [resendCooldown, setResendCooldown] = useState(60);
+  const [resendCooldown, setResendCooldown] = useState(30);
   const otpInputsRef = useRef([]);
 
-  // Passkey support
-  const [passkeySupported, setPasskeySupported] = useState(false);
+  useEffect(() => {
+    setActiveTab(initialTab === "register" ? "register" : "login");
+  }, [initialTab]);
 
   useEffect(() => {
-    isPlatformAuthenticatorAvailable().then(setPasskeySupported).catch(() => setPasskeySupported(false));
-  }, []);
+    document.title =
+      authStep === "otp"
+        ? "Two-Factor Authentication · VaultAuth SSO"
+        : authStep === "forgot"
+          ? "Reset password · VaultAuth SSO"
+          : activeTab === "register"
+            ? "Create account · VaultAuth SSO"
+            : "Sign in · VaultAuth SSO";
+  }, [activeTab, authStep]);
 
   useEffect(() => {
     let timer;
@@ -48,8 +59,7 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
 
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-  // Password strength calculator
-  const calculateStrength = (p) => {
+  const evaluatePasswordStrength = (p) => {
     if (!p) return { score: 0, text: "Password strength: none", color: "#e2e8f0" };
     let score = 0;
     if (p.length >= 8) score++;
@@ -66,23 +76,41 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
     return levels[Math.min(score, 4) - 1] || levels[0];
   };
 
-  const strength = calculateStrength(regPassword);
+  const strength = evaluatePasswordStrength(regPassword);
 
   const clearBanner = () => setBanner({ text: "", type: "" });
+
+  const switchTab = (tab) => {
+    clearBanner();
+    setAuthStep("credentials");
+    setActiveTab(tab);
+    if (typeof window !== "undefined") {
+      const targetUrl = tab === "register" ? "/register" : "/login";
+      if (window.location.pathname !== targetUrl) {
+        window.history.pushState(null, "", targetUrl);
+      }
+    }
+  };
+
+  const redirectAuthenticated = (user) => {
+    const target = user?.role === "admin" ? "/admin" : "/dashboard";
+    if (onNavigate) {
+      onNavigate(target, { replace: true });
+    } else {
+      window.location.replace(target);
+    }
+  };
 
   // Handle Login Submit
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
+    if (isLoading || isPasskeyLoading) return;
     clearBanner();
-    const errors = {};
-    const ident = loginEmail.trim();
 
-    if (!ident) {
-      errors.loginEmail = "Please enter your email or username.";
-    }
-    if (!loginPassword) {
-      errors.loginPassword = "Password is required.";
-    }
+    const ident = loginEmail.trim();
+    const errors = {};
+    if (!ident) errors.loginEmail = "Please enter your email or username.";
+    if (!loginPassword) errors.loginPassword = "Please enter your password.";
 
     if (Object.keys(errors).length > 0) {
       setLoginErrors(errors);
@@ -95,14 +123,19 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
       const data = await apiLogin({
         login: ident,
         username: ident,
+        email: ident,
         password: loginPassword,
+        remember: rememberMe,
       });
 
-      if (data?.otp_required) {
-        setPendingIdentifier(ident);
+      if (data?.otp_required || data?.requires_otp) {
+        setPendingIdentifier(data.identifier || ident);
         setAuthStep("otp");
-        setResendCooldown(60);
-        setBanner({ text: data.message || `Enter the 6-digit verification code sent to ${ident}`, type: "info" });
+        setOtpValues(["", "", "", "", "", ""]);
+        setOtpError("");
+        setResendCooldown(30);
+        onNotify?.("Verification required. Check your email for the code.", "info");
+        setTimeout(() => otpInputsRef.current[0]?.focus(), 50);
         return;
       }
 
@@ -111,15 +144,8 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
         if (data.user) {
           localStorage.setItem("vault_auth_user", JSON.stringify(data.user));
         }
-
         onNotify?.(data.message || "Signed in successfully. Redirecting...", "success");
-
-        const target = data.user?.role === "admin" ? "/admin" : "/dashboard";
-        if (onNavigate) {
-          onNavigate(target);
-        } else {
-          window.location.href = target;
-        }
+        redirectAuthenticated(data.user);
       }
     } catch (err) {
       setBanner({ text: err.message || "Invalid email or password.", type: "error" });
@@ -128,12 +154,37 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
     }
   };
 
+  // Handle Passkey Sign-In (Image 2 secondary button)
+  const handlePasskeySignIn = async () => {
+    if (isLoading || isPasskeyLoading) return;
+    clearBanner();
+    setIsPasskeyLoading(true);
+    try {
+      const data = await loginWithPasskey(loginEmail.trim() || undefined);
+      if (data?.token) {
+        localStorage.setItem("vault_auth_token", data.token);
+        if (data.user) {
+          localStorage.setItem("vault_auth_user", JSON.stringify(data.user));
+        }
+        onNotify?.("Passkey verified! Successfully signed in.", "success");
+        redirectAuthenticated(data.user);
+      }
+    } catch (err) {
+      const msg = err.message || "Passkey authentication canceled or failed.";
+      setBanner({ text: msg, type: "error" });
+      onNotify?.(msg, "error");
+    } finally {
+      setIsPasskeyLoading(false);
+    }
+  };
+
   // Handle Register Submit
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
+    if (isLoading) return;
     clearBanner();
-    const errors = {};
 
+    const errors = {};
     if (!regFullName.trim()) errors.regFullName = "Full name is required.";
     if (!regUsername.trim()) errors.regUsername = "Username is required.";
     if (!regEmail.trim()) {
@@ -146,6 +197,9 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
     } else if (regPassword.length < 8) {
       errors.regPassword = "Password must be at least 8 characters long.";
     }
+    if (regConfirm !== regPassword) {
+      errors.regConfirm = "Passwords do not match.";
+    }
 
     if (Object.keys(errors).length > 0) {
       setRegErrors(errors);
@@ -155,7 +209,7 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
     setIsLoading(true);
 
     try {
-      const data = await apiRegister({
+      await apiRegister({
         fullName: regFullName.trim(),
         username: regUsername.trim(),
         email: regEmail.trim(),
@@ -163,37 +217,13 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
       });
 
       onNotify?.("Account created successfully! Please sign in.", "success");
-      setBanner({ text: "Account created! You can now sign in with your credentials.", type: "success" });
       setLoginEmail(regEmail.trim());
-      setActiveTab("login");
+      setRegPassword("");
+      setRegConfirm("");
+      switchTab("login");
+      setBanner({ text: "Account created. You can now sign in.", type: "success" });
     } catch (err) {
       setBanner({ text: err.message || "Registration failed. Please try again.", type: "error" });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Handle Passkey Login
-  const handlePasskeySignIn = async () => {
-    clearBanner();
-    setIsLoading(true);
-    try {
-      const data = await loginWithPasskey(loginEmail.trim() || undefined);
-      if (data?.token) {
-        localStorage.setItem("vault_auth_token", data.token);
-        if (data.user) {
-          localStorage.setItem("vault_auth_user", JSON.stringify(data.user));
-        }
-        onNotify?.("Biometric authentication verified!", "success");
-        const target = data.user?.role === "admin" ? "/admin" : "/dashboard";
-        if (onNavigate) {
-          onNavigate(target);
-        } else {
-          window.location.href = target;
-        }
-      }
-    } catch (err) {
-      setBanner({ text: err.message || "Passkey verification canceled or failed.", type: "error" });
     } finally {
       setIsLoading(false);
     }
@@ -205,6 +235,7 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
     const updated = [...otpValues];
     updated[index] = clean.slice(-1);
     setOtpValues(updated);
+    if (otpError) setOtpError("");
 
     if (clean && index < 5) {
       otpInputsRef.current[index + 1]?.focus();
@@ -219,7 +250,10 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
 
   const handleOtpPaste = (e) => {
     e.preventDefault();
-    const pasted = e.clipboardData.getData("text").replace(/[^0-9]/g, "").slice(0, 6);
+    const pasted = (e.clipboardData || window.clipboardData)
+      .getData("text")
+      .replace(/[^0-9]/g, "")
+      .slice(0, 6);
     if (!pasted) return;
     const updated = [...otpValues];
     for (let i = 0; i < pasted.length; i++) {
@@ -232,12 +266,15 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
 
   const handleVerifyOtpSubmit = async (e) => {
     e.preventDefault();
+    if (isLoading) return;
     clearBanner();
+
     const code = otpValues.join("");
     if (code.length < 6) {
-      setBanner({ text: "Please enter the complete 6-digit verification code.", type: "error" });
+      setOtpError("Please enter the complete 6-digit verification code.");
       return;
     }
+    setOtpError("");
     setIsLoading(true);
 
     try {
@@ -248,15 +285,13 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
           localStorage.setItem("vault_auth_user", JSON.stringify(data.user));
         }
         onNotify?.("Two-factor authentication verified!", "success");
-        const target = data.user?.role === "admin" ? "/admin" : "/dashboard";
-        if (onNavigate) {
-          onNavigate(target);
-        } else {
-          window.location.href = target;
-        }
+        redirectAuthenticated(data.user);
       }
     } catch (err) {
-      setBanner({ text: err.message || "Invalid verification code. Please check your email.", type: "error" });
+      setBanner({
+        text: err.message || "Invalid verification code. Please check your email.",
+        type: "error",
+      });
       setOtpValues(["", "", "", "", "", ""]);
       otpInputsRef.current[0]?.focus();
     } finally {
@@ -264,359 +299,488 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
     }
   };
 
-  const handleResendOtp = async () => {
+  const handleResendOtp = async (e) => {
+    e.preventDefault();
     if (resendCooldown > 0) return;
+    onNotify?.("Sending a new verification code...", "info");
     try {
       await sendOtp(pendingIdentifier);
-      setResendCooldown(60);
-      onNotify?.("A new 6-digit verification code has been dispatched to your email.", "info");
+      setResendCooldown(30);
+      onNotify?.("New 6-digit code sent to your email.", "success");
     } catch (err) {
-      setBanner({ text: err.message || "Failed to resend code. Please try again later.", type: "error" });
+      setBanner({
+        text: err.message || "Could not resend code. Please try again.",
+        type: "error",
+      });
     }
   };
 
   return (
-    <div className="auth-clean-wrapper">
-      <div className="auth-clean-card">
-        {/* Brand Header */}
-        <div className="auth-brand-center">
-          <div className="auth-brand-shield">
-            <svg viewBox="0 0 24 24" fill="none" width="24" height="24" stroke="currentColor" strokeWidth="2.2">
-              <path d="M12 2L4 5.5V11.5C4 16.5 7.5 21 12 22C16.5 21 20 16.5 20 11.5V5.5L12 2Z" fill="#7047eb" fillOpacity="0.2" stroke="#7047eb"/>
-              <circle cx="12" cy="10" r="2.2" fill="#7047eb"/>
-              <path d="M11 11.5L10 16H14L13 11.5" stroke="#7047eb" strokeWidth="1.8" fill="#7047eb"/>
-            </svg>
-          </div>
-          <h1 className="auth-title">
-            VaultAuth<span>SSO</span>
-          </h1>
-          <p className="auth-subtitle">Unified Identity &amp; Enterprise Access Management</p>
-        </div>
+    <div className="login-clean-page">
+      <main className="login-clean-wrap">
+        {/* Brand Logo & Motto */}
+        <a
+          href="/login"
+          className="login-clean-brand"
+          aria-label="VaultAuth SSO home"
+          onClick={(e) => {
+            e.preventDefault();
+            switchTab("login");
+          }}
+        >
+          <svg viewBox="0 0 32 32" aria-hidden="true">
+            <defs>
+              <linearGradient id="vault-brand-g" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stopColor="#3b82f6" />
+                <stop offset="1" stopColor="#1d4ed8" />
+              </linearGradient>
+            </defs>
+            <path
+              d="M16 2 28 6.5v8.2c0 7.4-4.8 12.6-12 15.3C8.8 27.3 4 22.1 4 14.7V6.5L16 2Z"
+              fill="url(#vault-brand-g)"
+            />
+            <path
+              d="m10.5 16 4 4 7.5-8"
+              fill="none"
+              stroke="#fff"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <span>
+            VaultAuth <em>SSO</em>
+          </span>
+        </a>
+        <p className="login-clean-tag">One identity. Every access.</p>
 
-        {/* Global Banner Notification */}
-        {banner.text && (
-          <div className={`auth-banner auth-banner-${banner.type}`}>
-            {banner.type === "error" ? <AlertCircle size={16} /> : <Check size={16} />}
-            <span>{banner.text}</span>
-          </div>
-        )}
-
-        {/* ========================================================
-             STEP 1: CREDENTIALS (LOGIN / REGISTER TABS)
-            ======================================================== */}
-        {authStep === "credentials" ? (
-          <>
-            {/* Tabs Switcher */}
-            <div className="auth-tabs-nav">
+        {/* Main Container Card */}
+        <section className="login-clean-card" aria-live="polite">
+          {/* Segmented Nav Tabs */}
+          {authStep === "credentials" && (
+            <nav className="login-clean-tabs" aria-label="Authentication views">
               <button
                 type="button"
-                className={`auth-tab-btn ${activeTab === "login" ? "active" : ""}`}
-                onClick={() => {
-                  setActiveTab("login");
-                  clearBanner();
-                }}
+                className={`login-clean-tab-btn ${activeTab === "login" ? "active" : ""}`}
+                aria-selected={activeTab === "login"}
+                onClick={() => switchTab("login")}
               >
                 Sign in
               </button>
               <button
                 type="button"
-                className={`auth-tab-btn ${activeTab === "register" ? "active" : ""}`}
-                onClick={() => {
-                  setActiveTab("register");
-                  clearBanner();
-                }}
+                className={`login-clean-tab-btn ${activeTab === "register" ? "active" : ""}`}
+                aria-selected={activeTab === "register"}
+                onClick={() => switchTab("register")}
               >
                 Create account
               </button>
-            </div>
+            </nav>
+          )}
 
-            {/* TAB: SIGN IN */}
-            {activeTab === "login" ? (
-              <form onSubmit={handleLoginSubmit} className="auth-form" noValidate>
-                <div className="auth-field">
-                  <label htmlFor="login-email">Work Email or Username</label>
+          {/* Status Banner inside card */}
+          {banner.text && (
+            <div className={`login-banner show ${banner.type}`} role="alert">
+              {banner.text}
+            </div>
+          )}
+
+          {/* ================= 1. LOGIN VIEW ================= */}
+          {authStep === "credentials" && activeTab === "login" && (
+            <div>
+              <h1 className="login-clean-h1">Welcome back</h1>
+              <p className="login-clean-sub">Sign in to your VaultAuth account.</p>
+
+              <form onSubmit={handleLoginSubmit} noValidate>
+                <div className={`login-field ${loginErrors.loginEmail ? "bad" : ""}`}>
+                  <label className="login-lbl" htmlFor="login-email">
+                    Email or username
+                  </label>
                   <input
                     id="login-email"
+                    name="email"
                     type="text"
+                    autoComplete="username"
+                    placeholder="you@company.com"
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
-                    placeholder="name@company.com"
-                    autoComplete="username"
-                    className={loginErrors.loginEmail ? "has-error" : ""}
+                    required
                   />
-                  {loginErrors.loginEmail && <span className="field-err">{loginErrors.loginEmail}</span>}
+                  {loginErrors.loginEmail && (
+                    <p className="login-err" role="alert">
+                      {loginErrors.loginEmail}
+                    </p>
+                  )}
                 </div>
 
-                <div className="auth-field">
-                  <div className="field-label-row">
-                    <label htmlFor="login-password">Password</label>
-                    <button
-                      type="button"
-                      className="text-link"
-                      onClick={() => setIsForgotOpen(true)}
-                    >
-                      Forgot password?
-                    </button>
-                  </div>
-                  <div className="input-with-action">
+                <div className={`login-field ${loginErrors.loginPassword ? "bad" : ""}`}>
+                  <label className="login-lbl" htmlFor="login-password">
+                    Password
+                  </label>
+                  <div className="login-ctl login-pw">
                     <input
                       id="login-password"
+                      name="password"
                       type={showLoginPass ? "text" : "password"}
+                      autoComplete="current-password"
+                      placeholder="Enter your password"
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
-                      placeholder="••••••••"
-                      autoComplete="current-password"
-                      className={loginErrors.loginPassword ? "has-error" : ""}
+                      required
                     />
                     <button
                       type="button"
-                      className="eye-toggle-btn"
+                      className="login-show"
+                      aria-pressed={showLoginPass}
+                      aria-label={showLoginPass ? "Hide password" : "Show password"}
                       onClick={() => setShowLoginPass(!showLoginPass)}
-                      title={showLoginPass ? "Hide password" : "Show password"}
                     >
-                      {showLoginPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                      {showLoginPass ? "Hide" : "Show"}
                     </button>
                   </div>
-                  {loginErrors.loginPassword && <span className="field-err">{loginErrors.loginPassword}</span>}
+                  {loginErrors.loginPassword && (
+                    <p className="login-err" role="alert">
+                      {loginErrors.loginPassword}
+                    </p>
+                  )}
                 </div>
 
-                <div className="auth-checkbox-row">
-                  <label className="checkbox-wrap">
+                <div className="login-row">
+                  <label>
                     <input
                       type="checkbox"
                       checked={rememberMe}
                       onChange={(e) => setRememberMe(e.target.checked)}
                     />
-                    <span>Remember this device for 30 days</span>
+                    Remember me
                   </label>
+                  <a
+                    href="#forgot"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      clearBanner();
+                      setAuthStep("forgot");
+                    }}
+                  >
+                    Forgot password?
+                  </a>
                 </div>
 
-                <button type="submit" className="btn-brand-submit" disabled={isLoading}>
-                  {isLoading ? <RefreshCw className="spin" size={16} /> : null}
-                  <span>{isLoading ? "Authenticating..." : "Sign in to VaultAuth"}</span>
+                <button
+                  className={`login-btn ${isLoading ? "load" : ""}`}
+                  type="submit"
+                  disabled={isLoading || isPasskeyLoading}
+                >
+                  <span className="spin" aria-hidden="true" />
+                  <span>{isLoading ? "Signing in..." : "Sign in"}</span>
                 </button>
 
-                {passkeySupported && (
-                  <div style={{ marginTop: "16px" }}>
-                    <button
-                      type="button"
-                      className="btn-passkey-outline"
-                      onClick={handlePasskeySignIn}
-                      disabled={isLoading}
+                <button
+                  type="button"
+                  className={`login-btn login-btn-secondary ${isPasskeyLoading ? "load" : ""}`}
+                  onClick={handlePasskeySignIn}
+                  disabled={isLoading || isPasskeyLoading}
+                >
+                  {isPasskeyLoading ? (
+                    <span className="spin spin-dark" aria-hidden="true" />
+                  ) : (
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="17"
+                      height="17"
+                      fill="none"
+                      stroke="#2563eb"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
                     >
-                      <KeyRound size={16} color="#7047eb" />
-                      <span>Sign in with Biometric Passkey</span>
-                    </button>
-                  </div>
-                )}
+                      <circle cx="7.5" cy="15.5" r="4.5" />
+                      <path d="m21 2-9.6 9.6" />
+                      <path d="m15.5 7.5 3 3L22 7l-3-3" />
+                    </svg>
+                  )}
+                  <span>{isPasskeyLoading ? "Verifying passkey..." : "Sign in with Passkey"}</span>
+                </button>
               </form>
-            ) : (
-              /* TAB: CREATE ACCOUNT */
-              <form onSubmit={handleRegisterSubmit} className="auth-form" noValidate>
-                <div className="auth-field">
-                  <label htmlFor="reg-fullname">Full Name</label>
+
+              <p className="login-alt">
+                Don&apos;t have an account?{" "}
+                <a
+                  href="/register"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    switchTab("register");
+                  }}
+                >
+                  Create one
+                </a>
+              </p>
+            </div>
+          )}
+
+          {/* ================= 2. REGISTER VIEW ================= */}
+          {authStep === "credentials" && activeTab === "register" && (
+            <div>
+              <h1 className="login-clean-h1">Create your account</h1>
+              <p className="login-clean-sub">Join the VaultAuth SSO workspace network.</p>
+
+              <form onSubmit={handleRegisterSubmit} noValidate>
+                <div className={`login-field ${regErrors.regFullName ? "bad" : ""}`}>
+                  <label className="login-lbl" htmlFor="reg-fullname">
+                    Full name
+                  </label>
                   <input
                     id="reg-fullname"
+                    name="fullName"
                     type="text"
+                    autoComplete="name"
+                    placeholder="Alex Morgan"
                     value={regFullName}
                     onChange={(e) => setRegFullName(e.target.value)}
-                    placeholder="Alex Taylor"
-                    className={regErrors.regFullName ? "has-error" : ""}
+                    required
                   />
-                  {regErrors.regFullName && <span className="field-err">{regErrors.regFullName}</span>}
-                </div>
-
-                <div className="auth-field">
-                  <label htmlFor="reg-username">Username</label>
-                  <input
-                    id="reg-username"
-                    type="text"
-                    value={regUsername}
-                    onChange={(e) => setRegUsername(e.target.value)}
-                    placeholder="alextaylor"
-                    autoComplete="username"
-                    className={regErrors.regUsername ? "has-error" : ""}
-                  />
-                  {regErrors.regUsername && <span className="field-err">{regErrors.regUsername}</span>}
-                </div>
-
-                <div className="auth-field">
-                  <label htmlFor="reg-email">Work Email</label>
-                  <input
-                    id="reg-email"
-                    type="email"
-                    value={regEmail}
-                    onChange={(e) => setRegEmail(e.target.value)}
-                    placeholder="alex@company.com"
-                    autoComplete="email"
-                    className={regErrors.regEmail ? "has-error" : ""}
-                  />
-                  {regErrors.regEmail && <span className="field-err">{regErrors.regEmail}</span>}
-                </div>
-
-                <div className="auth-field">
-                  <label htmlFor="reg-password">Password</label>
-                  <div className="input-with-action">
-                    <input
-                      id="reg-password"
-                      type={showRegPass ? "text" : "password"}
-                      value={regPassword}
-                      onChange={(e) => setRegPassword(e.target.value)}
-                      placeholder="At least 8 characters"
-                      autoComplete="new-password"
-                      className={regErrors.regPassword ? "has-error" : ""}
-                    />
-                    <button
-                      type="button"
-                      className="eye-toggle-btn"
-                      onClick={() => setShowRegPass(!showRegPass)}
-                    >
-                      {showRegPass ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                  {regErrors.regPassword && <span className="field-err">{regErrors.regPassword}</span>}
-
-                  {/* Password Strength Indicator */}
-                  {regPassword && (
-                    <div className="strength-bar-container">
-                      <div className="strength-bars">
-                        {[1, 2, 3, 4].map((bar) => (
-                          <div
-                            key={bar}
-                            className="strength-bar"
-                            style={{
-                              backgroundColor: bar <= strength.score ? strength.color : "#e2e8f0",
-                            }}
-                          />
-                        ))}
-                      </div>
-                      <span className="strength-text" style={{ color: strength.color }}>
-                        {strength.text}
-                      </span>
-                    </div>
+                  {regErrors.regFullName && (
+                    <p className="login-err" role="alert">
+                      {regErrors.regFullName}
+                    </p>
                   )}
                 </div>
 
-                <button type="submit" className="btn-brand-submit" disabled={isLoading}>
-                  {isLoading ? <RefreshCw className="spin" size={16} /> : null}
-                  <span>{isLoading ? "Creating account..." : "Create Free Account"}</span>
+                <div className={`login-field ${regErrors.regUsername ? "bad" : ""}`}>
+                  <label className="login-lbl" htmlFor="reg-username">
+                    Username
+                  </label>
+                  <input
+                    id="reg-username"
+                    name="username"
+                    type="text"
+                    autoComplete="username"
+                    placeholder="alexmorgan"
+                    value={regUsername}
+                    onChange={(e) => setRegUsername(e.target.value)}
+                    required
+                  />
+                  {regErrors.regUsername && (
+                    <p className="login-err" role="alert">
+                      {regErrors.regUsername}
+                    </p>
+                  )}
+                </div>
+
+                <div className={`login-field ${regErrors.regEmail ? "bad" : ""}`}>
+                  <label className="login-lbl" htmlFor="reg-email">
+                    Email address
+                  </label>
+                  <input
+                    id="reg-email"
+                    name="email"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    placeholder="alex@company.com"
+                    value={regEmail}
+                    onChange={(e) => setRegEmail(e.target.value)}
+                    required
+                  />
+                  {regErrors.regEmail && (
+                    <p className="login-err" role="alert">
+                      {regErrors.regEmail}
+                    </p>
+                  )}
+                </div>
+
+                <div className={`login-field ${regErrors.regPassword ? "bad" : ""}`}>
+                  <label className="login-lbl" htmlFor="reg-password">
+                    Password
+                  </label>
+                  <div className="login-ctl login-pw">
+                    <input
+                      id="reg-password"
+                      name="password"
+                      type={showRegPass ? "text" : "password"}
+                      autoComplete="new-password"
+                      placeholder="At least 8 characters"
+                      value={regPassword}
+                      onChange={(e) => setRegPassword(e.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="login-show"
+                      aria-pressed={showRegPass}
+                      aria-label={showRegPass ? "Hide password" : "Show password"}
+                      onClick={() => setShowRegPass(!showRegPass)}
+                    >
+                      {showRegPass ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                  <div className="login-strength-wrap">
+                    <div className="login-strength-bars">
+                      {[1, 2, 3, 4].map((bar) => (
+                        <div
+                          key={bar}
+                          className="login-strength-bar"
+                          style={{
+                            background:
+                              regPassword && bar <= strength.score ? strength.color : "#e2e8f0",
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <span className="login-strength-text">{strength.text}</span>
+                  </div>
+                  {regErrors.regPassword && (
+                    <p className="login-err" role="alert">
+                      {regErrors.regPassword}
+                    </p>
+                  )}
+                </div>
+
+                <div className={`login-field ${regErrors.regConfirm ? "bad" : ""}`}>
+                  <label className="login-lbl" htmlFor="reg-confirm">
+                    Confirm password
+                  </label>
+                  <div className="login-ctl login-pw">
+                    <input
+                      id="reg-confirm"
+                      name="confirmPassword"
+                      type="password"
+                      autoComplete="new-password"
+                      placeholder="Re-enter your password"
+                      value={regConfirm}
+                      onChange={(e) => setRegConfirm(e.target.value)}
+                      required
+                    />
+                  </div>
+                  {regErrors.regConfirm && (
+                    <p className="login-err" role="alert">
+                      {regErrors.regConfirm}
+                    </p>
+                  )}
+                </div>
+
+                <button
+                  className={`login-btn ${isLoading ? "load" : ""}`}
+                  type="submit"
+                  disabled={isLoading}
+                >
+                  <span className="spin" aria-hidden="true" />
+                  <span>{isLoading ? "Creating account..." : "Create account"}</span>
                 </button>
               </form>
-            )}
-          </>
-        ) : (
-          /* ========================================================
-             STEP 2: MULTI-FACTOR EMAIL OTP VERIFICATION
-            ======================================================== */
-          <div className="auth-otp-view">
-            <button
-              type="button"
-              className="otp-back-btn"
-              onClick={() => {
-                setAuthStep("credentials");
-                clearBanner();
-              }}
-            >
-              <ArrowLeft size={16} />
-              <span>Back to credentials</span>
-            </button>
 
-            <h3 style={{ fontSize: "1.1rem", fontWeight: 700, margin: "16px 0 6px" }}>
-              Check your email
-            </h3>
-            <p style={{ fontSize: "0.86rem", color: "#64748b", marginBottom: "20px" }}>
-              We sent a 6-digit security code to <strong>{pendingIdentifier}</strong>
-            </p>
-
-            <form onSubmit={handleVerifyOtpSubmit}>
-              <div className="otp-inputs-grid" onPaste={handleOtpPaste}>
-                {otpValues.map((val, idx) => (
-                  <input
-                    key={idx}
-                    ref={(el) => (otpInputsRef.current[idx] = el)}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={val}
-                    onChange={(e) => handleOtpChange(idx, e.target.value)}
-                    onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                    className="otp-digit-box"
-                    autoFocus={idx === 0}
-                  />
-                ))}
-              </div>
-
-              <button type="submit" className="btn-brand-submit" style={{ marginTop: "20px" }} disabled={isLoading}>
-                {isLoading ? <RefreshCw className="spin" size={16} /> : null}
-                <span>{isLoading ? "Verifying code..." : "Verify & Sign In"}</span>
-              </button>
-
-              <div style={{ textAlign: "center", marginTop: "16px" }}>
-                {resendCooldown > 0 ? (
-                  <span style={{ fontSize: "0.82rem", color: "#94a3b8" }}>
-                    Resend code in {resendCooldown}s
-                  </span>
-                ) : (
-                  <button type="button" className="text-link" onClick={handleResendOtp}>
-                    Resend security code
-                  </button>
-                )}
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* Footer info */}
-        <div className="auth-card-footer">
-          <span>&copy; 2026 VaultAuthSSO • Zero Trust Workspace</span>
-        </div>
-      </div>
-
-      {/* Forgot Password Modal */}
-      {isForgotOpen && (
-        <div className="modal-backdrop">
-          <div className="modal-card">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h3 style={{ fontSize: "1.1rem", fontWeight: 700 }}>Reset Password</h3>
-              <button
-                type="button"
-                style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b" }}
-                onClick={() => setIsForgotOpen(false)}
-              >
-                <X size={20} />
-              </button>
+              <p className="login-alt">
+                Already have an account?{" "}
+                <a
+                  href="/login"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    switchTab("login");
+                  }}
+                >
+                  Sign in
+                </a>
+              </p>
             </div>
-            <p style={{ fontSize: "0.86rem", color: "#64748b", marginBottom: "18px" }}>
-              Enter your registered work email address and we'll send you an encrypted password recovery link.
-            </p>
-            <input
-              type="email"
-              placeholder="name@company.com"
-              className="modal-input"
-              id="forgot-email-input"
-            />
-            <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
-              <button
-                type="button"
-                className="btn-modal-cancel"
-                onClick={() => setIsForgotOpen(false)}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="btn-modal-primary"
-                onClick={() => {
-                  setIsForgotOpen(false);
-                  onNotify?.("If this email exists in our directory, a recovery link has been dispatched.", "info");
+          )}
+
+          {/* ================= 3. OTP VERIFICATION VIEW ================= */}
+          {authStep === "otp" && (
+            <div>
+              <h1 className="login-clean-h1">Two-Factor Auth</h1>
+              <p className="login-clean-sub">
+                Enter the 6-digit verification code sent to{" "}
+                <strong>{pendingIdentifier || "your registered email"}</strong>.
+              </p>
+
+              <form onSubmit={handleVerifyOtpSubmit} noValidate>
+                <div className="login-otp-grid" onPaste={handleOtpPaste}>
+                  {otpValues.map((val, idx) => (
+                    <input
+                      key={idx}
+                      ref={(el) => (otpInputsRef.current[idx] = el)}
+                      type="text"
+                      maxLength={1}
+                      inputMode="numeric"
+                      className="login-otp-box"
+                      value={val}
+                      onChange={(e) => handleOtpChange(idx, e.target.value)}
+                      onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                      autoFocus={idx === 0}
+                    />
+                  ))}
+                </div>
+                {otpError && (
+                  <p className="login-err" style={{ display: "block", textAlign: "center", marginBottom: "12px" }} role="alert">
+                    {otpError}
+                  </p>
+                )}
+
+                <button
+                  className={`login-btn ${isLoading ? "load" : ""}`}
+                  type="submit"
+                  disabled={isLoading}
+                >
+                  <span className="spin" aria-hidden="true" />
+                  <span>{isLoading ? "Verifying..." : "Verify & Continue"}</span>
+                </button>
+              </form>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginTop: "18px",
+                  fontSize: "0.86rem",
                 }}
               >
-                Send Reset Link
-              </button>
+                <a
+                  href="#resend"
+                  onClick={handleResendOtp}
+                  style={{
+                    pointerEvents: resendCooldown > 0 ? "none" : "auto",
+                    opacity: resendCooldown > 0 ? 0.5 : 1,
+                  }}
+                >
+                  {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend code"}
+                </a>
+                <a
+                  href="/login"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    switchTab("login");
+                  }}
+                >
+                  ← Back to sign in
+                </a>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
+
+          {/* ================= 4. FORGOT & RESET PASSWORD VIEW ================= */}
+          {authStep === "forgot" && (
+            <PasswordResetFlow
+              initialEmail={loginEmail}
+              onBackToLogin={() => switchTab("login")}
+              onResetSuccess={(resetEmail) => {
+                if (resetEmail) setLoginEmail(resetEmail);
+                setLoginPassword("");
+                switchTab("login");
+                setBanner({
+                  text: "Your password has been reset successfully. Please log in with your new password.",
+                  type: "success",
+                });
+              }}
+              onNotify={onNotify}
+            />
+          )}
+        </section>
+
+        {/* Footer */}
+        <p className="login-clean-foot">Protected by VaultAuth SSO · {new Date().getFullYear()}</p>
+      </main>
     </div>
   );
 }

@@ -225,8 +225,9 @@ describe("Node.js Backend Server API Suite", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         username: `reg_test_${Date.now()}`,
-        email: `reg_test_${Date.now()}@example.com`,
+        email: `admin_attempt_${Date.now()}@example.com`,
         password: "SecurePassword123!",
+        role: "admin",
       }),
     });
     expect(res.status).toBe(201);
@@ -234,5 +235,94 @@ describe("Node.js Backend Server API Suite", () => {
     expect(data.user.role).toBe("user");
     expect(data.user.role_title).toBe("End User");
     expect(data.user.password).toBeUndefined();
+  });
+
+  it("Enforces auth on /api/users and blocks hardcoded OTP and WebAuthn bypasses", async () => {
+    // /api/users requires admin auth
+    const anonUsers = await fetch(`${BASE}/api/users`);
+    expect(anonUsers.status).toBe(401);
+
+    const bobLogin = await fetch(`${BASE}/api/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ login: "bob", password: "Password@1234!" }),
+    });
+    const bobToken = (await bobLogin.json()).token;
+
+    const bobUsers = await fetch(`${BASE}/api/users`, {
+      headers: { Authorization: `Bearer ${bobToken}` },
+    });
+    expect(bobUsers.status).toBe(403);
+
+    const adminUsers = await fetch(`${BASE}/api/users`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    expect(adminUsers.status).toBe(200);
+
+    // Hardcoded 123456 OTP bypass rejected
+    const otpBypass = await fetch(`${BASE}/api/otp/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ identifier: "bob", otp: "123456" }),
+    });
+    expect(otpBypass.status).toBe(401);
+
+    // Unrecognized WebAuthn login rejected
+    const fakePasskey = await fetch(`${BASE}/api/webauthn/login/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: "fake-credential-id" }),
+    });
+    expect(fakePasskey.status).toBe(401);
+
+    // Authenticated password change works
+    const chgOk = await fetch(`${BASE}/api/auth/change-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${bobToken}`,
+      },
+      body: JSON.stringify({
+        current_password: "Password@1234!",
+        new_password: "BobUpdated@2026!",
+        confirm_password: "BobUpdated@2026!",
+      }),
+    });
+    expect(chgOk.status).toBe(200);
+  });
+
+  it("Forgot & Reset Password routes enforce enumeration protection, cooldown, and token rules", async () => {
+    const req1 = await fetch(`${BASE}/api/auth/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "bob@vault.io" }),
+    });
+    const req2 = await fetch(`${BASE}/api/auth/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "nonexistent@vault.io" }),
+    });
+    expect(req1.status).toBe(200);
+    expect(req2.status).toBe(200);
+    const d1 = await req1.json();
+    const d2 = await req2.json();
+    expect(d1.message).toBe(d2.message);
+    expect(d1.otp).toBeUndefined();
+
+    // Resend within 60s returns 429 cooldown
+    const resend = await fetch(`${BASE}/api/auth/resend-reset-otp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "bob@vault.io" }),
+    });
+    expect(resend.status).toBe(429);
+
+    // Invalid reset token rejected
+    const resetBad = await fetch(`${BASE}/api/auth/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reset_token: "invalid-token", new_password: "NewStrong@2026!" }),
+    });
+    expect(resetBad.status).toBe(400);
   });
 });
