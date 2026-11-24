@@ -61,6 +61,25 @@ console.log("🛠️  Running initial build...");
 await buildJs();
 await buildCss();
 
+// Ensure backend server is running on port 5000
+async function ensureBackend() {
+  try {
+    const res = await fetch("http://127.0.0.1:5000/api/users", { method: "GET" });
+    if (res.status) {
+      console.log("🛡️  Backend server active on port 5000");
+      return;
+    }
+  } catch {}
+
+  console.log("🚀 Spawning VaultAuth backend server on port 5000...");
+  const proc = Bun.spawn(["bun", "backend/server.js"], {
+    stdout: "inherit",
+    stderr: "inherit",
+  });
+  process.on("exit", () => proc.kill());
+}
+await ensureBackend();
+
 // Watch src/ directory
 let debounceTimer = null;
 watch("src", { recursive: true }, async (eventType, filename) => {

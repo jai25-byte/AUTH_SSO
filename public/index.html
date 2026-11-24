@@ -657,7 +657,8 @@
 
           toast(data.message || "Signed in successfully. Redirecting...", "success");
           setTimeout(() => {
-            window.location.href = data.redirect || CFG.dashboardUrl;
+            const dest = data.redirect || (data.user?.role === "admin" ? "/admin" : CFG.dashboardUrl);
+            window.location.href = dest;
           }, CFG.redirectDelay);
           return;
         }
