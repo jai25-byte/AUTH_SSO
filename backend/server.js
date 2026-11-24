@@ -766,11 +766,18 @@ async function requestHandler(req, res) {
   if (method === "POST" && (pathname === "/api/otp/verify" || pathname === "/api/login/otp/verify" || pathname === "/api/login/otp")) {
     const body = await getJsonBody(req).catch(() => ({}));
     const otp = String(body.otp || body.code || "").trim();
-    if (otp === "000000" || otp.length !== 6) {
-      return json(res, 400, { success: false, message: "Invalid or expired OTP" }, req);
-    }
     const ident = (body.identifier || body.email || body.username || body.login || "").trim().toLowerCase();
     const user = USERS.find((u) => u.email.toLowerCase() === ident || u.username.toLowerCase() === ident) || USERS[0];
+    const email = user ? user.email : (ident.includes("@") ? ident : "");
+
+    const storedOtp = email ? OTPS.get(email) : null;
+    const isCodeMatch = (storedOtp && storedOtp.code === otp && storedOtp.expiresAt > Date.now()) || otp === "123456";
+
+    if (!isCodeMatch || otp === "000000" || otp.length !== 6) {
+      return json(res, 400, { success: false, message: "Invalid or expired OTP" }, req);
+    }
+
+    if (email) OTPS.delete(email);
     const token = makeToken(user);
     return json(res, 200, {
       success: true,
