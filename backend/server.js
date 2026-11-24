@@ -748,10 +748,24 @@ async function requestHandler(req, res) {
     const email = user ? user.email : (ident.includes("@") ? ident : "user@example.com");
     const masked = email.replace(/^(.{2})(.*)(@.*)$/, (_, a, b, c) => a + "*".repeat(Math.max(b.length, 3)) + c);
 
-    OTPS.set(email, {
-      code: "123456",
+    const existing = OTPS.get(email.toLowerCase());
+    if (existing && existing.cooldownUntil > Date.now()) {
+      const wait = Math.ceil((existing.cooldownUntil - Date.now()) / 1000);
+      return json(res, 429, { message: `Please wait ${wait}s before requesting another code`, retry_after: wait }, req);
+    }
+
+    // Cryptographically random 6-digit code; only the user's own email can redeem it.
+    const code = String(crypto.randomInt(0, 1000000)).padStart(6, "0");
+    OTPS.set(email.toLowerCase(), {
+      code,
       expiresAt: Date.now() + 300000,
+      cooldownUntil: Date.now() + 60000,
+      attempts: 0,
     });
+    // No mail transport is configured yet; log the code for local development only.
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[dev] OTP for ${email}: ${code}`);
+    }
 
     return json(res, 200, {
       message: `OTP sent to ${masked}`,
@@ -766,11 +780,24 @@ async function requestHandler(req, res) {
   if (method === "POST" && (pathname === "/api/otp/verify" || pathname === "/api/login/otp/verify" || pathname === "/api/login/otp")) {
     const body = await getJsonBody(req).catch(() => ({}));
     const otp = String(body.otp || body.code || "").trim();
-    if (otp === "000000" || otp.length !== 6) {
-      return json(res, 400, { success: false, message: "Invalid or expired OTP" }, req);
-    }
+    const invalid = () => json(res, 400, { success: false, message: "Invalid or expired OTP" }, req);
     const ident = (body.identifier || body.email || body.username || body.login || "").trim().toLowerCase();
-    const user = USERS.find((u) => u.email.toLowerCase() === ident || u.username.toLowerCase() === ident) || USERS[0];
+    const user = USERS.find((u) => u.email.toLowerCase() === ident || u.username.toLowerCase() === ident);
+    if (!user || !/^\d{6}$/.test(otp)) return invalid();
+
+    const key = user.email.toLowerCase();
+    const entry = OTPS.get(key);
+    if (!entry || entry.expiresAt < Date.now() || entry.attempts >= 5) {
+      OTPS.delete(key);
+      return invalid();
+    }
+    const a = Buffer.from(otp);
+    const b = Buffer.from(entry.code);
+    if (!crypto.timingSafeEqual(a, b)) {
+      entry.attempts += 1;
+      return invalid();
+    }
+    OTPS.delete(key); // single use
     const token = makeToken(user);
     return json(res, 200, {
       success: true,

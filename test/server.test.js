@@ -236,3 +236,39 @@ describe("Node.js Backend Server API Suite", () => {
     expect(data.user.password).toBeUndefined();
   });
 });
+
+describe("OTP flow", () => {
+  const post = (path, body) =>
+    fetch(`${BASE}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+  it("rejects verify without a requested code, and the old hardcoded code", async () => {
+    expect((await post("/api/otp/verify", { identifier: "bob", otp: "123456" })).status).toBe(400);
+  });
+
+  it("accepts the issued code once, rejects wrong codes, and throttles resend", async () => {
+    const logs = [];
+    const orig = console.log;
+    console.log = (...a) => { logs.push(a.join(" ")); };
+    let sent;
+    try {
+      sent = await post("/api/otp/send", { identifier: "alice" });
+    } finally {
+      console.log = orig;
+    }
+    expect(sent.status).toBe(200);
+    const code = logs.join("\n").match(/OTP for alice@vault\.io: (\d{6})/)[1];
+
+    const wrong = code === "000001" ? "000002" : "000001";
+    expect((await post("/api/otp/verify", { identifier: "alice", otp: wrong })).status).toBe(400);
+    expect((await post("/api/otp/send", { identifier: "alice" })).status).toBe(429);
+
+    const ok = await post("/api/otp/verify", { identifier: "alice", otp: code });
+    expect(ok.status).toBe(200);
+    expect((await ok.json()).user.username).toBe("alice");
+    expect((await post("/api/otp/verify", { identifier: "alice", otp: code })).status).toBe(400);
+  });
+});
