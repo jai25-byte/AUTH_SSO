@@ -11,7 +11,8 @@ if (!existsSync("dist")) {
 const jsStart = performance.now();
 const jsResult = await Bun.build({
   entrypoints: ["src/main.jsx"],
-  outfile: "dist/bundle.js",
+  outdir: "dist",
+  naming: "bundle.[ext]",
   target: "browser",
   minify: true,
   define: {
@@ -41,8 +42,8 @@ console.log(`✅ [Tailwind] CSS compiled & minified in ${Math.round(performance.
 
 // 3. Copy HTML and assets
 await cp("public/index.html", "dist/index.html");
-await cp("public/login.html", "dist/login.html");
-await cp("public/register.html", "dist/register.html");
+await cp("dist/bundle.js", "public/bundle.js");
+await cp("dist/styles.css", "public/styles.css");
 await cp("public/wallpaper.png", "dist/wallpaper.png");
 
 console.log("\n🎉 Production build complete! Distributable files are ready in ./dist/");

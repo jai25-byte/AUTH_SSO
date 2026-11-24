@@ -9,7 +9,8 @@ async function buildJs() {
   const start = performance.now();
   const result = await Bun.build({
     entrypoints: ["src/main.jsx"],
-    outfile: "public/bundle.js",
+    outdir: "public",
+    naming: "bundle.[ext]",
     target: "browser",
     define: {
       "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
@@ -208,12 +209,23 @@ const server = Bun.serve({
       );
     }
 
-    // Static routing
+    // React SPA routing: /login, /register, /dashboard, /admin all resolve to public/index.html
     let pathname = url.pathname;
-    if (pathname === "/" || pathname === "/login" || pathname === "/register") {
+    if (
+      pathname === "/" ||
+      pathname === "/login" ||
+      pathname === "/register" ||
+      pathname === "/dashboard" ||
+      pathname === "/dashboard/" ||
+      pathname === "/admin" ||
+      pathname === "/admin/" ||
+      pathname === "/user" ||
+      pathname === "/portal"
+    ) {
       pathname = "/index.html";
     }
-    // Standalone / Vanilla Admin Dashboard
+
+    // Standalone / Vanilla Admin Dashboard (Legacy preview)
     if (
       pathname === "/admin-standalone" ||
       pathname === "/admin-standalone/" ||
@@ -228,8 +240,13 @@ const server = Bun.serve({
       }
     }
 
-    if (pathname === "/admin" || pathname === "/admin/") {
-      pathname = "/ADMIN/index.html";
+    if (pathname === "/dashboard-vanilla" || pathname === "/vanilla-dashboard") {
+      const vanillaDash = Bun.file(join(process.cwd(), "DASHBOARD", "index.html"));
+      if (await vanillaDash.exists()) {
+        return new Response(vanillaDash, {
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+        });
+      }
     }
 
     // Serve DASHBOARD static assets if path starts with /DASHBOARD or /dashboard

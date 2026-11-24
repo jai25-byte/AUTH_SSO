@@ -1,27 +1,31 @@
 import React, { useState, useEffect } from "react";
-import LoginCard from "./components/LoginCard.jsx";
-import RegisterCard from "./components/RegisterCard.jsx";
-import OtpVerificationCard from "./components/OtpVerificationCard.jsx";
-import AuthenticatedCard from "./components/AuthenticatedCard.jsx";
+import AuthPage from "./components/auth/AuthPage.jsx";
+import UserDashboard from "./components/dashboard/UserDashboard.jsx";
+import AdminDashboard from "./components/admin/AdminDashboard.jsx";
 import Toast from "./components/Toast.jsx";
-import ForgotPasswordModal from "./components/ForgotPasswordModal.jsx";
-import BrandingSidebar from "./components/BrandingSidebar.jsx";
-import { removeToken, checkBackendHealth } from "./services/api.js";
+import { Shield, LayoutDashboard, Lock } from "lucide-react";
 
 export default function App() {
-  const getInitialTab = () => {
-    if (typeof window === "undefined") return "login";
+  const getInitialPath = () => {
+    if (typeof window === "undefined") return "/";
     const path = (window.location.pathname || "").toLowerCase();
-    const q = new URLSearchParams(window.location.search || "");
-    return path.includes("register") || q.get("tab") === "register" ? "register" : "login";
+    const search = (window.location.search || "").toLowerCase();
+    const hash = (window.location.hash || "").toLowerCase();
+
+    if (path.includes("admin") || search.includes("admin") || hash.includes("admin")) {
+      return "/admin";
+    }
+    if (path.includes("dashboard") || search.includes("dashboard") || hash.includes("dashboard")) {
+      return "/dashboard";
+    }
+    if (path.includes("register") || search.includes("tab=register")) {
+      return "/register";
+    }
+    return "/login";
   };
 
-  const [authStep, setAuthStep] = useState("credentials"); // 'credentials' | 'otp' | 'authenticated'
-  const [activeTab, setActiveTab] = useState(getInitialTab);
+  const [currentPath, setCurrentPath] = useState(getInitialPath);
   const [toast, setToast] = useState({ message: "", type: "info" });
-  const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
-  const [pendingUser, setPendingUser] = useState(null);
-  const [backendStatus, setBackendStatus] = useState("checking");
 
   const notify = (message, type = "info") => {
     setToast({ message, type });
@@ -31,118 +35,128 @@ export default function App() {
     setToast({ message: "", type: "info" });
   };
 
-  // Check backend connectivity on mount and periodically
-  useEffect(() => {
-    let isMounted = true;
-    const verifyHealth = () => {
-      checkBackendHealth().then((res) => {
-        if (isMounted) {
-          setBackendStatus(res.ok ? "connected" : "offline");
-        }
-      });
-    };
-
-    verifyHealth();
-    const interval = setInterval(verifyHealth, 10000);
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
-  }, []);
-
-  // Called after valid login step
-  const handleLoginSuccess = (userData) => {
-    setPendingUser(userData);
-    if (userData?.passkeyVerified) {
-      setAuthStep("authenticated");
-    } else {
-      setAuthStep("otp");
+  const navigate = (path) => {
+    if (typeof window !== "undefined") {
+      window.history.pushState(null, "", path);
+      setCurrentPath(path.toLowerCase());
+      window.scrollTo(0, 0);
     }
   };
 
-  // Called when OTP verification succeeds
-  const handleOtpVerifySuccess = (userData) => {
-    setPendingUser((prev) => ({ ...prev, ...userData }));
-    setAuthStep("authenticated");
-  };
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentPath(getInitialPath());
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
-  // Back to login credentials
-  const handleBackToLogin = () => {
-    setAuthStep("credentials");
-    setActiveTab("login");
-  };
-
-  // Sign out from authenticated session
-  const handleSignOut = () => {
-    removeToken();
-    setAuthStep("credentials");
-    setActiveTab("login");
-    setPendingUser(null);
-    notify("You have signed out successfully.", "info");
-  };
+  // Determine active view
+  const isAdminView = currentPath.startsWith("/admin");
+  const isDashboardView = currentPath.startsWith("/dashboard") || currentPath.startsWith("/user");
+  const isRegisterView = currentPath === "/register";
 
   return (
-    <main className="shell">
-      {/* ============ LEFT: BRANDING ============ */}
-      <BrandingSidebar backendStatus={backendStatus} />
+    <div className="vault-app-root" style={{ minHeight: "100vh", width: "100%", display: "flex", flexDirection: "column" }}>
+      {/* Dynamic View Component */}
+      {isAdminView ? (
+        <AdminDashboard onNavigate={navigate} />
+      ) : isDashboardView ? (
+        <UserDashboard onNavigate={navigate} onNotify={notify} />
+      ) : (
+        <AuthPage
+          initialTab={isRegisterView ? "register" : "login"}
+          onNavigate={navigate}
+          onNotify={notify}
+        />
+      )}
 
-      {/* ============ RIGHT: FORM PANEL ============ */}
-      <section className="panel" aria-labelledby="form-title">
-        <div className="card">
-          {authStep === "credentials" && (
-            <>
-              {activeTab === "login" ? (
-                <LoginCard
-                  key="login"
-                  onSwitchToRegister={() => setActiveTab("register")}
-                  onForgotPassword={() => setIsForgotModalOpen(true)}
-                  onLoginSuccess={handleLoginSuccess}
-                  onNotify={notify}
-                />
-              ) : (
-                <RegisterCard
-                  key="register"
-                  onSwitchToLogin={() => setActiveTab("login")}
-                  onNotify={notify}
-                />
-              )}
-            </>
-          )}
+      {/* Floating Dev / Quick Switcher Pill */}
+      <aside
+        aria-label="Navigation Switcher"
+        style={{
+          position: "fixed",
+          bottom: "16px",
+          right: "16px",
+          zIndex: 9999,
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
+          background: "rgba(15, 23, 42, 0.88)",
+          backdropFilter: "blur(8px)",
+          border: "1px solid rgba(255, 255, 255, 0.12)",
+          padding: "6px 10px",
+          borderRadius: "9999px",
+          boxShadow: "0 8px 24px rgba(0, 0, 0, 0.35)",
+        }}
+      >
+        <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", padding: "0 4px" }}>
+          Portal:
+        </span>
+        <button
+          type="button"
+          onClick={() => navigate("/login")}
+          style={{
+            background: !isAdminView && !isDashboardView ? "#7047eb" : "transparent",
+            color: !isAdminView && !isDashboardView ? "#ffffff" : "#94a3b8",
+            border: "none",
+            borderRadius: "9999px",
+            padding: "4px 10px",
+            fontSize: "0.76rem",
+            fontWeight: 600,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "5px",
+            transition: "all 0.15s",
+          }}
+        >
+          <Lock size={12} /> Auth
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate("/dashboard")}
+          style={{
+            background: isDashboardView ? "#7047eb" : "transparent",
+            color: isDashboardView ? "#ffffff" : "#94a3b8",
+            border: "none",
+            borderRadius: "9999px",
+            padding: "4px 10px",
+            fontSize: "0.76rem",
+            fontWeight: 600,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "5px",
+            transition: "all 0.15s",
+          }}
+        >
+          <LayoutDashboard size={12} /> Dashboard
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate("/admin")}
+          style={{
+            background: isAdminView ? "#7047eb" : "transparent",
+            color: isAdminView ? "#ffffff" : "#94a3b8",
+            border: "none",
+            borderRadius: "9999px",
+            padding: "4px 10px",
+            fontSize: "0.76rem",
+            fontWeight: 600,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "5px",
+            transition: "all 0.15s",
+          }}
+        >
+          <Shield size={12} /> Admin
+        </button>
+      </aside>
 
-          {authStep === "otp" && (
-            <OtpVerificationCard
-              key="otp"
-              user={pendingUser}
-              onVerifySuccess={handleOtpVerifySuccess}
-              onBackToLogin={handleBackToLogin}
-              onNotify={notify}
-            />
-          )}
-
-          {authStep === "authenticated" && (
-            <AuthenticatedCard
-              key="authenticated"
-              user={pendingUser}
-              onSignOut={handleSignOut}
-              onNotify={notify}
-            />
-          )}
-        </div>
-      </section>
-
-      {/* Forgot Password Modal */}
-      <ForgotPasswordModal
-        isOpen={isForgotModalOpen}
-        onClose={() => setIsForgotModalOpen(false)}
-        onNotify={notify}
-      />
-
-      {/* Toast notifications */}
-      <Toast
-        message={toast.message}
-        type={toast.type}
-        onClose={closeToast}
-      />
-    </main>
+      {/* Global Notifications */}
+      <Toast message={toast.message} type={toast.type} onClose={closeToast} />
+    </div>
   );
 }

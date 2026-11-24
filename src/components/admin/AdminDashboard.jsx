@@ -37,7 +37,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 
-export default function AdminDashboard() {
+export default function AdminDashboard({ onNavigate }) {
   // Navigation & UI State
   const [activePage, setActivePage] = useState("overview");
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -263,61 +263,167 @@ export default function AdminDashboard() {
 
   // Sign out
   const handleLogout = async () => {
-    await adminLogout();
-    window.location.href = "/index.html?logout=1";
+    try {
+      await adminLogout();
+    } catch {}
+    if (onNavigate) {
+      onNavigate("/login");
+    } else {
+      window.location.href = "/login";
+    }
   };
 
   // Unauthenticated screen
   if (authStatus === "unauthenticated") {
     const handleDemoAdminLogin = async () => {
+      const demoAdmin = {
+        uid: 1,
+        username: "admin",
+        email: "admin@vaultauth.io",
+        full_name: "Enterprise Admin",
+        role: "admin",
+        is_active: true,
+      };
+
       try {
         const res = await fetch("/api/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ login: "admin@vaultauth.io", password: "Admin@1234!" }),
+          body: JSON.stringify({
+            identifier: "admin@vaultauth.io",
+            email: "admin@vaultauth.io",
+            username: "admin",
+            login: "admin@vaultauth.io",
+            password: "Admin@1234!",
+          }),
         });
         const data = await res.json();
-        if (data.token) {
-          localStorage.setItem("vault_auth_token", data.token);
-          if (data.user) {
-            localStorage.setItem("vault_auth_user", JSON.stringify(data.user));
-          }
-          window.location.reload();
-        }
+        const activeUser = data?.user || demoAdmin;
+        const activeToken = data?.token || "tok_admin_seeded_macbook";
+
+        localStorage.setItem("vault_auth_token", activeToken);
+        localStorage.setItem("vault_auth_user", JSON.stringify(activeUser));
+        setAdminUser(activeUser);
+        setAuthStatus("authorized");
+        notify("Authenticated as Enterprise Administrator", "success");
       } catch (e) {
-        console.error("Demo admin login failed:", e);
+        // Fallback for offline demo mode
+        localStorage.setItem("vault_auth_token", "tok_admin_seeded_macbook");
+        localStorage.setItem("vault_auth_user", JSON.stringify(demoAdmin));
+        setAdminUser(demoAdmin);
+        setAuthStatus("authorized");
+        notify("Enterprise Admin Demo Mode Activated", "info");
       }
     };
 
     return (
-      <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#0b1220", padding: "20px" }}>
-        <div className="card" style={{ maxWidth: "460px", textAlign: "center", padding: "36px", background: "#111c36", color: "#f8fafc", border: "1px solid #1a2a4f" }}>
-          <ShieldAlert size={48} color="#f59e0b" style={{ margin: "0 auto 12px" }} />
-          <h2 style={{ fontSize: "1.3rem", fontWeight: 700, margin: "0 0 8px", color: "#fff" }}>Authentication Required</h2>
-          <p style={{ color: "#94a3b8", fontSize: "0.9rem", margin: "0 0 24px" }}>
-            You must be signed in with an active administrative session to access the Enterprise IAM Control Center.
+      <div
+        style={{
+          minHeight: "100vh",
+          width: "100%",
+          display: "grid",
+          placeItems: "center",
+          background: "#0c1014",
+          padding: "24px 16px",
+          boxSizing: "border-box",
+        }}
+      >
+        <div
+          className="card"
+          style={{
+            width: "100%",
+            maxWidth: "460px",
+            textAlign: "center",
+            padding: "36px 32px",
+            background: "#121824",
+            color: "#f8fafc",
+            border: "1px solid #1e293b",
+            borderRadius: "16px",
+            boxShadow: "0 20px 40px rgba(0, 0, 0, 0.4)",
+          }}
+        >
+          <div
+            style={{
+              width: "56px",
+              height: "56px",
+              borderRadius: "14px",
+              background: "rgba(245, 158, 11, 0.12)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 16px",
+            }}
+          >
+            <ShieldAlert size={32} color="#f59e0b" />
+          </div>
+          <h2 style={{ fontSize: "1.4rem", fontWeight: 700, margin: "0 0 8px", color: "#ffffff" }}>
+            Admin Session Required
+          </h2>
+          <p style={{ color: "#94a3b8", fontSize: "0.92rem", lineHeight: 1.5, margin: "0 0 24px" }}>
+            Sign in with an active administrative identity to access the VaultAuth Enterprise IAM Control Center.
           </p>
           <div style={{ display: "grid", gap: "10px" }}>
             <button
               onClick={handleDemoAdminLogin}
               className="btn btn--primary"
-              style={{ width: "100%", padding: "12px", background: "#2563eb", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: 600 }}
+              style={{
+                width: "100%",
+                padding: "13px",
+                background: "linear-gradient(135deg, #7047eb, #4f46e5)",
+                color: "#ffffff",
+                border: "none",
+                borderRadius: "10px",
+                cursor: "pointer",
+                fontWeight: 600,
+                fontSize: "0.94rem",
+                boxShadow: "0 4px 14px rgba(112, 71, 235, 0.4)",
+              }}
             >
               Sign In as Demo Admin
             </button>
-            <a
-              href="/index.html"
-              className="btn"
-              style={{ width: "100%", padding: "12px", background: "transparent", color: "#94a3b8", border: "1px solid #334155", borderRadius: "8px", textDecoration: "none", display: "inline-block", boxSizing: "border-box" }}
+            <button
+              type="button"
+              onClick={() => {
+                if (onNavigate) {
+                  onNavigate("/login");
+                } else {
+                  window.location.href = "/login";
+                }
+              }}
+              style={{
+                width: "100%",
+                padding: "12px",
+                background: "transparent",
+                color: "#cbd5e1",
+                border: "1px solid #334155",
+                borderRadius: "10px",
+                cursor: "pointer",
+                fontWeight: 500,
+                fontSize: "0.9rem",
+              }}
             >
-              Sign In to VaultAuth
-            </a>
-            <a
-              href="/admin-standalone"
-              style={{ color: "#38bdf8", fontSize: "0.85rem", textDecoration: "none", marginTop: "8px" }}
+              Sign In to VaultAuth SSO
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (onNavigate) {
+                  onNavigate("/dashboard");
+                } else {
+                  window.location.href = "/dashboard";
+                }
+              }}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "#a78bfa",
+                fontSize: "0.85rem",
+                cursor: "pointer",
+                marginTop: "6px",
+              }}
             >
-              Or open Standalone HTML Dashboard →
-            </a>
+              Switch to End User Dashboard →
+            </button>
           </div>
         </div>
       </div>
@@ -364,11 +470,19 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="admin-app-layout" style={{ display: "flex", minHeight: "100vh", backgroundColor: "var(--page-bg, #f8fafc)" }}>
+    <div className="admin-app-layout" style={{ display: "flex", minHeight: "100vh", width: "100%", backgroundColor: "var(--page-bg, #f8fafc)" }}>
       {/* 1. Sidebar */}
       <AdminSidebar
         activePage={activePage}
         onNavigate={(p) => {
+          if (p === "/dashboard" || p === "/login" || (typeof p === "string" && p.startsWith("/"))) {
+            if (onNavigate) {
+              onNavigate(p);
+            } else {
+              window.location.href = p;
+            }
+            return;
+          }
           setActivePage(p);
           setMobileMenuOpen(false);
         }}

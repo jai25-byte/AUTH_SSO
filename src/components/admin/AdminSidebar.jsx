@@ -242,8 +242,9 @@ export default function AdminSidebar({
                 Portals
               </div>
             )}
-            <a
-              href="/DASHBOARD/index.html"
+            <button
+              type="button"
+              onClick={() => onNavigate("/dashboard")}
               title="Switch to End User Dashboard"
               style={{
                 width: "100%",
@@ -253,11 +254,11 @@ export default function AdminSidebar({
                 padding: isCollapsed ? "10px" : "10px 14px",
                 borderRadius: "8px",
                 color: "#a5b4fc",
-                textDecoration: "none",
-                fontSize: "0.84rem",
-                fontWeight: 500,
                 background: "rgba(112, 71, 235, 0.08)",
                 border: "1px solid rgba(165, 180, 252, 0.15)",
+                fontSize: "0.84rem",
+                fontWeight: 500,
+                cursor: "pointer",
                 transition: "all 0.15s",
               }}
               onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(112, 71, 235, 0.18)")}
@@ -267,7 +268,7 @@ export default function AdminSidebar({
                 <ExternalLink size={16} />
                 {!isCollapsed && <span>User Dashboard</span>}
               </div>
-            </a>
+            </button>
           </div>
         </nav>
       </div>
