@@ -481,13 +481,20 @@ export async function revokeOtherSessions() {
   return await request("/api/sessions/revoke-others", { method: "POST" });
 }
 
-export async function getConnectedApps() {
-  return await request("/api/connected-apps", { method: "GET" });
+export async function getConnectedApps({ includeInactive = false } = {}) {
+  const qs = includeInactive ? "?include_inactive=true" : "";
+  return await request(`/api/connected-apps${qs}`, { method: "GET" });
 }
 
 export async function disconnectConnectedApp(appId) {
   return await request(`/api/connected-apps/${encodeURIComponent(appId)}`, {
     method: "DELETE",
+  });
+}
+
+export async function reconnectConnectedApp(appId) {
+  return await request(`/api/connected-apps/${encodeURIComponent(appId)}/reconnect`, {
+    method: "POST",
   });
 }
 

@@ -1354,14 +1354,75 @@ async function requestHandler(req, res) {
     const auth = requireAdmin(req, res);
     if (!auth) return;
 
+    const activeSess = SESSIONS.filter((s) => s.is_active);
+    const activeAppCnt = CONNECTED_APPS.filter((a) => (a.status || "Active").toLowerCase() === "active").length;
     return json(res, 200, {
       total_users: USERS.length,
       active_users: USERS.filter((u) => u.is_active).length,
       administrators: USERS.filter((u) => u.role === "admin").length,
-      active_sessions: SESSIONS.filter((s) => s.is_active).length,
+      active_sessions: activeSess.length,
+      active_session_users: new Set(activeSess.map((s) => s.uid)).size,
       failed_logins_24h: LOGIN_ACTIVITIES.filter((a) => a.status === "Failed").length,
       suspicious_activities_24h: 0,
+      connected_apps_total: CONNECTED_APPS.length,
+      connected_apps_active: activeAppCnt,
+      connected_apps_inactive: Math.max(0, CONNECTED_APPS.length - activeAppCnt),
     }, req);
+  }
+
+  if (method === "GET" && pathname === "/api/admin/connected-apps") {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+
+    const activeApps = CONNECTED_APPS.filter((a) => (a.status || "Active").toLowerCase() === "active");
+    return json(res, 200, {
+      apps: CONNECTED_APPS.map((a) => ({
+        ...a,
+        app_key: (a.app_key || a.name || String(a.id)).toLowerCase().replace(/\s+/g, "_"),
+        app_name: a.name,
+        app_desc: a.desc,
+        logo_char: a.logo,
+        connected_date: a.connectedDate,
+        is_active: (a.status || "Active").toLowerCase() === "active",
+      })),
+      summary: {
+        total_apps: CONNECTED_APPS.length,
+        active_apps: activeApps.length,
+        inactive_apps: Math.max(0, CONNECTED_APPS.length - activeApps.length),
+      },
+    }, req);
+  }
+
+  const adminToggleAppMatch = pathname.match(/^\/api\/admin\/connected-apps\/([^/]+)\/toggle$/);
+  if (method === "POST" && adminToggleAppMatch) {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+
+    const key = decodeURIComponent(adminToggleAppMatch[1]).toLowerCase();
+    const target = CONNECTED_APPS.find(
+      (a) => String(a.id) === key || (a.app_key || a.name || "").toLowerCase().replace(/\s+/g, "_") === key
+    );
+    if (!target) return json(res, 404, { success: false, message: "Application not found" }, req);
+
+    const body = await getJsonBody(req).catch(() => ({}));
+    const nextActive = typeof body.is_active === "boolean" ? body.is_active : (target.status || "Active") !== "Active";
+    target.status = nextActive ? "Active" : "Inactive";
+    return json(res, 200, { success: true, is_active: nextActive, message: `${target.name} ${nextActive ? "enabled" : "disabled"}` }, req);
+  }
+
+  const adminDeleteAppMatch = pathname.match(/^\/api\/admin\/connected-apps\/([^/]+)$/);
+  if (method === "DELETE" && adminDeleteAppMatch) {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+
+    const key = decodeURIComponent(adminDeleteAppMatch[1]).toLowerCase();
+    const target = CONNECTED_APPS.find(
+      (a) => String(a.id) === key || (a.app_key || a.name || "").toLowerCase().replace(/\s+/g, "_") === key
+    );
+    if (!target) return json(res, 404, { success: false, message: "Application not found" }, req);
+
+    target.status = "Inactive";
+    return json(res, 200, { success: true, is_active: false, message: `${target.name} disconnected` }, req);
   }
 
   // ── Admin Users Management (Paginated, Searchable, Filtered) ──
@@ -1874,7 +1935,11 @@ async function requestHandler(req, res) {
   if (method === "GET" && pathname === "/api/connected-apps") {
     const auth = requireAuth(req, res);
     if (!auth) return;
-    return json(res, 200, CONNECTED_APPS, req);
+    const includeInactive = query.include_inactive === "true";
+    const list = includeInactive
+      ? CONNECTED_APPS
+      : CONNECTED_APPS.filter((a) => (a.status || "Active").toLowerCase() === "active");
+    return json(res, 200, list, req);
   }
 
   const deleteAppMatch = pathname.match(/^\/api\/connected-apps\/(\d+)$/);
@@ -1883,8 +1948,22 @@ async function requestHandler(req, res) {
     if (!auth) return;
 
     const appId = parseInt(deleteAppMatch[1], 10);
-    CONNECTED_APPS = CONNECTED_APPS.filter((a) => a.id !== appId);
+    const app = CONNECTED_APPS.find((a) => a.id === appId);
+    if (!app) return json(res, 404, { success: false, message: "Application not found" }, req);
+    app.status = "Inactive";
     return json(res, 200, { success: true, message: "Application disconnected" }, req);
+  }
+
+  const reconnectAppMatch = pathname.match(/^\/api\/connected-apps\/(\d+)\/reconnect$/);
+  if (method === "POST" && reconnectAppMatch) {
+    const auth = requireAuth(req, res);
+    if (!auth) return;
+
+    const appId = parseInt(reconnectAppMatch[1], 10);
+    const app = CONNECTED_APPS.find((a) => a.id === appId);
+    if (!app) return json(res, 404, { success: false, message: "Application not found" }, req);
+    app.status = "Active";
+    return json(res, 200, { success: true, message: `Reconnected ${app.name}` }, req);
   }
 
   if (method === "GET" && pathname === "/api/security/checklist") {

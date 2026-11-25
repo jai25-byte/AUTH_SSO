@@ -45,6 +45,7 @@ import {
   revokeOtherSessions,
   getConnectedApps,
   disconnectConnectedApp,
+  reconnectConnectedApp,
   changePassword,
   validateResetPasswordPolicy,
 } from "../../services/api.js";
@@ -60,17 +61,32 @@ const USER_DASHBOARD_TABS = new Set([
   "help",
 ]);
 
+const USER_TAB_TITLES = {
+  overview: "Overview · VaultAuth SSO",
+  apps: "Connected apps · VaultAuth SSO",
+  activity: "Login activity · VaultAuth SSO",
+  devices: "Devices & sessions · VaultAuth SSO",
+  security: "Security settings · VaultAuth SSO",
+  profile: "My profile · VaultAuth SSO",
+  help: "Help & support · VaultAuth SSO",
+};
+
 function normalizeAppItem(app) {
+  const isAct = app.is_active !== undefined ? Boolean(app.is_active) : (app.status || "Active").toLowerCase() === "active";
   return {
     id: app.id,
+    appKey: app.app_key || "",
     name: app.app_name || app.name || "Connected App",
     desc: app.app_desc || app.desc || "",
     category: app.category || "Enterprise App",
     logoText: app.logo_char || app.logo || (app.app_name || app.name || "A").slice(0, 1).toUpperCase(),
     bg: app.logo_bg || app.bg || "#4f46e5",
     permissions: Array.isArray(app.permissions) ? app.permissions : ["Standard access"],
-    status: app.status || "Active",
+    isActive: isAct,
+    status: isAct ? "Active" : "Disconnected",
     connectedDate: app.connected_date || app.connectedDate || "Recently",
+    lastUsed: app.last_used_at || app.connected_date || app.connectedDate || "Recently",
+    loginCount: app.login_count ?? 1,
   };
 }
 
@@ -178,7 +194,7 @@ export default function UserDashboard({ onNavigate, onNotify }) {
       getDashboardOverview().catch(() => null),
       getLoginActivity(25).catch(() => []),
       getActiveSessions().catch(() => []),
-      getConnectedApps().catch(() => []),
+      getConnectedApps({ includeInactive: true }).catch(() => []),
     ]);
 
     if (profileRes) {
@@ -188,8 +204,9 @@ export default function UserDashboard({ onNavigate, onNotify }) {
         return merged;
       });
     }
+    const normalizedApps = Array.isArray(appsRes) ? appsRes.map(normalizeAppItem) : [];
     if (Array.isArray(appsRes)) {
-      setApps(appsRes.map(normalizeAppItem));
+      setApps(normalizedApps);
     }
     if (Array.isArray(activityRes)) {
       setActivities(activityRes.map(normalizeActivityItem));
@@ -197,15 +214,20 @@ export default function UserDashboard({ onNavigate, onNotify }) {
     if (Array.isArray(sessionsRes)) {
       setSessions(sessionsRes.map(normalizeSessionItem));
     }
+    const activeAppsTotal = normalizedApps.filter((a) => a.isActive).length;
     if (overviewRes) {
       setOverviewStats({
         securityScore: overviewRes.security_score?.score ?? 90,
         scoreDesc: overviewRes.security_score?.description || "Your account is well protected",
         activeSessionsCount: overviewRes.active_sessions?.count ?? (Array.isArray(sessionsRes) ? sessionsRes.length : 0),
-        connectedAppsCount: overviewRes.connected_apps?.count ?? (Array.isArray(appsRes) ? appsRes.length : 0),
+        connectedAppsCount: overviewRes.connected_apps?.count ?? activeAppsTotal,
       });
     }
   };
+
+  useEffect(() => {
+    document.title = USER_TAB_TITLES[activeTab] || "Workspace · VaultAuth SSO";
+  }, [activeTab]);
 
   useEffect(() => {
     let active = true;
@@ -234,8 +256,20 @@ export default function UserDashboard({ onNavigate, onNotify }) {
       }
     }
     bootstrap();
+
+    const syncSilently = () => {
+      if (active && document.visibilityState === "visible" && getToken()) {
+        loadDashboardData().catch(() => {});
+      }
+    };
+    const timer = setInterval(syncSilently, 20000);
+    window.addEventListener("focus", syncSilently);
+    document.addEventListener("visibilitychange", syncSilently);
     return () => {
       active = false;
+      clearInterval(timer);
+      window.removeEventListener("focus", syncSilently);
+      document.removeEventListener("visibilitychange", syncSilently);
     };
   }, []);
 
@@ -255,7 +289,9 @@ export default function UserDashboard({ onNavigate, onNotify }) {
     const targetApp = disconnectModalApp;
     try {
       await disconnectConnectedApp(targetApp.id);
-      setApps((prev) => prev.filter((a) => a.id !== targetApp.id));
+      setApps((prev) =>
+        prev.map((a) => (a.id === targetApp.id ? { ...a, isActive: false, status: "Disconnected" } : a))
+      );
       onNotify?.(`Disconnected ${targetApp.name} from your account.`, "success");
       getDashboardOverview()
         .then((ov) =>
@@ -269,6 +305,16 @@ export default function UserDashboard({ onNavigate, onNotify }) {
       onNotify?.(err.message || `Failed to disconnect ${targetApp.name}.`, "error");
     } finally {
       setDisconnectModalApp(null);
+    }
+  };
+
+  const handleReconnectApp = async (targetApp) => {
+    try {
+      await reconnectConnectedApp(targetApp.id);
+      onNotify?.(`Reconnected ${targetApp.name}.`, "success");
+      await loadDashboardData();
+    } catch (err) {
+      onNotify?.(err.message || `Failed to reconnect ${targetApp.name}.`, "error");
     }
   };
 
@@ -446,7 +492,7 @@ export default function UserDashboard({ onNavigate, onNotify }) {
               {!sidebarCollapsed && (
                 <div style={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center" }}>
                   <span>Connected apps</span>
-                  <span className="nav-badge-pill">{apps.length}</span>
+                  <span className="nav-badge-pill">{apps.filter((a) => a.isActive).length}</span>
                 </div>
               )}
             </button>
@@ -673,7 +719,7 @@ export default function UserDashboard({ onNavigate, onNotify }) {
                       <Grid size={18} />
                     </div>
                   </div>
-                  <h3 className="stat-card-value">{apps.length || overviewStats.connectedAppsCount} apps</h3>
+                  <h3 className="stat-card-value">{apps.filter((a) => a.isActive).length} apps</h3>
                   <span className="stat-card-desc">Approved enterprise services</span>
                 </div>
 
@@ -865,7 +911,9 @@ export default function UserDashboard({ onNavigate, onNotify }) {
                           </div>
                           <p>{app.desc}</p>
                           <div className="app-meta-badges">
-                            <span>Connected {app.connectedDate}</span>
+                            <span>Last used {app.lastUsed}</span>
+                            <span>•</span>
+                            <span>{app.loginCount || 1} sign-in(s)</span>
                             <span>•</span>
                             <span className="badge-perm-count">{app.permissions.length} permissions granted</span>
                           </div>
@@ -873,7 +921,9 @@ export default function UserDashboard({ onNavigate, onNotify }) {
                       </div>
 
                       <div className="app-card-right">
-                        <span className="status-badge status-success">Active</span>
+                        <span className={`status-badge ${app.isActive ? "status-success" : "status-failed"}`}>
+                          {app.isActive ? "Active" : "Disconnected"}
+                        </span>
                         <div className="app-actions-group">
                           <button
                             type="button"
@@ -882,13 +932,23 @@ export default function UserDashboard({ onNavigate, onNotify }) {
                           >
                             Manage Access
                           </button>
-                          <button
-                            type="button"
-                            className="btn-danger-sm"
-                            onClick={() => setDisconnectModalApp(app)}
-                          >
-                            Disconnect
-                          </button>
+                          {app.isActive ? (
+                            <button
+                              type="button"
+                              className="btn-danger-sm"
+                              onClick={() => setDisconnectModalApp(app)}
+                            >
+                              Disconnect
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="btn-outline-sm"
+                              onClick={() => handleReconnectApp(app)}
+                            >
+                              Reconnect
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>

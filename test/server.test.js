@@ -344,4 +344,43 @@ describe("Node.js Backend Server API Suite", () => {
     });
     expect(resetBad.status).toBe(400);
   });
+
+  it("Admin connected apps endpoint reports live summary and supports toggling", async () => {
+    const listRes = await fetch(`${BASE}/api/admin/connected-apps`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    expect(listRes.status).toBe(200);
+    const data = await listRes.json();
+    expect(Array.isArray(data.apps)).toBe(true);
+    expect(data.summary.total_apps).toBe(data.apps.length);
+
+    const firstKey = data.apps[0].app_key;
+    const toggleRes = await fetch(`${BASE}/api/admin/connected-apps/${encodeURIComponent(firstKey)}/toggle`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${adminToken}`,
+      },
+      body: JSON.stringify({ is_active: false }),
+    });
+    expect(toggleRes.status).toBe(200);
+    const toggleData = await toggleRes.json();
+    expect(toggleData.is_active).toBe(false);
+
+    const statsRes = await fetch(`${BASE}/api/admin/dashboard/stats`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    const stats = await statsRes.json();
+    expect(stats.connected_apps_inactive).toBeGreaterThanOrEqual(1);
+
+    // Re-enable cleanly
+    await fetch(`${BASE}/api/admin/connected-apps/${encodeURIComponent(firstKey)}/toggle`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${adminToken}`,
+      },
+      body: JSON.stringify({ is_active: true }),
+    });
+  });
 });

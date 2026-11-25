@@ -7,6 +7,7 @@ export default function AdminSecurityActivity({
   initialTab = "logins",
   activities = [],
   activityTotal = 0,
+  activityRawTotal = 0,
   activityPage = 1,
   activityTotalPages = 1,
   activitySearch = "",
@@ -20,6 +21,7 @@ export default function AdminSecurityActivity({
   onActivityPageChange,
   logs = [],
   auditTotal = 0,
+  auditRawTotal = 0,
   auditPage = 1,
   auditTotalPages = 1,
   auditSearch = "",
@@ -98,6 +100,7 @@ export default function AdminSecurityActivity({
         <AdminLoginActivity
           activities={activities}
           total={activityTotal}
+          rawTotal={activityRawTotal}
           page={activityPage}
           totalPages={activityTotalPages}
           search={activitySearch}
@@ -116,6 +119,7 @@ export default function AdminSecurityActivity({
         <AdminAuditLogs
           logs={logs}
           total={auditTotal}
+          rawTotal={auditRawTotal}
           page={auditPage}
           totalPages={auditTotalPages}
           search={auditSearch}

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import {
   Activity,
   Search,
@@ -8,13 +8,16 @@ import {
   XCircle,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   RefreshCw,
   Globe,
 } from "lucide-react";
+import { groupByUidAndTime, tallyField, toggleKeyInSet } from "./activityGroupUtils.js";
 
 export default function AdminLoginActivity({
   activities = [],
   total = 0,
+  rawTotal = 0,
   page = 1,
   totalPages = 1,
   search = "",
@@ -29,6 +32,51 @@ export default function AdminLoginActivity({
   onRefresh,
   loading,
 }) {
+  const [expandedKeys, setExpandedKeys] = useState(() => new Set());
+
+  const groupedActivities = useMemo(
+    () =>
+      groupByUidAndTime(activities, {
+        getUid: (a) => a.uid,
+        getTimeKey: (a) => a.time_bucket || a.created_at,
+        toChildEvent: (ev, parent) => ({
+          id: ev.id,
+          uid: ev.uid ?? parent.uid,
+          username: ev.username || parent.username,
+          full_name: ev.full_name || parent.full_name,
+          email: ev.email || parent.email,
+          device_name: ev.device_name || "Desktop",
+          device_type: ev.device_type || "desktop",
+          browser: ev.browser || "—",
+          os: ev.os || "—",
+          location: ev.location || "Local",
+          ip_address: ev.ip_address || "—",
+          status: ev.status || "Unknown",
+          created_at: ev.created_at || parent.created_at,
+          created_at_exact: ev.created_at_exact || ev.created_at || parent.created_at,
+        }),
+        buildGroup: (lead, events, groupKey, timeKey) => {
+          const statusCounts = tallyField(events, (e) => e.status || "Unknown");
+          const hasFailure = Object.keys(statusCounts).some((s) => s.toLowerCase() !== "success");
+          const distinctDevices = [...new Set(events.map((e) => e.device_name || "Desktop"))];
+          const distinctIps = [...new Set(events.map((e) => e.ip_address).filter(Boolean))];
+          return {
+            ...lead,
+            group_key: lead.group_key || groupKey,
+            time_bucket: lead.time_bucket || timeKey,
+            created_at: lead.time_bucket || timeKey || lead.created_at,
+            event_count: events.length,
+            status_counts: lead.status_counts || statusCounts,
+            has_failure: typeof lead.has_failure === "boolean" ? lead.has_failure : hasFailure,
+            distinct_devices: distinctDevices,
+            distinct_ips: distinctIps,
+            events,
+          };
+        },
+      }),
+    [activities]
+  );
+
   return (
     <div className="admin-page-container" style={{ display: "grid", gap: "18px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "14px" }}>
@@ -37,7 +85,7 @@ export default function AdminLoginActivity({
             Login activity
           </h1>
           <p style={{ margin: "4px 0 0", color: "var(--adm-text-2)", fontSize: "13px" }}>
-            Successful authentication events and failed credential challenge attempts.
+            Authentication attempts grouped by user UID and timestamp. Click any multi-event row to expand details.
           </p>
         </div>
 
@@ -82,7 +130,11 @@ export default function AdminLoginActivity({
         </div>
 
         <div style={{ fontSize: "12px", color: "var(--adm-text-2)" }}>
-          Showing <strong style={{ color: "var(--adm-text)" }}>{activities.length}</strong> of <strong style={{ color: "var(--adm-text)" }}>{total}</strong> entries
+          Showing <strong style={{ color: "var(--adm-text)" }}>{groupedActivities.length}</strong> of{" "}
+          <strong style={{ color: "var(--adm-text)" }}>{total || groupedActivities.length}</strong> grouped entries
+          {rawTotal > (total || groupedActivities.length) ? (
+            <span style={{ color: "var(--adm-muted)" }}> ({rawTotal} total events)</span>
+          ) : null}
         </div>
       </div>
 
@@ -102,7 +154,7 @@ export default function AdminLoginActivity({
             <tbody>
               {loading ? (
                 <tr><td colSpan={6} style={{ textAlign: "center", padding: "36px 16px", color: "var(--adm-muted)" }}>Loading activity...</td></tr>
-              ) : activities.length === 0 ? (
+              ) : groupedActivities.length === 0 ? (
                 <tr>
                   <td colSpan={6} style={{ textAlign: "center", padding: "44px 16px", color: "var(--adm-muted)" }}>
                     <Activity size={30} style={{ margin: "0 auto 8px", color: "var(--adm-muted)" }} />
@@ -110,32 +162,144 @@ export default function AdminLoginActivity({
                   </td>
                 </tr>
               ) : (
-                activities.map((item) => {
-                  const isSuccess = (item.status || "").toLowerCase() === "success";
+                groupedActivities.map((item) => {
+                  const isGroup = item.event_count > 1;
+                  const isExpanded = isGroup && expandedKeys.has(item.group_key);
+                  const isSuccess = !item.has_failure && (item.status || "").toLowerCase() === "success";
+                  const statusEntries = Object.entries(item.status_counts || {});
                   return (
-                    <tr key={item.id} style={{ borderBottom: "1px solid var(--adm-border-soft)" }}>
-                      <td style={{ padding: "12px 16px" }}>
-                        <div style={{ fontWeight: 600, color: "var(--adm-text)" }}>{item.username}</div>
-                        <div style={{ fontSize: "11.5px", color: "var(--adm-muted)" }}>{item.email} · UID #{item.uid}</div>
-                      </td>
-                      <td style={{ padding: "12px 16px" }}>
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "2px 9px", borderRadius: "6px", fontSize: "11.5px", fontWeight: 600, background: isSuccess ? "var(--adm-ok-bg)" : "var(--adm-danger-bg)", border: `1px solid ${isSuccess ? "var(--adm-ok-border)" : "var(--adm-danger-border)"}`, color: isSuccess ? "var(--adm-ok-text)" : "var(--adm-danger-text)" }}>
-                          {isSuccess ? <CheckCircle2 size={11} /> : <XCircle size={11} />}
-                          {item.status}
-                        </span>
-                      </td>
-                      <td style={{ padding: "12px 16px" }}>
-                        <div style={{ color: "var(--adm-body)", fontWeight: 500 }}>{item.device_name || "Desktop"}</div>
-                        <div style={{ fontSize: "11.5px", color: "var(--adm-muted)" }}>{item.browser} · {item.os}</div>
-                      </td>
-                      <td style={{ padding: "12px 16px", color: "var(--adm-body)" }}>
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
-                          <Globe size={12} color="var(--adm-muted)" /> {item.location || "Local"}
-                        </span>
-                      </td>
-                      <td style={{ padding: "12px 16px", fontFamily: "monospace", color: "var(--adm-text-2)", fontSize: "12px" }}>{item.ip_address}</td>
-                      <td style={{ padding: "12px 16px", textAlign: "right", color: "var(--adm-text-2)", fontSize: "12px" }}>{item.created_at}</td>
-                    </tr>
+                    <React.Fragment key={item.group_key}>
+                      <tr
+                        onClick={isGroup ? () => setExpandedKeys((prev) => toggleKeyInSet(prev, item.group_key)) : undefined}
+                        style={{
+                          borderBottom: "1px solid var(--adm-border-soft)",
+                          cursor: isGroup ? "pointer" : "default",
+                          background: isExpanded ? "var(--adm-table-head-bg)" : "transparent",
+                        }}
+                      >
+                        <td style={{ padding: "12px 16px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            {isGroup ? (
+                              <span
+                                style={{
+                                  width: "18px",
+                                  height: "18px",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  borderRadius: "4px",
+                                  background: "var(--adm-accent-soft)",
+                                  color: "var(--adm-link)",
+                                  flexShrink: 0,
+                                }}
+                                title={isExpanded ? "Collapse grouped attempts" : "Expand grouped attempts"}
+                              >
+                                {isExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                              </span>
+                            ) : null}
+                            <div>
+                              <div style={{ display: "flex", alignItems: "center", gap: "7px", flexWrap: "wrap" }}>
+                                <span style={{ fontWeight: 600, color: "var(--adm-text)" }}>
+                                  {item.full_name || item.username}
+                                </span>
+                                {isGroup ? (
+                                  <span
+                                    style={{
+                                      padding: "1px 7px",
+                                      borderRadius: "999px",
+                                      fontSize: "10.5px",
+                                      fontWeight: 700,
+                                      background: "var(--adm-accent-soft)",
+                                      color: "var(--adm-link)",
+                                      border: "1px solid var(--adm-accent-border)",
+                                    }}
+                                  >
+                                    ×{item.event_count}
+                                  </span>
+                                ) : null}
+                              </div>
+                              <div style={{ fontSize: "11.5px", color: "var(--adm-muted)" }}>
+                                {item.email} · UID #{item.uid}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ padding: "12px 16px" }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "2px 9px", borderRadius: "6px", fontSize: "11.5px", fontWeight: 600, background: isSuccess ? "var(--adm-ok-bg)" : "var(--adm-danger-bg)", border: `1px solid ${isSuccess ? "var(--adm-ok-border)" : "var(--adm-danger-border)"}`, color: isSuccess ? "var(--adm-ok-text)" : "var(--adm-danger-text)" }}>
+                            {isSuccess ? <CheckCircle2 size={11} /> : <XCircle size={11} />}
+                            {item.status}
+                          </span>
+                          {isGroup && statusEntries.length > 1 ? (
+                            <div style={{ fontSize: "11px", color: "var(--adm-muted)", marginTop: "3px" }}>
+                              {statusEntries.map(([st, cnt]) => `${cnt} ${st}`).join(" · ")}
+                            </div>
+                          ) : null}
+                        </td>
+                        <td style={{ padding: "12px 16px" }}>
+                          <div style={{ color: "var(--adm-body)", fontWeight: 500 }}>
+                            {item.device_name || "Desktop"}
+                            {item.distinct_devices?.length > 1 ? (
+                              <span style={{ color: "var(--adm-muted)", fontSize: "11px" }}> (+{item.distinct_devices.length - 1} more)</span>
+                            ) : null}
+                          </div>
+                          <div style={{ fontSize: "11.5px", color: "var(--adm-muted)" }}>{item.browser} · {item.os}</div>
+                        </td>
+                        <td style={{ padding: "12px 16px", color: "var(--adm-body)" }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
+                            <Globe size={12} color="var(--adm-muted)" /> {item.location || "Local"}
+                          </span>
+                        </td>
+                        <td style={{ padding: "12px 16px", fontFamily: "monospace", color: "var(--adm-text-2)", fontSize: "12px" }}>
+                          {item.ip_address}
+                          {item.distinct_ips?.length > 1 ? (
+                            <span style={{ color: "var(--adm-muted)", fontSize: "11px", fontFamily: "sans-serif" }}> (+{item.distinct_ips.length - 1})</span>
+                          ) : null}
+                        </td>
+                        <td style={{ padding: "12px 16px", textAlign: "right", color: "var(--adm-text-2)", fontSize: "12px" }}>
+                          <div>{item.created_at}</div>
+                          {isGroup ? (
+                            <div style={{ fontSize: "11px", color: "var(--adm-muted)" }}>
+                              {item.event_count} events in minute
+                            </div>
+                          ) : null}
+                        </td>
+                      </tr>
+
+                      {isExpanded &&
+                        item.events.map((ev, idx) => {
+                          const evOk = (ev.status || "").toLowerCase() === "success";
+                          return (
+                            <tr
+                              key={`${item.group_key}-ev-${ev.id ?? idx}`}
+                              style={{
+                                borderBottom: "1px solid var(--adm-border-soft)",
+                                background: "var(--adm-surface)",
+                                fontSize: "12px",
+                              }}
+                            >
+                              <td style={{ padding: "8px 16px 8px 42px", color: "var(--adm-muted)" }}>
+                                <span style={{ borderLeft: "2px solid var(--adm-border-strong)", paddingLeft: "10px" }}>
+                                  Event #{ev.id ?? idx + 1}
+                                </span>
+                              </td>
+                              <td style={{ padding: "8px 16px" }}>
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "1px 7px", borderRadius: "5px", fontSize: "11px", fontWeight: 600, background: evOk ? "var(--adm-ok-bg)" : "var(--adm-danger-bg)", border: `1px solid ${evOk ? "var(--adm-ok-border)" : "var(--adm-danger-border)"}`, color: evOk ? "var(--adm-ok-text)" : "var(--adm-danger-text)" }}>
+                                  {evOk ? <CheckCircle2 size={10} /> : <XCircle size={10} />}
+                                  {ev.status}
+                                </span>
+                              </td>
+                              <td style={{ padding: "8px 16px", color: "var(--adm-text-2)" }}>
+                                {ev.device_name} · {ev.browser} · {ev.os}
+                              </td>
+                              <td style={{ padding: "8px 16px", color: "var(--adm-text-2)" }}>{ev.location}</td>
+                              <td style={{ padding: "8px 16px", fontFamily: "monospace", color: "var(--adm-text-2)" }}>{ev.ip_address}</td>
+                              <td style={{ padding: "8px 16px", textAlign: "right", color: "var(--adm-muted)" }}>
+                                {ev.created_at_exact || ev.created_at}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </React.Fragment>
                   );
                 })
               )}

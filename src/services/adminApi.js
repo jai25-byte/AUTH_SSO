@@ -233,18 +233,34 @@ export async function updateAdminSettings(settings) {
   });
 }
 
-// 9. Connected Applications (SSO Apps)
+// 9. Connected Applications (Live Workspace SSO Apps)
 export async function getAdminConnectedApps() {
   try {
-    const res = await adminRequest("/api/connected-apps", { method: "GET" });
-    return Array.isArray(res) ? res : res?.apps || [];
+    const res = await adminRequest("/api/admin/connected-apps", { method: "GET" });
+    if (Array.isArray(res)) {
+      return { apps: res, summary: null };
+    }
+    return {
+      apps: Array.isArray(res?.apps) ? res.apps : [],
+      summary: res?.summary || null,
+    };
   } catch {
-    return [];
+    return { apps: [], summary: null };
   }
 }
 
+export async function toggleAdminApp(appKey, isActive, targetUid = null) {
+  const body = {};
+  if (typeof isActive === "boolean") body.is_active = isActive;
+  if (targetUid !== null && targetUid !== undefined) body.uid = targetUid;
+  return await adminRequest(`/api/admin/connected-apps/${encodeURIComponent(appKey)}/toggle`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
 export async function disconnectAdminApp(appId) {
-  return await adminRequest(`/api/connected-apps/${encodeURIComponent(appId)}`, {
+  return await adminRequest(`/api/admin/connected-apps/${encodeURIComponent(appId)}`, {
     method: "DELETE",
   });
 }

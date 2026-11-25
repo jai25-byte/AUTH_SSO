@@ -17,6 +17,7 @@ export default function AdminOverview({
   users = [],
   rolesData = { roles: [] },
   apps = [],
+  appsSummary = null,
   settings = {},
   adminUser,
   loading,
@@ -47,12 +48,21 @@ export default function AdminOverview({
   const suspiciousCount = stats?.suspicious_activities_24h ?? 0;
   const activePct = totalUsers > 0 ? ((activeUsers / totalUsers) * 100).toFixed(1) : "0.0";
 
-  const activeAppsCount = apps.filter(
-    (a) => (a.status || "Active").toLowerCase() === "active"
-  ).length;
-  const inactiveAppsCount = Math.max(0, apps.length - activeAppsCount);
+  const activeAppsCount =
+    appsSummary?.active_apps ??
+    stats?.connected_apps_active ??
+    apps.filter((a) => (a.status || "Active").toLowerCase() === "active").length;
+  const totalAppsCount = appsSummary?.total_apps ?? stats?.connected_apps_total ?? apps.length;
+  const inactiveAppsCount =
+    appsSummary?.inactive_apps ??
+    stats?.connected_apps_inactive ??
+    Math.max(0, totalAppsCount - activeAppsCount);
+  const activeGrantsCount = appsSummary?.total_active_grants ?? stats?.connected_grants_active;
+  const inactiveGrantsCount = appsSummary?.total_inactive_grants ?? stats?.connected_grants_inactive;
 
-  const uniqueSessionUsers = new Set(sessions.map((s) => s.uid || s.username)).size;
+  const uniqueSessionUsers =
+    stats?.active_session_users ??
+    new Set(sessions.filter((s) => s.is_active).map((s) => s.uid || s.username)).size;
   const mfaRequired =
     settings?.mfa_required === true || String(settings?.mfa_required) === "true";
   const minPassLen = Number(settings?.password_min_length) || 8;
@@ -61,18 +71,25 @@ export default function AdminOverview({
     settings?.mail_provider ||
     (settings?.smtp_configured ? "SMTP" : settings?.otp_configured ? "Plunk" : "Email / In-app");
 
-  const securityScore = Math.min(
-    100,
-    Math.max(
-      50,
-      70 +
-        (mfaRequired ? 15 : 5) +
-        (minPassLen >= 8 ? 10 : 0) +
-        (suspiciousCount === 0 ? 5 : 0) -
-        Math.min(15, failedLogins > 10 ? 10 : 0)
-    )
-  );
+  const securityScore =
+    stats?.security_score ??
+    Math.min(
+      100,
+      Math.max(
+        50,
+        70 +
+          (mfaRequired ? 15 : 5) +
+          (minPassLen >= 8 ? 10 : 0) +
+          (suspiciousCount === 0 ? 5 : 0) -
+          Math.min(15, failedLogins > 10 ? 10 : 0)
+      )
+    );
   const isHealthy = suspiciousCount === 0;
+
+  const appsSubtext =
+    typeof activeGrantsCount === "number"
+      ? `${activeAppsCount} active · ${inactiveAppsCount} inactive · ${activeGrantsCount} user grants`
+      : `${activeAppsCount} active · ${inactiveAppsCount} inactive`;
 
   const kpiCards = [
     {
@@ -80,7 +97,7 @@ export default function AdminOverview({
       value: totalUsers,
       subtext:
         stats?.new_users_today > 0
-          ? `+${stats.new_users_today} this period`
+          ? `+${stats.new_users_today} today`
           : "Directory accounts",
       subColor: stats?.new_users_today > 0 ? "var(--adm-ok-text)" : "var(--adm-muted)",
       page: "users",
@@ -102,14 +119,14 @@ export default function AdminOverview({
     {
       label: "Active sessions",
       value: activeSessionsCount,
-      subtext: `Across ${uniqueSessionUsers} users`,
+      subtext: `Across ${uniqueSessionUsers} ${uniqueSessionUsers === 1 ? "user" : "users"}`,
       subColor: "var(--adm-muted)",
       page: "sessions",
     },
     {
       label: "Connected applications",
-      value: apps.length,
-      subtext: `${activeAppsCount} active · ${inactiveAppsCount} inactive`,
+      value: totalAppsCount,
+      subtext: appsSubtext,
       subColor: "var(--adm-muted)",
       page: "applications",
     },
@@ -122,11 +139,12 @@ export default function AdminOverview({
     },
   ];
 
-  const previewSessions = sessions.slice(0, 4);
+  const activeOnlySessions = (sessions || []).filter((s) => s.is_active);
+  const previewSessions = activeOnlySessions.slice(0, 4);
   const previewUsers = users.slice(0, 3);
-  const previewApps = apps.slice(0, 3);
+  const previewApps = apps.slice(0, 4);
   const rolesCount = rolesData?.roles?.length || 2;
-  const displayedSessionsTotal = sessionsTotal || sessions.length;
+  const displayedSessionsTotal = stats?.active_sessions ?? sessionsTotal ?? activeOnlySessions.length;
 
   return (
     <div className="admin-page-container" style={{ display: "grid", gap: "18px" }}>
@@ -183,14 +201,10 @@ export default function AdminOverview({
               gap: "6px",
               cursor: "pointer",
             }}
-            title="Refresh workspace metrics"
+            title="Refresh live workspace metrics"
           >
-            {loading ? (
-              <RefreshCw size={13} style={{ animation: "spin 1s linear infinite" }} />
-            ) : (
-              <ChevronDown size={14} color="var(--adm-text-2)" />
-            )}
-            <span>Last 24 hours</span>
+            <RefreshCw size={13} color="var(--adm-text-2)" style={loading ? { animation: "spin 1s linear infinite" } : undefined} />
+            <span>{loading ? "Syncing..." : "Refresh live"}</span>
           </button>
 
           <button
@@ -495,7 +509,7 @@ export default function AdminOverview({
               ) : (
                 previewSessions.map((sess, idx) => {
                   const isActive = Boolean(sess.is_active);
-                  const isCurrent = idx === 0 && isActive && sess.uid === adminUser?.uid;
+                  const isCurrent = Boolean(sess.is_current ?? (idx === 0 && isActive && sess.uid === adminUser?.uid));
                   return (
                     <tr
                       key={sess.id || sess.session_id || idx}
@@ -525,8 +539,13 @@ export default function AdminOverview({
                           {sess.location || "Local / Verified"}
                         </div>
                       </td>
-                      <td style={{ padding: "12px 16px", color: "var(--adm-text-2)" }}>
-                        {sess.last_activity || sess.created_at || "Recent"}
+                      <td style={{ padding: "12px 16px" }}>
+                        <div style={{ fontWeight: sess.last_activity_relative === "Active now" ? 600 : 400, color: sess.last_activity_relative === "Active now" ? "var(--adm-ok-text)" : "var(--adm-text-2)" }}>
+                          {sess.last_activity_relative || sess.last_activity || sess.created_at || "Recent"}
+                        </div>
+                        {sess.last_activity_relative && sess.last_activity && sess.last_activity_relative !== sess.last_activity && (
+                          <div style={{ fontSize: "11px", color: "var(--adm-muted)" }}>{sess.last_activity}</div>
+                        )}
                       </td>
                       <td style={{ padding: "12px 16px" }}>
                         <span
@@ -784,7 +803,10 @@ export default function AdminOverview({
             </div>
 
             <div style={{ fontSize: "12px", color: "var(--adm-text-2)", marginTop: "6px", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-              <span>{apps.length} registered applications</span>
+              <span>
+                {totalAppsCount} workspace applications · {activeAppsCount} active
+                {typeof inactiveGrantsCount === "number" && inactiveGrantsCount > 0 ? ` · ${inactiveGrantsCount} user revoked` : ""}
+              </span>
               <button
                 type="button"
                 onClick={() => onNavigate("applications")}
@@ -801,10 +823,18 @@ export default function AdminOverview({
                 </div>
               ) : (
                 previewApps.map((app) => {
+                  const appName = app.name || app.app_name || "Connected App";
+                  const appDesc = app.desc || app.app_desc || `${(app.permissions || []).length} permissions`;
+                  const appLogo = app.logo || app.logo_char || appName.substring(0, 1).toUpperCase();
                   const isAppActive = (app.status || "Active").toLowerCase() === "active";
+                  const latestEmail = app.connected_emails?.[0];
+                  const subLine =
+                    typeof app.active_users_count === "number"
+                      ? `${app.active_users_count} active · ${app.total_logins || 1} logins${latestEmail ? ` · ${latestEmail}` : ""}`
+                      : appDesc;
                   return (
                     <div
-                      key={app.id || app.name}
+                      key={app.app_key || app.id || appName}
                       style={{
                         display: "flex",
                         alignItems: "center",
@@ -830,14 +860,14 @@ export default function AdminOverview({
                             flexShrink: 0,
                           }}
                         >
-                          {app.logo || (app.name || "A").substring(0, 1).toUpperCase()}
+                          {appLogo}
                         </div>
                         <div style={{ minWidth: 0 }}>
                           <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--adm-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {app.name}
+                            {appName}
                           </div>
-                          <div style={{ fontSize: "11.5px", color: "var(--adm-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {app.desc || `${(app.permissions || []).length} permissions`}
+                          <div style={{ fontSize: "11.5px", color: "var(--adm-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={subLine}>
+                            {subLine}
                           </div>
                         </div>
                       </div>

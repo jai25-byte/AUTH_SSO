@@ -47,11 +47,29 @@ export default function AdminSessions({
     <div className="admin-page-container" style={{ display: "grid", gap: "18px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "14px" }}>
         <div>
-          <h1 style={{ fontSize: "22px", fontWeight: 700, color: "var(--adm-text)", margin: 0 }}>
-            Active sessions
-          </h1>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            <h1 style={{ fontSize: "22px", fontWeight: 700, color: "var(--adm-text)", margin: 0 }}>
+              Active sessions
+            </h1>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
+                fontSize: "11px",
+                fontWeight: 600,
+                padding: "2px 8px",
+                borderRadius: "9999px",
+                background: "var(--adm-ok-bg)",
+                border: "1px solid var(--adm-ok-border)",
+                color: "var(--adm-ok-text)",
+              }}
+            >
+              ● Real-time
+            </span>
+          </div>
           <p style={{ margin: "4px 0 0", color: "var(--adm-text-2)", fontSize: "13px" }}>
-            Inspect valid client sessions, device fingerprints, and revoke access tokens immediately.
+            Inspect real-time authenticated user sessions, last activity, and revoke access tokens immediately.
           </p>
         </div>
 
@@ -169,11 +187,16 @@ export default function AdminSessions({
               ) : (
                 sessions.map((sess) => {
                   const isActive = sess.is_active;
+                  const isCur = Boolean(sess.is_current);
                   return (
                     <tr key={sess.id || sess.session_id} style={{ borderBottom: "1px solid var(--adm-border-soft)" }}>
                       <td style={{ padding: "12px 16px" }}>
-                        <div style={{ fontWeight: 600, color: "var(--adm-text)" }}>{sess.username}</div>
-                        <div style={{ fontSize: "11.5px", color: "var(--adm-muted)" }}>{sess.email} · UID #{sess.uid}</div>
+                        <div style={{ fontWeight: 600, color: "var(--adm-text)" }}>
+                          {sess.full_name || sess.username}
+                        </div>
+                        <div style={{ fontSize: "11.5px", color: "var(--adm-muted)" }}>
+                          {sess.email}
+                        </div>
                       </td>
                       <td style={{ padding: "12px 16px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: 500, color: "var(--adm-text)" }}>
@@ -187,12 +210,18 @@ export default function AdminSessions({
                         <div style={{ fontSize: "11.5px", color: "var(--adm-muted)", fontFamily: "monospace" }}>{sess.ip_address || "127.0.0.1"}</div>
                       </td>
                       <td style={{ padding: "12px 16px", color: "var(--adm-text-2)", fontSize: "12px" }}>{sess.created_at}</td>
-                      <td style={{ padding: "12px 16px", color: "var(--adm-text-2)", fontSize: "12px" }}>{sess.last_activity}</td>
+                      <td style={{ padding: "12px 16px", fontSize: "12px" }}>
+                        <div style={{ fontWeight: sess.last_activity_relative === "Active now" ? 600 : 400, color: sess.last_activity_relative === "Active now" ? "var(--adm-ok-text)" : "var(--adm-text-2)" }}>
+                          {sess.last_activity_relative || sess.last_activity}
+                        </div>
+                        {sess.last_activity_relative && sess.last_activity && sess.last_activity_relative !== sess.last_activity && (
+                          <div style={{ fontSize: "11px", color: "var(--adm-muted)" }}>{sess.last_activity}</div>
+                        )}
+                      </td>
                       <td style={{ padding: "12px 16px" }}>
                         {(() => {
                           const statusStr = (sess.status || (isActive ? "Active" : "Revoked")).toLowerCase();
-                          const isCur = Boolean(sess.is_current);
-                          const isAct = isActive || statusStr === "active";
+                          const isAct = isActive || statusStr === "active" || statusStr === "current";
                           const isRev = statusStr === "revoked";
                           const isExp = statusStr === "expired";
 
@@ -236,7 +265,7 @@ export default function AdminSessions({
                       </td>
                       <td style={{ padding: "12px 16px", textAlign: "right" }}>
                         <div style={{ display: "inline-flex", gap: "6px" }}>
-                          {isActive && (
+                          {isActive && !isCur && (
                             <button
                               onClick={() => onRevokeSession(sess.session_id)}
                               style={{

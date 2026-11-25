@@ -26,6 +26,7 @@ import {
   getAdminSettings,
   updateAdminSettings,
   getAdminConnectedApps,
+  toggleAdminApp,
   disconnectAdminApp,
   adminLogout,
 } from "../../services/adminApi.js";
@@ -69,6 +70,17 @@ const QUICK_PAGES = [
   { id: "settings", label: "Admin settings" },
 ];
 
+const PAGE_TITLES = {
+  overview: "Admin overview · VaultAuth SSO",
+  users: "Users · Admin · VaultAuth SSO",
+  roles: "Roles & permissions · Admin · VaultAuth SSO",
+  sessions: "Active sessions · Admin · VaultAuth SSO",
+  applications: "Connected applications · Admin · VaultAuth SSO",
+  activity: "Login activity · Admin · VaultAuth SSO",
+  audit: "Audit logs · Admin · VaultAuth SSO",
+  settings: "Settings · Admin · VaultAuth SSO",
+};
+
 export default function AdminDashboard({ onNavigate }) {
   const [activePage, setActivePage] = useHistoryTab(ADMIN_PAGES, "overview");
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -111,6 +123,7 @@ export default function AdminDashboard({ onNavigate }) {
   const [rolesData, setRolesData] = useState({ roles: [], permissions: [] });
   const [sessionsData, setSessionsData] = useState({ sessions: [], total: 0, page: 1, pages: 1 });
   const [appsData, setAppsData] = useState([]);
+  const [appsSummary, setAppsSummary] = useState(null);
   const [activityData, setActivityData] = useState({ activities: [], total: 0, page: 1, pages: 1 });
   const [auditData, setAuditData] = useState({ logs: [], total: 0, page: 1, pages: 1 });
   const [settingsData, setSettingsData] = useState({});
@@ -118,7 +131,7 @@ export default function AdminDashboard({ onNavigate }) {
 
   // Filter States
   const [userFilters, setUserFilters] = useState({ search: "", role: "all", status: "all", page: 1 });
-  const [sessionFilters, setSessionFilters] = useState({ search: "", status: "all", page: 1 });
+  const [sessionFilters, setSessionFilters] = useState({ search: "", status: "active", page: 1 });
   const [activityFilters, setActivityFilters] = useState({ search: "", status: "all", date_from: "", date_to: "", page: 1 });
   const [auditFilters, setAuditFilters] = useState({ search: "", event: "all", page: 1 });
 
@@ -188,10 +201,14 @@ export default function AdminDashboard({ onNavigate }) {
     verifyAuth();
   }, []);
 
+  useEffect(() => {
+    document.title = PAGE_TITLES[activePage] || "Admin Console · VaultAuth SSO";
+  }, [activePage]);
+
   const loadPageData = useCallback(
-    async (pageId = activePage) => {
+    async (pageId = activePage, { silent = false } = {}) => {
       if (authStatus !== "authorized") return;
-      setLoading(true);
+      if (!silent) setLoading(true);
       try {
         if (pageId === "overview") {
           const [statsRes, usersRes, rolesRes, sessRes, actRes, settingsRes, appsRes] =
@@ -199,7 +216,7 @@ export default function AdminDashboard({ onNavigate }) {
               getAdminStats(),
               getAdminUsers({ page: 1, per_page: 20 }),
               getAdminRoles(),
-              getAdminSessions({ page: 1, per_page: 20 }),
+              getAdminSessions({ page: 1, per_page: 20, status: "active" }),
               getAdminLoginActivity({ page: 1, per_page: 20 }),
               getAdminSettings(),
               getAdminConnectedApps(),
@@ -212,7 +229,11 @@ export default function AdminDashboard({ onNavigate }) {
           if (sessRes.status === "fulfilled") setSessionsData(sessRes.value);
           if (actRes.status === "fulfilled") setRecentActivity(actRes.value?.activities || []);
           if (settingsRes.status === "fulfilled") setSettingsData(settingsRes.value || {});
-          if (appsRes.status === "fulfilled") setAppsData(appsRes.value || []);
+          if (appsRes.status === "fulfilled") {
+            const payload = appsRes.value || {};
+            setAppsData(Array.isArray(payload) ? payload : payload.apps || []);
+            setAppsSummary(Array.isArray(payload) ? null : payload.summary || null);
+          }
         } else if (pageId === "users") {
           const res = await getAdminUsers(userFilters);
           setUsersData(res);
@@ -224,11 +245,17 @@ export default function AdminDashboard({ onNavigate }) {
           setRolesData(rolesRes);
           setUsersData(usersRes);
         } else if (pageId === "sessions") {
-          const res = await getAdminSessions(sessionFilters);
-          setSessionsData(res);
+          const [sessRes, statsRes] = await Promise.allSettled([
+            getAdminSessions(sessionFilters),
+            getAdminStats(),
+          ]);
+          if (sessRes.status === "fulfilled") setSessionsData(sessRes.value);
+          else throw sessRes.reason;
+          if (statsRes.status === "fulfilled") setStats(statsRes.value);
         } else if (pageId === "applications") {
-          const appsRes = await getAdminConnectedApps();
-          setAppsData(appsRes || []);
+          const payload = await getAdminConnectedApps();
+          setAppsData(Array.isArray(payload) ? payload : payload?.apps || []);
+          setAppsSummary(Array.isArray(payload) ? null : payload?.summary || null);
         } else if (pageId === "activity" || pageId === "audit") {
           const [actRes, audRes] = await Promise.allSettled([
             getAdminLoginActivity(activityFilters),
@@ -241,9 +268,11 @@ export default function AdminDashboard({ onNavigate }) {
           setSettingsData(res);
         }
       } catch (err) {
-        notify(err.message || "Failed to load admin data", "error");
+        if (!silent) {
+          notify(err.message || "Failed to load admin data", "error");
+        }
       } finally {
-        setLoading(false);
+        if (!silent) setLoading(false);
       }
     },
     [authStatus, activePage, userFilters, sessionFilters, activityFilters, auditFilters]
@@ -253,6 +282,25 @@ export default function AdminDashboard({ onNavigate }) {
     if (authStatus === "authorized") {
       loadPageData(activePage);
     }
+  }, [authStatus, activePage, loadPageData]);
+
+  // Live workspace auto-sync (5s on overview/sessions, 15s elsewhere) when tab is visible
+  useEffect(() => {
+    if (authStatus !== "authorized" || typeof window === "undefined") return;
+    const refreshSilently = () => {
+      if (document.visibilityState === "visible") {
+        loadPageData(activePage, { silent: true });
+      }
+    };
+    const intervalMs = activePage === "sessions" || activePage === "overview" ? 5000 : 15000;
+    const intervalId = setInterval(refreshSilently, intervalMs);
+    window.addEventListener("focus", refreshSilently);
+    document.addEventListener("visibilitychange", refreshSilently);
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener("focus", refreshSilently);
+      document.removeEventListener("visibilitychange", refreshSilently);
+    };
   }, [authStatus, activePage, loadPageData]);
 
   // Handlers
@@ -343,12 +391,33 @@ export default function AdminDashboard({ onNavigate }) {
   };
 
   const handleDisconnectApp = async (app) => {
+    const targetKey = app?.app_key || app?.id;
+    const label = app?.name || app?.app_name || targetKey;
     try {
-      await disconnectAdminApp(app.id);
-      notify(`Disconnected application '${app.name}'`, "success");
+      await disconnectAdminApp(targetKey);
+      notify(`Disconnected application '${label}'`, "success");
       loadPageData(activePage);
     } catch (err) {
       notify(err.message || "Unable to modify application connection", "error");
+    }
+  };
+
+  const handleToggleApp = async (app, targetUser = null) => {
+    const targetKey = app?.app_key || app?.id;
+    const label = app?.name || app?.app_name || targetKey;
+    const isAct = targetUser
+      ? Boolean(targetUser.is_active)
+      : app?.is_active ?? (app?.status || "").toLowerCase() === "active";
+    try {
+      await toggleAdminApp(targetKey, !isAct, targetUser ? targetUser.uid : null);
+      if (targetUser) {
+        notify(`${label} ${!isAct ? "enabled" : "revoked"} for ${targetUser.email || targetUser.username}`, "success");
+      } else {
+        notify(`${label} ${!isAct ? "enabled" : "disabled"} across workspace`, "success");
+      }
+      loadPageData(activePage);
+    } catch (err) {
+      notify(err.message || "Unable to update application status", "error");
     }
   };
 
@@ -398,7 +467,7 @@ export default function AdminDashboard({ onNavigate }) {
             .slice(0, 5)
         : [],
       apps: q
-        ? appsData.filter((a) => (a.name || "").toLowerCase().includes(q)).slice(0, 4)
+        ? appsData.filter((a) => (a.name || a.app_name || "").toLowerCase().includes(q)).slice(0, 4)
         : [],
     };
   }, [cmdQuery, usersData.users, appsData]);
@@ -593,6 +662,8 @@ export default function AdminDashboard({ onNavigate }) {
                 gap: "10px",
                 width: "100%",
                 maxWidth: "340px",
+                minWidth: 0,
+                overflow: "hidden",
                 height: "36px",
                 padding: "0 12px",
                 borderRadius: "8px",
@@ -603,9 +674,9 @@ export default function AdminDashboard({ onNavigate }) {
                 cursor: "pointer",
               }}
             >
-              <span style={{ display: "flex", alignItems: "center", gap: "8px", overflow: "hidden", whiteSpace: "nowrap" }}>
-                <Search size={14} color="var(--adm-muted)" />
-                <span>Search users, applications, activity...</span>
+              <span style={{ display: "flex", alignItems: "center", gap: "8px", overflow: "hidden", whiteSpace: "nowrap", minWidth: 0 }}>
+                <Search size={14} color="var(--adm-muted)" style={{ flexShrink: 0 }} />
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>Search users, applications, activity...</span>
               </span>
               <span
                 style={{
@@ -933,6 +1004,7 @@ export default function AdminDashboard({ onNavigate }) {
               users={usersData.users}
               rolesData={rolesData}
               apps={appsData}
+              appsSummary={appsSummary}
               settings={settingsData}
               adminUser={adminUser}
               loading={loading}
@@ -941,7 +1013,7 @@ export default function AdminDashboard({ onNavigate }) {
               onOpenAddUser={() => setIsAddUserOpen(true)}
               onRevokeSession={handleRevokeSession}
               onAssignRole={handleAssignRole}
-              onToggleApp={() => setActivePage("applications")}
+              onToggleApp={handleToggleApp}
               onExportReport={handleExportReport}
             />
           )}
@@ -1007,6 +1079,7 @@ export default function AdminDashboard({ onNavigate }) {
             <AdminApplications
               apps={appsData}
               onRefresh={() => loadPageData("applications")}
+              onToggleApp={handleToggleApp}
               onDisconnectApp={handleDisconnectApp}
               loading={loading}
             />
@@ -1017,6 +1090,7 @@ export default function AdminDashboard({ onNavigate }) {
               initialTab={activePage === "audit" ? "audit" : "logins"}
               activities={activityData.activities}
               activityTotal={activityData.total}
+              activityRawTotal={activityData.raw_total || 0}
               activityPage={activityData.page}
               activityTotalPages={activityData.pages}
               activitySearch={activityFilters.search}
@@ -1030,6 +1104,7 @@ export default function AdminDashboard({ onNavigate }) {
               onActivityPageChange={(page) => setActivityFilters((prev) => ({ ...prev, page }))}
               logs={auditData.logs}
               auditTotal={auditData.total}
+              auditRawTotal={auditData.raw_total || 0}
               auditPage={auditData.page}
               auditTotalPages={auditData.pages}
               auditSearch={auditFilters.search}

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "bun:test";
 import { getApiBaseUrl, TOKEN_KEY, USER_KEY, validateResetPasswordPolicy, changePassword } from "../src/services/api.js";
+import { groupByUidAndTime, tallyField, toggleKeyInSet } from "../src/components/admin/activityGroupUtils.js";
 
 describe("Frontend API Service Unit Tests", () => {
   it("exports valid token storage keys and password helpers", () => {
@@ -22,5 +23,35 @@ describe("Frontend API Service Unit Tests", () => {
     const strong = validateResetPasswordPolicy("VaultAuth@2026!");
     expect(strong.isValid).toBe(true);
     expect(strong.errors.length).toBe(0);
+  });
+
+  it("groups security activity entries sharing uid and time cleanly", () => {
+    const rows = [
+      { id: 1, uid: 24, created_at: "Nov 25, 2026 11:29 PM", status: "Success" },
+      { id: 2, uid: 24, created_at: "Nov 25, 2026 11:29 PM", status: "Failed" },
+      { id: 3, uid: 5, created_at: "Nov 25, 2026 11:29 PM", status: "Success" },
+      { id: 4, uid: 24, created_at: "Nov 25, 2026 11:28 PM", status: "Success" },
+    ];
+    const grouped = groupByUidAndTime(rows, {
+      getUid: (r) => r.uid,
+      getTimeKey: (r) => r.created_at,
+      toChildEvent: (ev) => ev,
+      buildGroup: (lead, events, groupKey, timeKey) => ({
+        ...lead,
+        group_key: groupKey,
+        time_bucket: timeKey,
+        event_count: events.length,
+        status_counts: tallyField(events, (e) => e.status),
+        events,
+      }),
+    });
+    expect(grouped.length).toBe(3);
+    expect(grouped[0].uid).toBe(24);
+    expect(grouped[0].event_count).toBe(2);
+    expect(grouped[0].status_counts).toEqual({ Success: 1, Failed: 1 });
+    expect(grouped[1].uid).toBe(5);
+    expect(grouped[1].event_count).toBe(1);
+    const next = toggleKeyInSet(new Set(["24::t1"]), "24::t1");
+    expect(next.size).toBe(0);
   });
 });
