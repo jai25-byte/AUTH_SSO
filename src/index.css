@@ -1881,9 +1881,12 @@ label.login-lbl {
   --adm-text: #ffffff;
   --adm-text-2: #a1a1aa;
   --adm-muted: #71717a;
+  --adm-muted-2: #52525b;
   --adm-body: #d4d4d8;
   --adm-btn-ghost-text: #e4e4e7;
   --adm-accent: #f7d794;
+  --adm-danger: #dc2626;
+  --adm-danger-soft: rgba(239, 68, 68, 0.16);
   --adm-accent-hover: #e8c477;
   --adm-accent-ink: #000000;
   --adm-accent-soft: rgba(247, 215, 148, 0.14);
@@ -1967,9 +1970,12 @@ label.login-lbl {
   --adm-text: #0f172a;
   --adm-text-2: #64748b;
   --adm-muted: #94a3b8;
+  --adm-muted-2: #64748b;
   --adm-body: #334155;
   --adm-btn-ghost-text: #334155;
   --adm-accent: #7c3aed;
+  --adm-danger: #dc2626;
+  --adm-danger-soft: rgba(239, 68, 68, 0.12);
   --adm-accent-hover: #6d28d9;
   --adm-accent-ink: #ffffff;
   --adm-accent-soft: #f5f3ff;

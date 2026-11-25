@@ -25,10 +25,10 @@ export default function AdminApplications({
     <div className="admin-page-container" style={{ display: "grid", gap: "18px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "14px" }}>
         <div>
-          <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#ffffff", margin: 0 }}>
+          <h1 style={{ fontSize: "22px", fontWeight: 700, color: "var(--adm-text)", margin: 0 }}>
             Connected applications
           </h1>
-          <p style={{ margin: "4px 0 0", color: "#a1a1aa", fontSize: "13px" }}>
+          <p style={{ margin: "4px 0 0", color: "var(--adm-text-2)", fontSize: "13px" }}>
             Inspect integrated OAuth and SSO clients, granted scopes, and active access status.
           </p>
         </div>
@@ -68,7 +68,7 @@ export default function AdminApplications({
         <div style={{ position: "relative", flex: 1, minWidth: "240px", maxWidth: "420px" }}>
           <Search
             size={15}
-            color="#71717a"
+            color="var(--adm-muted)"
             style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }}
           />
           <input
@@ -82,29 +82,29 @@ export default function AdminApplications({
               paddingLeft: "36px",
               paddingRight: "12px",
               borderRadius: "8px",
-              border: "1px solid #262626",
-              background: "#000000",
+              border: "1px solid var(--adm-border-strong)",
+              background: "var(--adm-input)",
               fontSize: "13px",
-              color: "#ffffff",
+              color: "var(--adm-text)",
             }}
           />
         </div>
 
-        <div style={{ fontSize: "12.5px", color: "#a1a1aa" }}>
-          Showing <strong style={{ color: "#ffffff" }}>{filteredApps.length}</strong> of{" "}
-          <strong style={{ color: "#ffffff" }}>{apps.length}</strong> applications
+        <div style={{ fontSize: "12.5px", color: "var(--adm-text-2)" }}>
+          Showing <strong style={{ color: "var(--adm-text)" }}>{filteredApps.length}</strong> of{" "}
+          <strong style={{ color: "var(--adm-text)" }}>{apps.length}</strong> applications
         </div>
       </div>
 
       {/* Applications Grid */}
       {loading && apps.length === 0 ? (
-        <div className="card" style={{ padding: "40px", borderRadius: "12px", textAlign: "center", color: "#71717a" }}>
+        <div className="card" style={{ padding: "40px", borderRadius: "12px", textAlign: "center", color: "var(--adm-muted)" }}>
           Loading connected applications...
         </div>
       ) : filteredApps.length === 0 ? (
-        <div className="card" style={{ padding: "48px 24px", borderRadius: "12px", textAlign: "center", color: "#71717a" }}>
+        <div className="card" style={{ padding: "48px 24px", borderRadius: "12px", textAlign: "center", color: "var(--adm-muted)" }}>
           <AppWindow size={32} color="#52525b" style={{ margin: "0 auto 10px" }} />
-          <div style={{ fontSize: "14px", fontWeight: 600, color: "#e4e4e7" }}>
+          <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--adm-text)" }}>
             No connected applications found
           </div>
           <p style={{ margin: "4px 0 0", fontSize: "12.5px" }}>
@@ -142,7 +142,7 @@ export default function AdminApplications({
                           width: "36px",
                           height: "36px",
                           borderRadius: "8px",
-                          background: "#141414",
+                          background: "var(--adm-badge-neutral-bg)",
                           border: "1px solid rgba(247, 215, 148, 0.35)",
                           color: "#F7D794",
                           display: "grid",
@@ -154,10 +154,10 @@ export default function AdminApplications({
                         {app.logo || (app.name || "A").substring(0, 1).toUpperCase()}
                       </div>
                       <div>
-                        <div style={{ fontSize: "14px", fontWeight: 600, color: "#ffffff" }}>
+                        <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--adm-text)" }}>
                           {app.name}
                         </div>
-                        <div style={{ fontSize: "12px", color: "#a1a1aa" }}>
+                        <div style={{ fontSize: "12px", color: "var(--adm-text-2)" }}>
                           {app.desc || "Enterprise SSO Client"}
                         </div>
                       </div>
@@ -169,9 +169,9 @@ export default function AdminApplications({
                         fontWeight: 600,
                         padding: "2px 8px",
                         borderRadius: "6px",
-                        background: isActive ? "rgba(34, 197, 94, 0.14)" : "#141414",
-                        border: `1px solid ${isActive ? "rgba(34, 197, 94, 0.3)" : "#262626"}`,
-                        color: isActive ? "#4ade80" : "#a1a1aa",
+                        background: isActive ? "var(--adm-ok-bg)" : "var(--adm-badge-neutral-bg)",
+                        border: `1px solid ${isActive ? "var(--adm-ok-border)" : "var(--adm-border-strong)"}`,
+                        color: isActive ? "var(--adm-ok-text)" : "var(--adm-text-2)",
                       }}
                     >
                       {app.status || "Active"}
@@ -187,9 +187,9 @@ export default function AdminApplications({
                             fontSize: "11px",
                             padding: "2px 8px",
                             borderRadius: "6px",
-                            background: "#000000",
-                            border: "1px solid #262626",
-                            color: "#d4d4d8",
+                            background: "var(--adm-input)",
+                            border: "1px solid var(--adm-border-strong)",
+                            color: "var(--adm-text)",
                           }}
                         >
                           {perm}
@@ -201,17 +201,17 @@ export default function AdminApplications({
 
                 <div
                   style={{
-                    borderTop: "1px solid #171717",
+                    borderTop: "1px solid var(--adm-border-soft)",
                     paddingTop: "12px",
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
                     fontSize: "11.5px",
-                    color: "#71717a",
+                    color: "var(--adm-muted)",
                   }}
                 >
                   <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
-                    <ShieldCheck size={13} color="#4ade80" />
+                    <ShieldCheck size={13} color="var(--adm-ok-text)" />
                     Connected {app.connectedDate || app.connected_date || "Active"}
                   </span>
 
@@ -222,7 +222,7 @@ export default function AdminApplications({
                       style={{
                         background: "none",
                         border: "none",
-                        color: "#f87171",
+                        color: "var(--adm-danger-text)",
                         fontSize: "12px",
                         fontWeight: 600,
                         cursor: "pointer",
@@ -254,11 +254,11 @@ export default function AdminApplications({
           }}
           onClick={() => setConfirmApp(null)}
         >
-          <div className="card" style={{ width: "100%", maxWidth: "400px", padding: "24px", borderRadius: "12px", border: "1px solid #262626" }} onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ margin: "0 0 8px", fontSize: "16px", color: "#ffffff" }}>
+          <div className="card" style={{ width: "100%", maxWidth: "400px", padding: "24px", borderRadius: "12px", border: "1px solid var(--adm-border-strong)" }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ margin: "0 0 8px", fontSize: "16px", color: "var(--adm-text)" }}>
               Disconnect {confirmApp.name}?
             </h3>
-            <p style={{ margin: "0 0 18px", fontSize: "13px", color: "#a1a1aa", lineHeight: 1.5 }}>
+            <p style={{ margin: "0 0 18px", fontSize: "13px", color: "var(--adm-text-2)", lineHeight: 1.5 }}>
               Removing this connection revokes SSO token exchange for this client integration.
             </p>
             <div style={{ display: "flex", gap: "10px" }}>
@@ -273,7 +273,7 @@ export default function AdminApplications({
                   setConfirmApp(null);
                   onDisconnectApp(target);
                 }}
-                style={{ flex: 1, height: "36px", background: "#dc2626", borderColor: "#dc2626", color: "#ffffff", cursor: "pointer" }}
+                style={{ flex: 1, height: "36px", background: "#dc2626", borderColor: "#dc2626", color: "var(--adm-text)", cursor: "pointer" }}
               >
                 Disconnect
               </button>

@@ -41,10 +41,10 @@ export default function AdminUsers({
     <div className="admin-page-container" style={{ display: "grid", gap: "18px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "14px" }}>
         <div>
-          <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#ffffff", margin: 0 }}>
+          <h1 style={{ fontSize: "22px", fontWeight: 700, color: "var(--adm-text)", margin: 0 }}>
             Users
           </h1>
-          <p style={{ margin: "4px 0 0", color: "#a1a1aa", fontSize: "13px" }}>
+          <p style={{ margin: "4px 0 0", color: "var(--adm-text-2)", fontSize: "13px" }}>
             Manage registered accounts, provision credentials, assign roles, and update access state.
           </p>
         </div>
@@ -82,7 +82,7 @@ export default function AdminUsers({
       >
         <div style={{ display: "flex", gap: "10px", flex: 1, minWidth: "260px", flexWrap: "wrap" }}>
           <div style={{ position: "relative", flex: 1, minWidth: "200px" }}>
-            <Search size={15} color="#71717a" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }} />
+            <Search size={15} color="var(--adm-muted)" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }} />
             <input
               type="text"
               placeholder="Search by name, email, or user ID..."
@@ -94,16 +94,16 @@ export default function AdminUsers({
                 paddingLeft: "36px",
                 paddingRight: "12px",
                 borderRadius: "8px",
-                border: "1px solid #262626",
-                background: "#000000",
+                border: "1px solid var(--adm-border-strong)",
+                background: "var(--adm-input)",
                 fontSize: "13px",
-                color: "#ffffff",
+                color: "var(--adm-text)",
               }}
             />
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <Filter size={14} color="#71717a" />
+            <Filter size={14} color="var(--adm-muted)" />
             <select
               value={roleFilter}
               onChange={(e) => onRoleFilterChange(e.target.value)}
@@ -111,10 +111,10 @@ export default function AdminUsers({
                 height: "36px",
                 padding: "0 10px",
                 borderRadius: "8px",
-                border: "1px solid #262626",
+                border: "1px solid var(--adm-border-strong)",
                 fontSize: "12.5px",
-                backgroundColor: "#000000",
-                color: "#e4e4e7",
+                backgroundColor: "var(--adm-input)",
+                color: "var(--adm-text)",
                 cursor: "pointer",
               }}
             >
@@ -131,10 +131,10 @@ export default function AdminUsers({
               height: "36px",
               padding: "0 10px",
               borderRadius: "8px",
-              border: "1px solid #262626",
+              border: "1px solid var(--adm-border-strong)",
               fontSize: "12.5px",
-              backgroundColor: "#000000",
-              color: "#e4e4e7",
+              backgroundColor: "var(--adm-input)",
+              color: "var(--adm-text)",
               cursor: "pointer",
             }}
           >
@@ -144,9 +144,9 @@ export default function AdminUsers({
           </select>
         </div>
 
-        <div style={{ fontSize: "12px", color: "#a1a1aa" }}>
-          Showing <strong style={{ color: "#ffffff" }}>{users.length}</strong> of{" "}
-          <strong style={{ color: "#ffffff" }}>{total}</strong> users
+        <div style={{ fontSize: "12px", color: "var(--adm-text-2)" }}>
+          Showing <strong style={{ color: "var(--adm-text)" }}>{users.length}</strong> of{" "}
+          <strong style={{ color: "var(--adm-text)" }}>{total}</strong> users
         </div>
       </div>
 
@@ -155,7 +155,7 @@ export default function AdminUsers({
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", textAlign: "left" }}>
             <thead>
-              <tr style={{ background: "#111111", borderBottom: "1px solid #1f1f1f", color: "#71717a", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              <tr style={{ background: "var(--adm-table-head-bg)", borderBottom: "1px solid var(--adm-border)", color: "var(--adm-muted)", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
                 <th style={{ padding: "11px 16px", fontWeight: 600 }}>UID</th>
                 <th style={{ padding: "11px 16px", fontWeight: 600 }}>User</th>
                 <th style={{ padding: "11px 16px", fontWeight: 600 }}>Email</th>
@@ -168,14 +168,14 @@ export default function AdminUsers({
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: "center", padding: "38px 16px", color: "#71717a" }}>
+                  <td colSpan={7} style={{ textAlign: "center", padding: "38px 16px", color: "var(--adm-muted)" }}>
                     Loading directory accounts...
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: "center", padding: "44px 16px", color: "#71717a" }}>
-                    <User size={30} style={{ margin: "0 auto 8px", color: "#52525b" }} />
+                  <td colSpan={7} style={{ textAlign: "center", padding: "44px 16px", color: "var(--adm-muted)" }}>
+                    <User size={30} style={{ margin: "0 auto 8px", color: "var(--adm-muted-2)" }} />
                     <p style={{ margin: 0 }}>No users match your filter.</p>
                   </td>
                 </tr>
@@ -186,8 +186,8 @@ export default function AdminUsers({
                   const isSelf = u.uid === currentAdminUid;
 
                   return (
-                    <tr key={u.uid} style={{ borderBottom: "1px solid #141414" }}>
-                      <td style={{ padding: "12px 16px", fontFamily: "monospace", color: "#a1a1aa", fontWeight: 600 }}>
+                    <tr key={u.uid} style={{ borderBottom: "1px solid var(--adm-border-soft)" }}>
+                      <td style={{ padding: "12px 16px", fontFamily: "monospace", color: "var(--adm-text-2)", fontWeight: 600 }}>
                         #{u.uid}
                       </td>
                       <td style={{ padding: "12px 16px" }}>
@@ -198,8 +198,8 @@ export default function AdminUsers({
                               height: "30px",
                               borderRadius: "50%",
                               background: isAdmin ? "rgba(247, 215, 148, 0.16)" : "#141414",
-                              border: `1px solid ${isAdmin ? "rgba(247, 215, 148, 0.4)" : "#262626"}`,
-                              color: isAdmin ? "#F7D794" : "#d4d4d8",
+                              border: `1px solid ${isAdmin ? "var(--adm-accent-border)" : "var(--adm-border-strong)"}`,
+                              color: isAdmin ? "var(--adm-link)" : "var(--adm-text)",
                               display: "grid",
                               placeItems: "center",
                               fontWeight: 700,
@@ -210,19 +210,19 @@ export default function AdminUsers({
                             {(u.full_name || u.username || "U").substring(0, 1).toUpperCase()}
                           </div>
                           <div>
-                            <div style={{ fontWeight: 600, color: "#ffffff" }}>
+                            <div style={{ fontWeight: 600, color: "var(--adm-text)" }}>
                               {u.full_name || u.username}
                               {isSelf && (
-                                <span style={{ marginLeft: "6px", fontSize: "10.5px", color: "#000000", background: "#F7D794", padding: "1px 6px", borderRadius: "4px", fontWeight: 700 }}>
+                                <span style={{ marginLeft: "6px", fontSize: "10.5px", color: "var(--adm-bg)", background: "var(--adm-link)", padding: "1px 6px", borderRadius: "4px", fontWeight: 700 }}>
                                   You
                                 </span>
                               )}
                             </div>
-                            <div style={{ fontSize: "11.5px", color: "#71717a" }}>@{u.username}</div>
+                            <div style={{ fontSize: "11.5px", color: "var(--adm-muted)" }}>@{u.username}</div>
                           </div>
                         </div>
                       </td>
-                      <td style={{ padding: "12px 16px", color: "#d4d4d8" }}>{u.email}</td>
+                      <td style={{ padding: "12px 16px", color: "var(--adm-text)" }}>{u.email}</td>
                       <td style={{ padding: "12px 16px" }}>
                         <span
                           style={{
@@ -234,8 +234,8 @@ export default function AdminUsers({
                             fontSize: "11.5px",
                             fontWeight: 600,
                             background: isAdmin ? "rgba(247, 215, 148, 0.14)" : "#141414",
-                            border: `1px solid ${isAdmin ? "rgba(247, 215, 148, 0.35)" : "#262626"}`,
-                            color: isAdmin ? "#F7D794" : "#d4d4d8",
+                            border: `1px solid ${isAdmin ? "var(--adm-accent-border)" : "var(--adm-border-strong)"}`,
+                            color: isAdmin ? "var(--adm-link)" : "var(--adm-text)",
                           }}
                         >
                           {isAdmin ? <Shield size={11} /> : <User size={11} />}
@@ -254,27 +254,27 @@ export default function AdminUsers({
                             fontWeight: 600,
                             background: isActive ? "rgba(34, 197, 94, 0.14)" : "rgba(239, 68, 68, 0.14)",
                             border: `1px solid ${isActive ? "rgba(34, 197, 94, 0.3)" : "rgba(239, 68, 68, 0.35)"}`,
-                            color: isActive ? "#4ade80" : "#f87171",
+                            color: isActive ? "var(--adm-ok-text)" : "var(--adm-danger-text)",
                           }}
                         >
                           {isActive ? <CheckCircle2 size={11} /> : <XCircle size={11} />}
                           {isActive ? "Active" : "Deactivated"}
                         </span>
                       </td>
-                      <td style={{ padding: "12px 16px", color: "#a1a1aa", fontSize: "12px" }}>{u.c_date || "—"}</td>
+                      <td style={{ padding: "12px 16px", color: "var(--adm-text-2)", fontSize: "12px" }}>{u.c_date || "—"}</td>
                       <td style={{ padding: "12px 16px", textAlign: "right" }}>
                         <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
                           <button
                             onClick={() => setSelectedUser(u)}
                             title="View Details"
-                            style={{ background: "#000000", border: "1px solid #262626", borderRadius: "6px", padding: "5px 7px", cursor: "pointer", color: "#a1a1aa" }}
+                            style={{ background: "var(--adm-input)", border: "1px solid var(--adm-border-strong)", borderRadius: "6px", padding: "5px 7px", cursor: "pointer", color: "var(--adm-text-2)" }}
                           >
                             <Eye size={13} />
                           </button>
                           <button
                             onClick={() => onOpenEditUser(u)}
                             title="Edit User"
-                            style={{ background: "#000000", border: "1px solid rgba(247, 215, 148, 0.35)", borderRadius: "6px", padding: "5px 7px", cursor: "pointer", color: "#F7D794" }}
+                            style={{ background: "var(--adm-input)", border: "1px solid var(--adm-accent-border)", borderRadius: "6px", padding: "5px 7px", cursor: "pointer", color: "var(--adm-link)" }}
                           >
                             <Edit2 size={13} />
                           </button>
@@ -283,12 +283,12 @@ export default function AdminUsers({
                             disabled={isSelf}
                             title={isActive ? "Deactivate Account" : "Activate Account"}
                             style={{
-                              background: "#000000",
+                              background: "var(--adm-input)",
                               border: `1px solid ${isActive ? "rgba(247, 215, 148, 0.35)" : "rgba(34, 197, 94, 0.35)"}`,
                               borderRadius: "6px",
                               padding: "5px 7px",
                               cursor: isSelf ? "not-allowed" : "pointer",
-                              color: isActive ? "#F7D794" : "#4ade80",
+                              color: isActive ? "var(--adm-link)" : "var(--adm-ok-text)",
                               opacity: isSelf ? 0.4 : 1,
                             }}
                           >
@@ -299,12 +299,12 @@ export default function AdminUsers({
                             disabled={isSelf}
                             title={isSelf ? "Cannot delete own account" : "Delete User"}
                             style={{
-                              background: "#000000",
+                              background: "var(--adm-input)",
                               border: "1px solid rgba(239, 68, 68, 0.4)",
                               borderRadius: "6px",
                               padding: "5px 7px",
                               cursor: isSelf ? "not-allowed" : "pointer",
-                              color: "#f87171",
+                              color: "var(--adm-danger-text)",
                               opacity: isSelf ? 0.4 : 1,
                             }}
                           >
@@ -323,8 +323,8 @@ export default function AdminUsers({
         <div
           style={{
             padding: "12px 18px",
-            borderTop: "1px solid #171717",
-            background: "#050505",
+            borderTop: "1px solid var(--adm-border-soft)",
+            background: "var(--adm-table-foot-bg)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -332,9 +332,9 @@ export default function AdminUsers({
             gap: "10px",
           }}
         >
-          <div style={{ fontSize: "12px", color: "#a1a1aa" }}>
-            Page <strong style={{ color: "#ffffff" }}>{page}</strong> of{" "}
-            <strong style={{ color: "#ffffff" }}>{totalPages || 1}</strong>
+          <div style={{ fontSize: "12px", color: "var(--adm-text-2)" }}>
+            Page <strong style={{ color: "var(--adm-text)" }}>{page}</strong> of{" "}
+            <strong style={{ color: "var(--adm-text)" }}>{totalPages || 1}</strong>
           </div>
           <div style={{ display: "flex", gap: "6px" }}>
             <button onClick={() => onPageChange(page - 1)} disabled={page <= 1} className="btn btn--ghost" style={{ height: "30px", padding: "0 10px", fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "4px", cursor: "pointer" }}>
@@ -353,13 +353,13 @@ export default function AdminUsers({
           style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0, 0, 0, 0.78)", display: "grid", placeItems: "center", zIndex: 100, padding: "16px" }}
           onClick={() => setSelectedUser(null)}
         >
-          <div className="card" style={{ width: "100%", maxWidth: "460px", padding: "24px", borderRadius: "12px", border: "1px solid #262626" }} onClick={(e) => e.stopPropagation()}>
+          <div className="card" style={{ width: "100%", maxWidth: "460px", padding: "24px", borderRadius: "12px", border: "1px solid var(--adm-border-strong)" }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: "16px", color: "#ffffff" }}>{selectedUser.full_name || selectedUser.username}</h3>
-                <div style={{ fontSize: "12px", color: "#a1a1aa" }}>UID #{selectedUser.uid} · @{selectedUser.username}</div>
+                <h3 style={{ margin: 0, fontSize: "16px", color: "var(--adm-text)" }}>{selectedUser.full_name || selectedUser.username}</h3>
+                <div style={{ fontSize: "12px", color: "var(--adm-text-2)" }}>UID #{selectedUser.uid} · @{selectedUser.username}</div>
               </div>
-              <button onClick={() => setSelectedUser(null)} style={{ background: "none", border: "none", fontSize: "16px", cursor: "pointer", color: "#a1a1aa" }}>✕</button>
+              <button onClick={() => setSelectedUser(null)} style={{ background: "none", border: "none", fontSize: "16px", cursor: "pointer", color: "var(--adm-text-2)" }}>✕</button>
             </div>
             <div style={{ display: "grid", gap: "8px", marginBottom: "18px", fontSize: "13px" }}>
               {[
@@ -369,9 +369,9 @@ export default function AdminUsers({
                 ["Status", selectedUser.is_active !== false ? "Active" : "Deactivated"],
                 ["Created", selectedUser.c_date || "—"],
               ].map(([k, v]) => (
-                <div key={k} style={{ padding: "9px 12px", background: "#000000", border: "1px solid #1f1f1f", borderRadius: "8px", display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "#a1a1aa" }}>{k}</span>
-                  <strong style={{ color: "#ffffff" }}>{v}</strong>
+                <div key={k} style={{ padding: "9px 12px", background: "var(--adm-input)", border: "1px solid var(--adm-border)", borderRadius: "8px", display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ color: "var(--adm-text-2)" }}>{k}</span>
+                  <strong style={{ color: "var(--adm-text)" }}>{v}</strong>
                 </div>
               ))}
             </div>
@@ -399,13 +399,13 @@ export default function AdminUsers({
           style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0, 0, 0, 0.78)", display: "grid", placeItems: "center", zIndex: 100, padding: "16px" }}
           onClick={() => setDeleteConfirmUser(null)}
         >
-          <div className="card" style={{ width: "100%", maxWidth: "420px", padding: "24px", borderRadius: "12px", border: "1px solid #262626", textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ width: "44px", height: "44px", borderRadius: "50%", background: "rgba(239, 68, 68, 0.16)", color: "#f87171", display: "grid", placeItems: "center", margin: "0 auto 12px" }}>
+          <div className="card" style={{ width: "100%", maxWidth: "420px", padding: "24px", borderRadius: "12px", border: "1px solid var(--adm-border-strong)", textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ width: "44px", height: "44px", borderRadius: "50%", background: "var(--adm-danger-soft)", color: "var(--adm-danger-text)", display: "grid", placeItems: "center", margin: "0 auto 12px" }}>
               <AlertTriangle size={22} />
             </div>
-            <h3 style={{ margin: "0 0 8px", fontSize: "16px", color: "#ffffff" }}>Delete user permanently?</h3>
-            <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#a1a1aa", lineHeight: 1.5 }}>
-              Delete <strong style={{ color: "#ffffff" }}>"{deleteConfirmUser.username}"</strong> (#{deleteConfirmUser.uid}) and revoke all sessions and logs?
+            <h3 style={{ margin: "0 0 8px", fontSize: "16px", color: "var(--adm-text)" }}>Delete user permanently?</h3>
+            <p style={{ margin: "0 0 20px", fontSize: "13px", color: "var(--adm-text-2)", lineHeight: 1.5 }}>
+              Delete <strong style={{ color: "var(--adm-text)" }}>"{deleteConfirmUser.username}"</strong> (#{deleteConfirmUser.uid}) and revoke all sessions and logs?
             </p>
             <div style={{ display: "flex", gap: "10px" }}>
               <button className="btn btn--ghost" onClick={() => setDeleteConfirmUser(null)} style={{ flex: 1, height: "38px", cursor: "pointer" }}>Cancel</button>
@@ -416,7 +416,7 @@ export default function AdminUsers({
                   setDeleteConfirmUser(null);
                   onDeleteUser(uid);
                 }}
-                style={{ flex: 1, height: "38px", background: "#dc2626", borderColor: "#dc2626", color: "#ffffff", cursor: "pointer" }}
+                style={{ flex: 1, height: "38px", background: "#dc2626", borderColor: "#dc2626", color: "var(--adm-text)", cursor: "pointer" }}
               >
                 Yes, delete
               </button>

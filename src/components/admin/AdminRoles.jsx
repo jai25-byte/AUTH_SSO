@@ -17,9 +17,9 @@ export default function AdminRoles({
       title: "Enterprise Admin",
       description: "Full system administration, IAM policy management, user provisioning, and audit oversight.",
       badge: "Highest Privilege",
-      color: "#F7D794",
-      bgColor: "rgba(247, 215, 148, 0.14)",
-      borderColor: "rgba(247, 215, 148, 0.35)",
+      color: "var(--adm-link)",
+      bgColor: "var(--adm-accent-soft)",
+      borderColor: "var(--adm-accent-border)",
       permissions: [
         "users.view",
         "users.create",
@@ -38,9 +38,9 @@ export default function AdminRoles({
       title: "End User",
       description: "Standard workspace identity with personal security settings and connected OAuth apps.",
       badge: "Standard Access",
-      color: "#4ade80",
-      bgColor: "rgba(34, 197, 94, 0.12)",
-      borderColor: "rgba(34, 197, 94, 0.3)",
+      color: "var(--adm-ok-text)",
+      bgColor: "var(--adm-ok-bg)",
+      borderColor: "var(--adm-ok-border)",
       permissions: ["users.view"],
     },
   ];
@@ -77,10 +77,10 @@ export default function AdminRoles({
   return (
     <div className="admin-page-container" style={{ display: "grid", gap: "20px" }}>
       <div>
-        <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#ffffff", margin: 0 }}>
+        <h1 style={{ fontSize: "22px", fontWeight: 700, color: "var(--adm-text)", margin: 0 }}>
           Roles &amp; permissions
         </h1>
-        <p style={{ margin: "4px 0 0", color: "#a1a1aa", fontSize: "13px" }}>
+        <p style={{ margin: "4px 0 0", color: "var(--adm-text-2)", fontSize: "13px" }}>
           Server-enforced privilege levels, permission matrix, and user role assignments.
         </p>
       </div>
@@ -102,19 +102,19 @@ export default function AdminRoles({
               </span>
             </div>
 
-            <h2 style={{ fontSize: "15.5px", fontWeight: 700, color: "#ffffff", margin: 0 }}>
+            <h2 style={{ fontSize: "15.5px", fontWeight: 700, color: "var(--adm-text)", margin: 0 }}>
               {role.title}
               {typeof liveCounts[role.key] === "number" && (
-                <span style={{ fontSize: "12px", color: "#a1a1aa", fontWeight: 500, marginLeft: "8px" }}>
+                <span style={{ fontSize: "12px", color: "var(--adm-text-2)", fontWeight: 500, marginLeft: "8px" }}>
                   ({liveCounts[role.key]} users)
                 </span>
               )}
             </h2>
-            <p style={{ fontSize: "12.5px", color: "#a1a1aa", margin: "6px 0 14px", lineHeight: 1.5 }}>
+            <p style={{ fontSize: "12.5px", color: "var(--adm-text-2)", margin: "6px 0 14px", lineHeight: 1.5 }}>
               {role.description}
             </p>
 
-            <div style={{ borderTop: "1px solid #171717", paddingTop: "12px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
+            <div style={{ borderTop: "1px solid var(--adm-border-soft)", paddingTop: "12px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
               {role.permissions.map((perm) => (
                 <span
                   key={perm}
@@ -123,9 +123,9 @@ export default function AdminRoles({
                     fontFamily: "monospace",
                     padding: "2px 7px",
                     borderRadius: "6px",
-                    background: "#000000",
-                    color: "#d4d4d8",
-                    border: "1px solid #262626",
+                    background: "var(--adm-input)",
+                    color: "var(--adm-text)",
+                    border: "1px solid var(--adm-border-strong)",
                     display: "inline-flex",
                     alignItems: "center",
                     gap: "4px",
@@ -144,23 +144,23 @@ export default function AdminRoles({
       <div className="vw-two-col">
         <div className="card" style={{ borderRadius: "12px", padding: "20px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-            <Key size={16} color="#F7D794" />
-            <h2 style={{ fontSize: "15px", fontWeight: 600, margin: 0, color: "#ffffff" }}>Assign role</h2>
+            <Key size={16} color="var(--adm-link)" />
+            <h2 style={{ fontSize: "15px", fontWeight: 600, margin: 0, color: "var(--adm-text)" }}>Assign role</h2>
           </div>
-          <p style={{ fontSize: "12.5px", color: "#a1a1aa", marginBottom: "16px", lineHeight: 1.45 }}>
+          <p style={{ fontSize: "12.5px", color: "var(--adm-text-2)", marginBottom: "16px", lineHeight: 1.45 }}>
             Select a directory user and save role changes validated by the backend API.
           </p>
 
           <form onSubmit={handleRoleSubmit} style={{ display: "grid", gap: "12px" }}>
             <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#a1a1aa", marginBottom: "5px" }}>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--adm-text-2)", marginBottom: "5px" }}>
                 Target user
               </label>
               <select
                 value={selectedUid}
                 onChange={(e) => setSelectedUid(e.target.value)}
                 required
-                style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid #262626", padding: "0 10px", fontSize: "13px", background: "#000000", color: "#ffffff" }}
+                style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid var(--adm-border-strong)", padding: "0 10px", fontSize: "13px", background: "var(--adm-input)", color: "var(--adm-text)" }}
               >
                 <option value="">-- Choose user --</option>
                 {usersList.map((u) => (
@@ -172,20 +172,20 @@ export default function AdminRoles({
             </div>
 
             <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#a1a1aa", marginBottom: "5px" }}>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--adm-text-2)", marginBottom: "5px" }}>
                 Role assignment
               </label>
               <select
                 value={selectedRole}
                 onChange={(e) => setSelectedRole(e.target.value)}
-                style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid #262626", padding: "0 10px", fontSize: "13px", background: "#000000", color: "#ffffff" }}
+                style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid var(--adm-border-strong)", padding: "0 10px", fontSize: "13px", background: "var(--adm-input)", color: "var(--adm-text)" }}
               >
                 <option value="user">End User (Member)</option>
                 <option value="admin">Enterprise Admin</option>
               </select>
             </div>
 
-            <div style={{ padding: "9px 12px", background: "rgba(34, 197, 94, 0.08)", border: "1px solid rgba(34, 197, 94, 0.25)", borderRadius: "8px", fontSize: "12px", color: "#4ade80", display: "flex", gap: "8px", alignItems: "flex-start" }}>
+            <div style={{ padding: "9px 12px", background: "rgba(34, 197, 94, 0.08)", border: "1px solid rgba(34, 197, 94, 0.25)", borderRadius: "8px", fontSize: "12px", color: "var(--adm-ok-text)", display: "flex", gap: "8px", alignItems: "flex-start" }}>
               <Info size={14} style={{ flexShrink: 0, marginTop: "2px" }} />
               <span>The backend prevents demoting the last remaining administrator account.</span>
             </div>
@@ -199,14 +199,14 @@ export default function AdminRoles({
 
         <div className="card" style={{ borderRadius: "12px", padding: "20px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
-            <Lock size={16} color="#F7D794" />
-            <h2 style={{ fontSize: "15px", fontWeight: 600, margin: 0, color: "#ffffff" }}>Permission matrix</h2>
+            <Lock size={16} color="var(--adm-link)" />
+            <h2 style={{ fontSize: "15px", fontWeight: 600, margin: 0, color: "var(--adm-text)" }}>Permission matrix</h2>
           </div>
 
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12.5px" }}>
               <thead>
-                <tr style={{ borderBottom: "1px solid #1f1f1f", textAlign: "left", color: "#a1a1aa" }}>
+                <tr style={{ borderBottom: "1px solid var(--adm-border)", textAlign: "left", color: "var(--adm-text-2)" }}>
                   <th style={{ padding: "8px 10px", fontWeight: 600 }}>Permission</th>
                   <th style={{ padding: "8px 10px", fontWeight: 600 }}>Scope</th>
                   <th style={{ padding: "8px 10px", fontWeight: 600, textAlign: "center" }}>Admin</th>
@@ -215,10 +215,10 @@ export default function AdminRoles({
               </thead>
               <tbody>
                 {allPermissions.map((p) => (
-                  <tr key={p.key} style={{ borderBottom: "1px solid #141414" }}>
-                    <td style={{ padding: "8px 10px", fontFamily: "monospace", color: "#ffffff", fontWeight: 600 }}>{p.key}</td>
-                    <td style={{ padding: "8px 10px", color: "#a1a1aa" }}>{p.category}</td>
-                    <td style={{ padding: "8px 10px", textAlign: "center", color: "#4ade80", fontWeight: 700 }}>✓</td>
+                  <tr key={p.key} style={{ borderBottom: "1px solid var(--adm-border-soft)" }}>
+                    <td style={{ padding: "8px 10px", fontFamily: "monospace", color: "var(--adm-text)", fontWeight: 600 }}>{p.key}</td>
+                    <td style={{ padding: "8px 10px", color: "var(--adm-text-2)" }}>{p.category}</td>
+                    <td style={{ padding: "8px 10px", textAlign: "center", color: "var(--adm-ok-text)", fontWeight: 700 }}>✓</td>
                     <td style={{ padding: "8px 10px", textAlign: "center", color: p.key === "users.view" ? "#4ade80" : "#52525b", fontWeight: 700 }}>
                       {p.key === "users.view" ? "✓" : "—"}
                     </td>

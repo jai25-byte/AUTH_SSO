@@ -24,6 +24,7 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [regConfirm, setRegConfirm] = useState("");
+  const [regRole, setRegRole] = useState("user");
   const [showRegPass, setShowRegPass] = useState(false);
   const [regErrors, setRegErrors] = useState({});
 
@@ -214,6 +215,7 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
         username: regUsername.trim(),
         email: regEmail.trim(),
         password: regPassword,
+        role: regRole,
       });
 
       onNotify?.("Account created successfully! Please sign in.", "success");
@@ -656,6 +658,44 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
                   {regErrors.regConfirm && (
                     <p className="login-err" role="alert">
                       {regErrors.regConfirm}
+                    </p>
+                  )}
+                </div>
+
+                {/* Account type selector */}
+                <div style={{ marginBottom: "4px" }}>
+                  <label className="login-lbl" style={{ display: "block", marginBottom: "8px" }}>
+                    Account type
+                  </label>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                    {[
+                      { value: "user", label: "Standard User", desc: "Personal access & apps" },
+                      { value: "admin", label: "Administrator", desc: "Full system management" },
+                    ].map(({ value, label, desc }) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setRegRole(value)}
+                        style={{
+                          padding: "10px 12px",
+                          borderRadius: "9px",
+                          border: `2px solid ${regRole === value ? "#F7D794" : "rgba(255,255,255,0.08)"}`,
+                          background: regRole === value ? "rgba(247,215,148,0.10)" : "rgba(255,255,255,0.03)",
+                          cursor: "pointer",
+                          textAlign: "left",
+                          transition: "all 0.15s",
+                        }}
+                      >
+                        <div style={{ fontSize: "13px", fontWeight: 600, color: regRole === value ? "#F7D794" : "#e4e4e7", marginBottom: "2px" }}>
+                          {label}
+                        </div>
+                        <div style={{ fontSize: "11px", color: "#71717a" }}>{desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                  {regRole === "admin" && (
+                    <p style={{ margin: "8px 0 0", fontSize: "11.5px", color: "#a1a1aa", lineHeight: 1.4 }}>
+                      ⚠️ Admin registration requires approval from an existing administrator.
                     </p>
                   )}
                 </div>

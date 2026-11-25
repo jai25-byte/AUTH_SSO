@@ -34,11 +34,11 @@ export default function AdminSessions({
   const getDeviceIcon = (type) => {
     switch ((type || "").toLowerCase()) {
       case "mobile":
-        return <Smartphone size={15} color="#a1a1aa" />;
+        return <Smartphone size={15} color="var(--adm-text-2)" />;
       case "laptop":
-        return <Laptop size={15} color="#F7D794" />;
+        return <Laptop size={15} color="var(--adm-link)" />;
       default:
-        return <Monitor size={15} color="#a1a1aa" />;
+        return <Monitor size={15} color="var(--adm-text-2)" />;
     }
   };
 
@@ -46,10 +46,10 @@ export default function AdminSessions({
     <div className="admin-page-container" style={{ display: "grid", gap: "18px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "14px" }}>
         <div>
-          <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#ffffff", margin: 0 }}>
+          <h1 style={{ fontSize: "22px", fontWeight: 700, color: "var(--adm-text)", margin: 0 }}>
             Active sessions
           </h1>
-          <p style={{ margin: "4px 0 0", color: "#a1a1aa", fontSize: "13px" }}>
+          <p style={{ margin: "4px 0 0", color: "var(--adm-text-2)", fontSize: "13px" }}>
             Inspect valid client sessions, device fingerprints, and revoke access tokens immediately.
           </p>
         </div>
@@ -87,7 +87,7 @@ export default function AdminSessions({
       >
         <div style={{ display: "flex", gap: "10px", flex: 1, minWidth: "260px", flexWrap: "wrap" }}>
           <div style={{ position: "relative", flex: 1, minWidth: "200px" }}>
-            <Search size={15} color="#71717a" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }} />
+            <Search size={15} color="var(--adm-muted)" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }} />
             <input
               type="text"
               placeholder="Search by user, email, or device..."
@@ -99,16 +99,16 @@ export default function AdminSessions({
                 paddingLeft: "36px",
                 paddingRight: "12px",
                 borderRadius: "8px",
-                border: "1px solid #262626",
-                background: "#000000",
+                border: "1px solid var(--adm-border-strong)",
+                background: "var(--adm-input)",
                 fontSize: "13px",
-                color: "#ffffff",
+                color: "var(--adm-text)",
               }}
             />
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <Filter size={14} color="#71717a" />
+            <Filter size={14} color="var(--adm-muted)" />
             <select
               value={statusFilter}
               onChange={(e) => onStatusFilterChange(e.target.value)}
@@ -116,10 +116,10 @@ export default function AdminSessions({
                 height: "36px",
                 padding: "0 10px",
                 borderRadius: "8px",
-                border: "1px solid #262626",
+                border: "1px solid var(--adm-border-strong)",
                 fontSize: "12.5px",
-                backgroundColor: "#000000",
-                color: "#e4e4e7",
+                backgroundColor: "var(--adm-input)",
+                color: "var(--adm-text)",
                 cursor: "pointer",
               }}
             >
@@ -130,9 +130,9 @@ export default function AdminSessions({
           </div>
         </div>
 
-        <div style={{ fontSize: "12px", color: "#a1a1aa" }}>
-          Showing <strong style={{ color: "#ffffff" }}>{sessions.length}</strong> of{" "}
-          <strong style={{ color: "#ffffff" }}>{total}</strong> sessions
+        <div style={{ fontSize: "12px", color: "var(--adm-text-2)" }}>
+          Showing <strong style={{ color: "var(--adm-text)" }}>{sessions.length}</strong> of{" "}
+          <strong style={{ color: "var(--adm-text)" }}>{total}</strong> sessions
         </div>
       </div>
 
@@ -141,7 +141,7 @@ export default function AdminSessions({
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", textAlign: "left" }}>
             <thead>
-              <tr style={{ background: "#111111", borderBottom: "1px solid #1f1f1f", color: "#71717a", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              <tr style={{ background: "var(--adm-table-head-bg)", borderBottom: "1px solid var(--adm-border)", color: "var(--adm-muted)", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
                 <th style={{ padding: "11px 16px", fontWeight: 600 }}>User</th>
                 <th style={{ padding: "11px 16px", fontWeight: 600 }}>Device &amp; OS</th>
                 <th style={{ padding: "11px 16px", fontWeight: 600 }}>Browser &amp; IP</th>
@@ -154,14 +154,14 @@ export default function AdminSessions({
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: "center", padding: "36px 16px", color: "#71717a" }}>
+                  <td colSpan={7} style={{ textAlign: "center", padding: "36px 16px", color: "var(--adm-muted)" }}>
                     Loading sessions...
                   </td>
                 </tr>
               ) : sessions.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: "center", padding: "44px 16px", color: "#71717a" }}>
-                    <Monitor size={30} style={{ margin: "0 auto 8px", color: "#52525b" }} />
+                  <td colSpan={7} style={{ textAlign: "center", padding: "44px 16px", color: "var(--adm-muted)" }}>
+                    <Monitor size={30} style={{ margin: "0 auto 8px", color: "var(--adm-muted-2)" }} />
                     <p style={{ margin: 0 }}>No sessions found.</p>
                   </td>
                 </tr>
@@ -169,24 +169,24 @@ export default function AdminSessions({
                 sessions.map((sess) => {
                   const isActive = sess.is_active;
                   return (
-                    <tr key={sess.id || sess.session_id} style={{ borderBottom: "1px solid #141414" }}>
+                    <tr key={sess.id || sess.session_id} style={{ borderBottom: "1px solid var(--adm-border-soft)" }}>
                       <td style={{ padding: "12px 16px" }}>
-                        <div style={{ fontWeight: 600, color: "#ffffff" }}>{sess.username}</div>
-                        <div style={{ fontSize: "11.5px", color: "#71717a" }}>{sess.email} · UID #{sess.uid}</div>
+                        <div style={{ fontWeight: 600, color: "var(--adm-text)" }}>{sess.username}</div>
+                        <div style={{ fontSize: "11.5px", color: "var(--adm-muted)" }}>{sess.email} · UID #{sess.uid}</div>
                       </td>
                       <td style={{ padding: "12px 16px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: 500, color: "#e4e4e7" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: 500, color: "var(--adm-text)" }}>
                           {getDeviceIcon(sess.device_type)}
                           <span>{sess.device_name || "Web Client"}</span>
                         </div>
-                        <div style={{ fontSize: "11.5px", color: "#71717a", marginLeft: "23px" }}>{sess.os || "—"}</div>
+                        <div style={{ fontSize: "11.5px", color: "var(--adm-muted)", marginLeft: "23px" }}>{sess.os || "—"}</div>
                       </td>
                       <td style={{ padding: "12px 16px" }}>
-                        <div style={{ color: "#d4d4d8" }}>{sess.browser || "Browser"}</div>
-                        <div style={{ fontSize: "11.5px", color: "#71717a", fontFamily: "monospace" }}>{sess.ip_address || "127.0.0.1"}</div>
+                        <div style={{ color: "var(--adm-text)" }}>{sess.browser || "Browser"}</div>
+                        <div style={{ fontSize: "11.5px", color: "var(--adm-muted)", fontFamily: "monospace" }}>{sess.ip_address || "127.0.0.1"}</div>
                       </td>
-                      <td style={{ padding: "12px 16px", color: "#a1a1aa", fontSize: "12px" }}>{sess.created_at}</td>
-                      <td style={{ padding: "12px 16px", color: "#a1a1aa", fontSize: "12px" }}>{sess.last_activity}</td>
+                      <td style={{ padding: "12px 16px", color: "var(--adm-text-2)", fontSize: "12px" }}>{sess.created_at}</td>
+                      <td style={{ padding: "12px 16px", color: "var(--adm-text-2)", fontSize: "12px" }}>{sess.last_activity}</td>
                       <td style={{ padding: "12px 16px" }}>
                         <span
                           style={{
@@ -198,7 +198,7 @@ export default function AdminSessions({
                             fontSize: "11.5px",
                             fontWeight: 600,
                             background: isActive ? "rgba(34, 197, 94, 0.14)" : "#141414",
-                            border: `1px solid ${isActive ? "rgba(34, 197, 94, 0.3)" : "#262626"}`,
+                            border: `1px solid ${isActive ? "var(--adm-ok-border)" : "var(--adm-border-strong)"}`,
                             color: isActive ? "#4ade80" : "#a1a1aa",
                           }}
                         >
@@ -212,13 +212,13 @@ export default function AdminSessions({
                             <button
                               onClick={() => onRevokeSession(sess.session_id)}
                               style={{
-                                background: "#000000",
-                                border: "1px solid rgba(239, 68, 68, 0.45)",
+                                background: "var(--adm-input)",
+                                border: "1px solid var(--adm-danger-border)",
                                 borderRadius: "6px",
                                 padding: "4px 8px",
                                 fontSize: "12px",
                                 fontWeight: 600,
-                                color: "#f87171",
+                                color: "var(--adm-danger-text)",
                                 cursor: "pointer",
                                 display: "inline-flex",
                                 alignItems: "center",
@@ -231,13 +231,13 @@ export default function AdminSessions({
                           <button
                             onClick={() => setSelectedUserForRevokeAll({ uid: sess.uid, username: sess.username })}
                             style={{
-                              background: "#000000",
-                              border: "1px solid #262626",
+                              background: "var(--adm-input)",
+                              border: "1px solid var(--adm-border-strong)",
                               borderRadius: "6px",
                               padding: "4px 8px",
                               fontSize: "12px",
                               fontWeight: 500,
-                              color: "#a1a1aa",
+                              color: "var(--adm-text-2)",
                               cursor: "pointer",
                             }}
                           >
@@ -253,9 +253,9 @@ export default function AdminSessions({
           </table>
         </div>
 
-        <div style={{ padding: "12px 18px", borderTop: "1px solid #171717", background: "#050505", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ fontSize: "12px", color: "#a1a1aa" }}>
-            Page <strong style={{ color: "#ffffff" }}>{page}</strong> of <strong style={{ color: "#ffffff" }}>{totalPages || 1}</strong>
+        <div style={{ padding: "12px 18px", borderTop: "1px solid var(--adm-border-soft)", background: "var(--adm-table-foot-bg)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontSize: "12px", color: "var(--adm-text-2)" }}>
+            Page <strong style={{ color: "var(--adm-text)" }}>{page}</strong> of <strong style={{ color: "var(--adm-text)" }}>{totalPages || 1}</strong>
           </div>
           <div style={{ display: "flex", gap: "6px" }}>
             <button onClick={() => onPageChange(page - 1)} disabled={page <= 1} className="btn btn--ghost" style={{ height: "30px", padding: "0 10px", fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "4px", cursor: "pointer" }}>
@@ -270,13 +270,13 @@ export default function AdminSessions({
 
       {selectedUserForRevokeAll && (
         <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0, 0, 0, 0.78)", display: "grid", placeItems: "center", zIndex: 100, padding: "16px" }} onClick={() => setSelectedUserForRevokeAll(null)}>
-          <div className="card" style={{ width: "100%", maxWidth: "420px", padding: "24px", borderRadius: "12px", border: "1px solid #262626", textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ width: "44px", height: "44px", borderRadius: "50%", background: "rgba(239, 68, 68, 0.16)", color: "#f87171", display: "grid", placeItems: "center", margin: "0 auto 12px" }}>
+          <div className="card" style={{ width: "100%", maxWidth: "420px", padding: "24px", borderRadius: "12px", border: "1px solid var(--adm-border-strong)", textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ width: "44px", height: "44px", borderRadius: "50%", background: "var(--adm-danger-soft)", color: "var(--adm-danger-text)", display: "grid", placeItems: "center", margin: "0 auto 12px" }}>
               <AlertOctagon size={22} />
             </div>
-            <h3 style={{ margin: "0 0 8px", fontSize: "16px", color: "#ffffff" }}>Revoke all sessions?</h3>
-            <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#a1a1aa", lineHeight: 1.5 }}>
-              Sign out <strong style={{ color: "#ffffff" }}>"{selectedUserForRevokeAll.username}"</strong> (UID #{selectedUserForRevokeAll.uid}) across all active devices?
+            <h3 style={{ margin: "0 0 8px", fontSize: "16px", color: "var(--adm-text)" }}>Revoke all sessions?</h3>
+            <p style={{ margin: "0 0 20px", fontSize: "13px", color: "var(--adm-text-2)", lineHeight: 1.5 }}>
+              Sign out <strong style={{ color: "var(--adm-text)" }}>"{selectedUserForRevokeAll.username}"</strong> (UID #{selectedUserForRevokeAll.uid}) across all active devices?
             </p>
             <div style={{ display: "flex", gap: "10px" }}>
               <button className="btn btn--ghost" onClick={() => setSelectedUserForRevokeAll(null)} style={{ flex: 1, height: "38px", cursor: "pointer" }}>Cancel</button>
@@ -287,7 +287,7 @@ export default function AdminSessions({
                   setSelectedUserForRevokeAll(null);
                   onRevokeAllUserSessions(uid);
                 }}
-                style={{ flex: 1, height: "38px", background: "#dc2626", borderColor: "#dc2626", color: "#ffffff", cursor: "pointer" }}
+                style={{ flex: 1, height: "38px", background: "#dc2626", borderColor: "#dc2626", color: "var(--adm-text)", cursor: "pointer" }}
               >
                 Revoke all
               </button>
