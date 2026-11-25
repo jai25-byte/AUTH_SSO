@@ -151,7 +151,7 @@ async function request(endpoint, options = {}) {
  * Register a new user
  * POST /api/register
  */
-export async function register({ username, password, email, fullName, name, uid }) {
+export async function register({ username, password, email, fullName, name, uid, requireOtp }) {
   const payload = {
     username: username?.trim(),
     password,
@@ -167,6 +167,10 @@ export async function register({ username, password, email, fullName, name, uid 
     payload.uid = uid;
   }
 
+  if (typeof requireOtp === "boolean") {
+    payload.require_otp = requireOtp;
+  }
+
   return await request("/api/register", {
     method: "POST",
     body: JSON.stringify(payload),
@@ -177,7 +181,7 @@ export async function register({ username, password, email, fullName, name, uid 
  * Authenticate user and receive session token
  * POST /api/login
  */
-export async function login({ login: loginIdentifier, username, email, password }) {
+export async function login({ login: loginIdentifier, username, email, password, requireOtp }) {
   const identifier = (loginIdentifier || username || email || "").trim();
   const payload = {
     login: identifier,
@@ -185,6 +189,10 @@ export async function login({ login: loginIdentifier, username, email, password 
     email: identifier,
     password,
   };
+
+  if (typeof requireOtp === "boolean") {
+    payload.require_otp = requireOtp;
+  }
 
   const response = await request("/api/login", {
     method: "POST",

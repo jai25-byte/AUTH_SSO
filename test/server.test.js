@@ -237,6 +237,25 @@ describe("Node.js Backend Server API Suite", () => {
     expect(data.user.password).toBeUndefined();
   });
 
+  it("POST /api/register with require_otp triggers post-signup OTP challenge", async () => {
+    const res = await fetch(`${BASE}/api/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: `reg_otp_${Date.now()}`,
+        email: `reg_otp_${Date.now()}@example.com`,
+        password: "SecurePassword123!",
+        require_otp: true,
+      }),
+    });
+    expect(res.status).toBe(201);
+    const data = await res.json();
+    expect(data.otp_required).toBe(true);
+    expect(data.requires_otp).toBe(true);
+    expect(data.email_masked).toBeDefined();
+    expect(data.otp).toBeUndefined();
+  });
+
   it("Enforces auth on /api/users and blocks hardcoded OTP and WebAuthn bypasses", async () => {
     // /api/users requires admin auth
     const anonUsers = await fetch(`${BASE}/api/users`);

@@ -32,7 +32,9 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
   const [otpValues, setOtpValues] = useState(["", "", "", "", "", ""]);
   const [otpError, setOtpError] = useState("");
   const [pendingIdentifier, setPendingIdentifier] = useState("");
-  const [resendCooldown, setResendCooldown] = useState(30);
+  const [pendingEmailMasked, setPendingEmailMasked] = useState("");
+  const [otpContext, setOtpContext] = useState("login"); // 'login' | 'register'
+  const [resendCooldown, setResendCooldown] = useState(60);
   const otpInputsRef = useRef([]);
 
   useEffect(() => {
@@ -42,13 +44,15 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
   useEffect(() => {
     document.title =
       authStep === "otp"
-        ? "Two-Factor Authentication · VaultAuth SSO"
+        ? otpContext === "register"
+          ? "Verify email · VaultAuth SSO"
+          : "Two-Factor Authentication · VaultAuth SSO"
         : authStep === "forgot"
           ? "Reset password · VaultAuth SSO"
           : activeTab === "register"
             ? "Create account · VaultAuth SSO"
             : "Sign in · VaultAuth SSO";
-  }, [activeTab, authStep]);
+  }, [activeTab, authStep, otpContext]);
 
   useEffect(() => {
     let timer;
@@ -84,6 +88,8 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
   const switchTab = (tab) => {
     clearBanner();
     setAuthStep("credentials");
+    setOtpContext("login");
+    setPendingEmailMasked("");
     setActiveTab(tab);
     if (typeof window !== "undefined") {
       const targetUrl = tab === "register" ? "/register" : "/login";
@@ -91,6 +97,39 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
         window.history.pushState(null, "", targetUrl);
       }
     }
+  };
+
+  const enterOtpStep = (data, fallbackIdentifier, context = "login") => {
+    const identifier = data?.identifier || fallbackIdentifier;
+    const masked = data?.email_masked || "";
+    const cooldownVal = typeof data?.cooldown === "number" ? data.cooldown : 60;
+    const deliveryFailed = data?.email_sent === false;
+
+    setOtpContext(context);
+    setPendingIdentifier(identifier);
+    setPendingEmailMasked(masked);
+    setOtpValues(["", "", "", "", "", ""]);
+    setOtpError("");
+    setResendCooldown(cooldownVal);
+    setAuthStep("otp");
+
+    if (deliveryFailed) {
+      const warnMsg =
+        data?.message ||
+        "Account created, but verification email could not be sent. Click Resend code to try again.";
+      setBanner({ text: warnMsg, type: "error" });
+      onNotify?.(warnMsg, "error");
+    } else {
+      const okMsg =
+        data?.message ||
+        (context === "register"
+          ? "Account created! Check your email for the 6-digit verification code."
+          : "Verification required. Check your email for the code.");
+      setBanner({ text: okMsg, type: context === "register" ? "success" : "info" });
+      onNotify?.(okMsg, context === "register" ? "success" : "info");
+    }
+
+    setTimeout(() => otpInputsRef.current[0]?.focus(), 50);
   };
 
   const redirectAuthenticated = (user) => {
@@ -127,16 +166,11 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
         email: ident,
         password: loginPassword,
         remember: rememberMe,
+        requireOtp: true,
       });
 
       if (data?.otp_required || data?.requires_otp) {
-        setPendingIdentifier(data.identifier || ident);
-        setAuthStep("otp");
-        setOtpValues(["", "", "", "", "", ""]);
-        setOtpError("");
-        setResendCooldown(30);
-        onNotify?.("Verification required. Check your email for the code.", "info");
-        setTimeout(() => otpInputsRef.current[0]?.focus(), 50);
+        enterOtpStep(data, ident, "login");
         return;
       }
 
@@ -209,23 +243,46 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
     setRegErrors({});
     setIsLoading(true);
 
+    const cleanEmail = regEmail.trim().toLowerCase();
     try {
-      await apiRegister({
+      const regRes = await apiRegister({
         fullName: regFullName.trim(),
         username: regUsername.trim(),
-        email: regEmail.trim(),
+        email: cleanEmail,
         password: regPassword,
         role: regRole,
+        requireOtp: true,
       });
 
-      onNotify?.("Account created successfully! Please sign in.", "success");
-      setLoginEmail(regEmail.trim());
+      setLoginEmail(cleanEmail);
       setRegPassword("");
       setRegConfirm("");
-      switchTab("login");
-      setBanner({ text: "Account created. You can now sign in.", type: "success" });
+
+      if (regRes && typeof regRes === "object" && (regRes.otp_required || regRes.requires_otp)) {
+        enterOtpStep(regRes, cleanEmail, "register");
+        return;
+      }
+
+      // Fallback for minimal /api/register implementations: explicitly dispatch verification OTP
+      try {
+        const otpRes = await sendOtp(cleanEmail);
+        enterOtpStep(otpRes, cleanEmail, "register");
+      } catch (otpErr) {
+        onNotify?.("Account created successfully! Please sign in.", "success");
+        switchTab("login");
+        setBanner({
+          text: otpErr?.message
+            ? `Account created, but verification code failed: ${otpErr.message}`
+            : "Account created. You can now sign in.",
+          type: otpErr?.message ? "info" : "success",
+        });
+      }
     } catch (err) {
-      setBanner({ text: err.message || "Registration failed. Please try again.", type: "error" });
+      const detail =
+        Array.isArray(err?.data?.errors) && err.data.errors.length > 0
+          ? ` ${err.data.errors.join(" ")}`
+          : "";
+      setBanner({ text: `${err.message || "Registration failed. Please try again."}${detail}`, type: "error" });
     } finally {
       setIsLoading(false);
     }
@@ -304,12 +361,19 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
   const handleResendOtp = async (e) => {
     e.preventDefault();
     if (resendCooldown > 0) return;
+    clearBanner();
     onNotify?.("Sending a new verification code...", "info");
     try {
-      await sendOtp(pendingIdentifier);
-      setResendCooldown(30);
+      const res = await sendOtp(pendingIdentifier);
+      if (res?.email_masked) setPendingEmailMasked(res.email_masked);
+      setResendCooldown(typeof res?.cooldown === "number" ? res.cooldown : 60);
       onNotify?.("New 6-digit code sent to your email.", "success");
+      setBanner({ text: res?.message || "A new verification code has been sent.", type: "info" });
     } catch (err) {
+      const retry = err?.data?.cooldown || err?.data?.retry_after;
+      if (typeof retry === "number" && retry > 0) {
+        setResendCooldown(retry);
+      }
       setBanner({
         text: err.message || "Could not resend code. Please try again.",
         type: "error",
@@ -731,10 +795,12 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
           {/* ================= 3. OTP VERIFICATION VIEW ================= */}
           {authStep === "otp" && (
             <div>
-              <h1 className="login-clean-h1">Two-Factor Auth</h1>
+              <h1 className="login-clean-h1">
+                {otpContext === "register" ? "Verify your email" : "Two-Factor Auth"}
+              </h1>
               <p className="login-clean-sub">
                 Enter the 6-digit verification code sent to{" "}
-                <strong>{pendingIdentifier || "your registered email"}</strong>.
+                <strong>{pendingEmailMasked || pendingIdentifier || "your registered email"}</strong>.
               </p>
 
               <form onSubmit={handleVerifyOtpSubmit} noValidate>

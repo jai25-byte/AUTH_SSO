@@ -719,6 +719,36 @@ async function requestHandler(req, res) {
       };
       USERS.push(newUser);
       recordAudit("USER_REGISTERED", newUser, `User registered: ${cleanUsername}`);
+
+      if (body.require_otp || ADMIN_SETTINGS.mfa_required === "true") {
+        const otpCode = crypto.randomInt(100000, 1000000).toString();
+        OTPS.set(newUser.email.toLowerCase(), {
+          codeHash: hashResetSecret(`login-otp:${newUser.uid}:${otpCode}`),
+          expiresAt: Date.now() + 300000,
+          cooldownUntil: Date.now() + 60000,
+          attempts: 0,
+        });
+
+        const plunkResult = await sendEmailPlunk(newUser.email, otpCode);
+        const masked = newUser.email.replace(/^(.{2})(.*)(@.*)$/, (_, a, b, c) => a + "*".repeat(Math.max(b.length, 3)) + c);
+
+        return json(res, 201, {
+          success: true,
+          otp_required: true,
+          requires_otp: true,
+          identifier: newUser.email,
+          email_masked: masked,
+          email_sent: Boolean(plunkResult?.success),
+          expires_in: 300,
+          cooldown: plunkResult?.success ? 60 : 0,
+          message: plunkResult?.success
+            ? `Account created! Verification code sent to ${masked}.`
+            : `Account created, but verification email could not be sent: ${plunkResult?.error || "Email delivery failed"}. Click Resend code to try again.`,
+          uid,
+          user: sanitizeUser(newUser),
+        }, req);
+      }
+
       return json(res, 201, { success: true, message: "Registration successful", uid, user: sanitizeUser(newUser) }, req);
     } catch (e) {
       return json(res, 500, { success: false, message: "Invalid JSON", error: e.message }, req);
