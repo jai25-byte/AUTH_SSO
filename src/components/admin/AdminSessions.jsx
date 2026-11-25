@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   RefreshCw,
+  Clock,
 } from "lucide-react";
 
 export default function AdminSessions({
@@ -188,23 +189,50 @@ export default function AdminSessions({
                       <td style={{ padding: "12px 16px", color: "var(--adm-text-2)", fontSize: "12px" }}>{sess.created_at}</td>
                       <td style={{ padding: "12px 16px", color: "var(--adm-text-2)", fontSize: "12px" }}>{sess.last_activity}</td>
                       <td style={{ padding: "12px 16px" }}>
-                        <span
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "4px",
-                            padding: "2px 9px",
-                            borderRadius: "6px",
-                            fontSize: "11.5px",
-                            fontWeight: 600,
-                            background: isActive ? "var(--adm-ok-bg)" : "var(--adm-badge-neutral-bg)",
-                            border: `1px solid ${isActive ? "var(--adm-ok-border)" : "var(--adm-badge-neutral-border)"}`,
-                            color: isActive ? "var(--adm-ok-text)" : "var(--adm-badge-neutral-text)",
-                          }}
-                        >
-                          {isActive ? <CheckCircle2 size={11} /> : <XCircle size={11} />}
-                          {sess.status || (isActive ? "Active" : "Revoked")}
-                        </span>
+                        {(() => {
+                          const statusStr = (sess.status || (isActive ? "Active" : "Revoked")).toLowerCase();
+                          const isCur = Boolean(sess.is_current);
+                          const isAct = isActive || statusStr === "active";
+                          const isRev = statusStr === "revoked";
+                          const isExp = statusStr === "expired";
+
+                          let bg = "var(--adm-badge-neutral-bg)";
+                          let border = "var(--adm-badge-neutral-border)";
+                          let color = "var(--adm-badge-neutral-text)";
+                          let Icon = Clock;
+
+                          if (isAct) {
+                            bg = "var(--adm-ok-bg)";
+                            border = "var(--adm-ok-border)";
+                            color = "var(--adm-ok-text)";
+                            Icon = CheckCircle2;
+                          } else if (isRev) {
+                            bg = "var(--adm-danger-soft)";
+                            border = "var(--adm-danger-border)";
+                            color = "var(--adm-danger-text)";
+                            Icon = XCircle;
+                          }
+
+                          return (
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                padding: "2px 9px",
+                                borderRadius: "6px",
+                                fontSize: "11.5px",
+                                fontWeight: 600,
+                                background: bg,
+                                border: `1px solid ${border}`,
+                                color: color,
+                              }}
+                            >
+                              <Icon size={11} />
+                              {sess.status || (isAct ? (isCur ? "Current" : "Active") : isExp ? "Expired" : "Revoked")}
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td style={{ padding: "12px 16px", textAlign: "right" }}>
                         <div style={{ display: "inline-flex", gap: "6px" }}>
@@ -269,7 +297,7 @@ export default function AdminSessions({
       </div>
 
       {selectedUserForRevokeAll && (
-        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0, 0, 0, 0.78)", display: "grid", placeItems: "center", zIndex: 100, padding: "16px" }} onClick={() => setSelectedUserForRevokeAll(null)}>
+        <div style={{ position: "fixed", inset: 0, backgroundColor: "var(--adm-backdrop)", display: "grid", placeItems: "center", zIndex: 100, padding: "16px" }} onClick={() => setSelectedUserForRevokeAll(null)}>
           <div className="card" style={{ width: "100%", maxWidth: "420px", padding: "24px", borderRadius: "12px", border: "1px solid var(--adm-border-strong)", textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
             <div style={{ width: "44px", height: "44px", borderRadius: "50%", background: "var(--adm-danger-soft)", color: "var(--adm-danger-text)", display: "grid", placeItems: "center", margin: "0 auto 12px" }}>
               <AlertOctagon size={22} />

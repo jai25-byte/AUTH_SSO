@@ -350,7 +350,7 @@ export default function AdminUsers({
       {/* Details Modal */}
       {selectedUser && (
         <div
-          style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0, 0, 0, 0.78)", display: "grid", placeItems: "center", zIndex: 100, padding: "16px" }}
+          style={{ position: "fixed", inset: 0, backgroundColor: "var(--adm-backdrop)", display: "grid", placeItems: "center", zIndex: 100, padding: "16px" }}
           onClick={() => setSelectedUser(null)}
         >
           <div className="card" style={{ width: "100%", maxWidth: "460px", padding: "24px", borderRadius: "12px", border: "1px solid var(--adm-border-strong)" }} onClick={(e) => e.stopPropagation()}>
@@ -396,7 +396,7 @@ export default function AdminUsers({
       {/* Delete Modal */}
       {deleteConfirmUser && (
         <div
-          style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0, 0, 0, 0.78)", display: "grid", placeItems: "center", zIndex: 100, padding: "16px" }}
+          style={{ position: "fixed", inset: 0, backgroundColor: "var(--adm-backdrop)", display: "grid", placeItems: "center", zIndex: 100, padding: "16px" }}
           onClick={() => setDeleteConfirmUser(null)}
         >
           <div className="card" style={{ width: "100%", maxWidth: "420px", padding: "24px", borderRadius: "12px", border: "1px solid var(--adm-border-strong)", textAlign: "center" }} onClick={(e) => e.stopPropagation()}>

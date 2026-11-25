@@ -246,7 +246,7 @@ export default function AdminApplications({
           style={{
             position: "fixed",
             inset: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.78)",
+            backgroundColor: "var(--adm-backdrop)",
             display: "grid",
             placeItems: "center",
             zIndex: 110,
