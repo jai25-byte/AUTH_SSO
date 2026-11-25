@@ -233,7 +233,23 @@ export async function updateAdminSettings(settings) {
   });
 }
 
-// 9. Logout
+// 9. Connected Applications (SSO Apps)
+export async function getAdminConnectedApps() {
+  try {
+    const res = await adminRequest("/api/connected-apps", { method: "GET" });
+    return Array.isArray(res) ? res : res?.apps || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function disconnectAdminApp(appId) {
+  return await adminRequest(`/api/connected-apps/${encodeURIComponent(appId)}`, {
+    method: "DELETE",
+  });
+}
+
+// 10. Logout
 export async function adminLogout() {
   try {
     await adminRequest("/api/logout", { method: "POST" });

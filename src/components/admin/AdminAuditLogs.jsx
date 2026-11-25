@@ -3,11 +3,9 @@ import {
   FileText,
   Search,
   Filter,
-  ShieldAlert,
   ChevronLeft,
   ChevronRight,
   RefreshCw,
-  Terminal,
 } from "lucide-react";
 
 export default function AdminAuditLogs({
@@ -25,237 +23,113 @@ export default function AdminAuditLogs({
 }) {
   const getEventBadgeStyle = (eventType = "") => {
     const ev = eventType.toUpperCase();
-    if (ev.includes("WEBAUTHN") || ev.includes("PASSKEY")) {
-      return { bg: "#f0fdf4", color: "#16a34a", border: "#86efac" };
-    }
-    if (ev.includes("DELETE") || ev.includes("REVOKE") || ev.includes("BLOCKED")) {
-      return { bg: "#fef2f2", color: "#b91c1c", border: "#fecaca" };
-    }
-    if (ev.includes("CREATE") || ev.includes("SUCCESS") || ev.includes("ACTIVATE")) {
-      return { bg: "#ecfdf5", color: "#15803d", border: "#bbf7d0" };
-    }
-    if (ev.includes("ROLE") || ev.includes("PERMISSION")) {
-      return { bg: "#f5f3ff", color: "#7047eb", border: "#ddd6fe" };
-    }
-    return { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" };
+    if (ev.includes("WEBAUTHN") || ev.includes("PASSKEY")) return { bg: "rgba(34, 197, 94, 0.12)", color: "#4ade80", border: "rgba(34, 197, 94, 0.3)" };
+    if (ev.includes("DELETE") || ev.includes("REVOKE") || ev.includes("BLOCKED")) return { bg: "rgba(239, 68, 68, 0.14)", color: "#f87171", border: "rgba(239, 68, 68, 0.35)" };
+    if (ev.includes("CREATE") || ev.includes("SUCCESS") || ev.includes("ACTIVATE")) return { bg: "rgba(34, 197, 94, 0.12)", color: "#4ade80", border: "rgba(34, 197, 94, 0.3)" };
+    if (ev.includes("ROLE") || ev.includes("PERMISSION")) return { bg: "rgba(247, 215, 148, 0.14)", color: "#F7D794", border: "rgba(247, 215, 148, 0.35)" };
+    return { bg: "#141414", color: "#d4d4d8", border: "#262626" };
   };
 
   return (
-    <div className="admin-page-container" style={{ display: "grid", gap: "20px" }}>
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
+    <div className="admin-page-container" style={{ display: "grid", gap: "18px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "14px" }}>
         <div>
-          <h1 style={{ fontSize: "1.45rem", fontWeight: 700, color: "#111827", margin: 0 }}>
-            Security &amp; Audit Logs
+          <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#ffffff", margin: 0 }}>
+            Security &amp; audit logs
           </h1>
-          <p style={{ margin: "4px 0 0", color: "#6b7280", fontSize: "0.86rem" }}>
-            Immutable administrative provenance ledger tracking lifecycle operations, privilege modifications, and security exceptions.
+          <p style={{ margin: "4px 0 0", color: "#a1a1aa", fontSize: "13px" }}>
+            Administrative provenance ledger tracking user lifecycle, role modifications, and security exceptions.
           </p>
         </div>
 
-        <button
-          onClick={onRefresh}
-          className="btn btn--ghost"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "8px 14px",
-            height: "38px",
-            fontSize: "0.86rem",
-          }}
-        >
-          <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
-          <span>Refresh Ledger</span>
+        <button onClick={onRefresh} className="btn btn--ghost" style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "0 13px", height: "36px", fontSize: "12.5px", cursor: "pointer" }}>
+          <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+          <span>Refresh ledger</span>
         </button>
       </div>
 
-      {/* Filters Toolbar */}
-      <div
-        style={{
-          background: "#ffffff",
-          border: "1px solid #e5e7eb",
-          borderRadius: "12px",
-          padding: "16px",
-          display: "flex",
-          gap: "14px",
-          flexWrap: "wrap",
-          alignItems: "center",
-          justifyContent: "space-between",
-          boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)",
-        }}
-      >
-        <div style={{ display: "flex", gap: "12px", flex: 1, minWidth: "280px", flexWrap: "wrap" }}>
-          {/* Search box */}
-          <div style={{ position: "relative", flex: 1, minWidth: "220px" }}>
-            <Search
-              size={16}
-              color="#9ca3af"
-              style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }}
-            />
+      <div className="card" style={{ borderRadius: "10px", padding: "14px 16px", display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", gap: "10px", flex: 1, minWidth: "260px", flexWrap: "wrap" }}>
+          <div style={{ position: "relative", flex: 1, minWidth: "200px" }}>
+            <Search size={15} color="#71717a" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }} />
             <input
               type="text"
-              placeholder="Search by actor, target user, or action name..."
+              placeholder="Search actor, target user, or event..."
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
-              style={{
-                width: "100%",
-                height: "38px",
-                paddingLeft: "36px",
-                paddingRight: "12px",
-                borderRadius: "8px",
-                border: "1px solid #d1d5db",
-                fontSize: "0.88rem",
-                color: "#111827",
-                outline: "none",
-              }}
+              style={{ width: "100%", height: "36px", paddingLeft: "36px", paddingRight: "12px", borderRadius: "8px", border: "1px solid #262626", background: "#000000", fontSize: "13px", color: "#ffffff" }}
             />
           </div>
 
-          {/* Event Filter */}
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <Filter size={15} color="#6b7280" />
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <Filter size={14} color="#71717a" />
             <select
               value={eventFilter}
               onChange={(e) => onEventFilterChange(e.target.value)}
-              style={{
-                height: "38px",
-                padding: "0 12px",
-                borderRadius: "8px",
-                border: "1px solid #d1d5db",
-                fontSize: "0.86rem",
-                backgroundColor: "#fff",
-                color: "#374151",
-                cursor: "pointer",
-              }}
+              style={{ height: "36px", padding: "0 10px", borderRadius: "8px", border: "1px solid #262626", fontSize: "12.5px", backgroundColor: "#000000", color: "#e4e4e7", cursor: "pointer" }}
             >
-              <option value="all">All Events</option>
-              <option value="USER">User Lifecycle</option>
-              <option value="ROLE">Role &amp; Permissions</option>
-              <option value="SESSION">Session Revocation</option>
+              <option value="all">All events</option>
+              <option value="USER">User lifecycle</option>
+              <option value="ROLE">Role &amp; permissions</option>
+              <option value="SESSION">Session revocation</option>
               <option value="LOGIN">Authentication</option>
               <option value="WEBAUTHN">Passkey / WebAuthn</option>
-              <option value="SETTINGS">System Settings</option>
+              <option value="SETTINGS">System settings</option>
             </select>
           </div>
         </div>
 
-        <div style={{ fontSize: "0.82rem", color: "#6b7280" }}>
-          Displaying <strong>{logs.length}</strong> of <strong>{total}</strong> audit records
+        <div style={{ fontSize: "12px", color: "#a1a1aa" }}>
+          Showing <strong style={{ color: "#ffffff" }}>{logs.length}</strong> of <strong style={{ color: "#ffffff" }}>{total}</strong> records
         </div>
       </div>
 
-      {/* Audit Logs Table */}
-      <div
-        style={{
-          background: "#ffffff",
-          border: "1px solid #e5e7eb",
-          borderRadius: "14px",
-          overflow: "hidden",
-          boxShadow: "0 1px 3px rgba(15, 23, 42, 0.05)",
-        }}
-      >
+      <div className="card" style={{ borderRadius: "12px", overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.84rem", textAlign: "left" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12.5px", textAlign: "left" }}>
             <thead>
-              <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0", color: "#64748b" }}>
-                <th style={{ padding: "12px 14px", fontWeight: 600 }}>Event ID</th>
-                <th style={{ padding: "12px 14px", fontWeight: 600 }}>Action / Event</th>
-                <th style={{ padding: "12px 14px", fontWeight: 600 }}>Performed By</th>
-                <th style={{ padding: "12px 14px", fontWeight: 600 }}>Target User</th>
-                <th style={{ padding: "12px 14px", fontWeight: 600 }}>IP Address</th>
-                <th style={{ padding: "12px 14px", fontWeight: 600 }}>Status</th>
-                <th style={{ padding: "12px 14px", fontWeight: 600 }}>Timestamp</th>
-                <th style={{ padding: "12px 14px", fontWeight: 600 }}>Event Context</th>
+              <tr style={{ background: "#111111", borderBottom: "1px solid #1f1f1f", color: "#71717a", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                <th style={{ padding: "11px 14px", fontWeight: 600 }}>ID</th>
+                <th style={{ padding: "11px 14px", fontWeight: 600 }}>Event</th>
+                <th style={{ padding: "11px 14px", fontWeight: 600 }}>Performed by</th>
+                <th style={{ padding: "11px 14px", fontWeight: 600 }}>Target</th>
+                <th style={{ padding: "11px 14px", fontWeight: 600 }}>IP address</th>
+                <th style={{ padding: "11px 14px", fontWeight: 600 }}>Status</th>
+                <th style={{ padding: "11px 14px", fontWeight: 600 }}>Timestamp</th>
+                <th style={{ padding: "11px 14px", fontWeight: 600 }}>Details</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan={8} style={{ textAlign: "center", padding: "40px 16px", color: "#9ca3af" }}>
-                    Loading audit trail...
-                  </td>
-                </tr>
+                <tr><td colSpan={8} style={{ textAlign: "center", padding: "36px 16px", color: "#71717a" }}>Loading audit logs...</td></tr>
               ) : logs.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: "center", padding: "48px 16px", color: "#9ca3af" }}>
-                    <FileText size={32} style={{ margin: "0 auto 8px", color: "#cbd5e1" }} />
+                  <td colSpan={8} style={{ textAlign: "center", padding: "44px 16px", color: "#71717a" }}>
+                    <FileText size={30} style={{ margin: "0 auto 8px", color: "#52525b" }} />
                     <p style={{ margin: 0 }}>No audit logs found.</p>
                   </td>
                 </tr>
               ) : (
                 logs.map((log) => {
                   const badge = getEventBadgeStyle(log.event_type);
-
                   return (
-                    <tr
-                      key={log.id}
-                      style={{
-                        borderBottom: "1px solid #f1f5f9",
-                        transition: "background 0.1s",
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#fcfdfd")}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                    >
-                      <td style={{ padding: "12px 14px", fontFamily: "monospace", color: "#94a3b8", fontWeight: 600 }}>
-                        #{log.id}
-                      </td>
-
-                      <td style={{ padding: "12px 14px" }}>
-                        <span
-                          style={{
-                            display: "inline-block",
-                            padding: "2px 8px",
-                            borderRadius: "4px",
-                            fontSize: "0.74rem",
-                            fontWeight: 700,
-                            fontFamily: "monospace",
-                            backgroundColor: badge.bg,
-                            color: badge.color,
-                            border: `1px solid ${badge.border}`,
-                          }}
-                        >
+                    <tr key={log.id} style={{ borderBottom: "1px solid #141414" }}>
+                      <td style={{ padding: "11px 14px", fontFamily: "monospace", color: "#71717a", fontWeight: 600 }}>#{log.id}</td>
+                      <td style={{ padding: "11px 14px" }}>
+                        <span style={{ display: "inline-block", padding: "2px 7px", borderRadius: "5px", fontSize: "11px", fontWeight: 700, fontFamily: "monospace", background: badge.bg, color: badge.color, border: `1px solid ${badge.border}` }}>
                           {log.event_type}
                         </span>
                       </td>
-
-                      <td style={{ padding: "12px 14px", fontWeight: 600, color: "#111827" }}>
-                        {log.actor_username || "System"}
-                        {log.actor_uid ? (
-                          <span style={{ fontSize: "0.74rem", color: "#94a3b8", fontWeight: 400, marginLeft: "4px" }}>
-                            (UID #{log.actor_uid})
-                          </span>
-                        ) : null}
-                      </td>
-
-                      <td style={{ padding: "12px 14px", color: "#475569" }}>
-                        {log.target_username || (log.target_uid ? `UID #${log.target_uid}` : "—")}
-                      </td>
-
-                      <td style={{ padding: "12px 14px", fontFamily: "monospace", color: "#64748b", fontSize: "0.8rem" }}>
-                        {log.ip_address}
-                      </td>
-
-                      <td style={{ padding: "12px 14px" }}>
-                        <span
-                          style={{
-                            padding: "2px 6px",
-                            borderRadius: "4px",
-                            fontSize: "0.72rem",
-                            fontWeight: 600,
-                            backgroundColor: log.status === "Success" ? "#ecfdf5" : "#fef2f2",
-                            color: log.status === "Success" ? "#16a34a" : "#dc2626",
-                          }}
-                        >
+                      <td style={{ padding: "11px 14px", fontWeight: 600, color: "#ffffff" }}>{log.actor_username || "System"}</td>
+                      <td style={{ padding: "11px 14px", color: "#d4d4d8" }}>{log.target_username || (log.target_uid ? `UID #${log.target_uid}` : "—")}</td>
+                      <td style={{ padding: "11px 14px", fontFamily: "monospace", color: "#a1a1aa", fontSize: "12px" }}>{log.ip_address}</td>
+                      <td style={{ padding: "11px 14px" }}>
+                        <span style={{ padding: "2px 7px", borderRadius: "5px", fontSize: "11px", fontWeight: 600, background: log.status === "Success" ? "rgba(34, 197, 94, 0.14)" : "rgba(239, 68, 68, 0.14)", color: log.status === "Success" ? "#4ade80" : "#f87171" }}>
                           {log.status}
                         </span>
                       </td>
-
-                      <td style={{ padding: "12px 14px", color: "#64748b", fontSize: "0.8rem", whiteSpace: "nowrap" }}>
-                        {log.created_at}
-                      </td>
-
-                      <td style={{ padding: "12px 14px", color: "#64748b", fontSize: "0.78rem", maxWidth: "240px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={log.details}>
+                      <td style={{ padding: "11px 14px", color: "#a1a1aa", fontSize: "12px", whiteSpace: "nowrap" }}>{log.created_at}</td>
+                      <td style={{ padding: "11px 14px", color: "#a1a1aa", fontSize: "12px", maxWidth: "240px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={log.details}>
                         {log.details || "—"}
                       </td>
                     </tr>
@@ -266,42 +140,16 @@ export default function AdminAuditLogs({
           </table>
         </div>
 
-        {/* Pagination */}
-        <div
-          style={{
-            padding: "12px 18px",
-            borderTop: "1px solid #e5e7eb",
-            background: "#f8fafc",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: "10px",
-          }}
-        >
-          <div style={{ fontSize: "0.82rem", color: "#64748b" }}>
-            Page <strong>{page}</strong> of <strong>{totalPages || 1}</strong>
+        <div style={{ padding: "12px 18px", borderTop: "1px solid #171717", background: "#050505", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontSize: "12px", color: "#a1a1aa" }}>
+            Page <strong style={{ color: "#ffffff" }}>{page}</strong> of <strong style={{ color: "#ffffff" }}>{totalPages || 1}</strong>
           </div>
-
           <div style={{ display: "flex", gap: "6px" }}>
-            <button
-              onClick={() => onPageChange(page - 1)}
-              disabled={page <= 1}
-              className="btn btn--ghost"
-              style={{ height: "32px", padding: "0 10px", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: "4px" }}
-            >
-              <ChevronLeft size={14} />
-              <span>Previous</span>
+            <button onClick={() => onPageChange(page - 1)} disabled={page <= 1} className="btn btn--ghost" style={{ height: "30px", padding: "0 10px", fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "4px", cursor: "pointer" }}>
+              <ChevronLeft size={13} /> Previous
             </button>
-
-            <button
-              onClick={() => onPageChange(page + 1)}
-              disabled={page >= totalPages}
-              className="btn btn--ghost"
-              style={{ height: "32px", padding: "0 10px", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: "4px" }}
-            >
-              <span>Next</span>
-              <ChevronRight size={14} />
+            <button onClick={() => onPageChange(page + 1)} disabled={page >= totalPages} className="btn btn--ghost" style={{ height: "30px", padding: "0 10px", fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "4px", cursor: "pointer" }}>
+              Next <ChevronRight size={13} />
             </button>
           </div>
         </div>

@@ -139,6 +139,20 @@ let USERS = [
     c_date: "2025-01-15",
     created_at: "2025-01-15T08:30:00Z",
   },
+  {
+    uid: 7,
+    id: 7,
+    username: "amy",
+    email: "amy492998@gmail.com",
+    password: hashPassword("Waheguru@1"),
+    full_name: "Amy Admin",
+    phone: "+1 (555) 019-2835",
+    role: "admin",
+    role_title: "Enterprise Admin",
+    is_active: true,
+    c_date: "2025-01-15",
+    created_at: "2025-01-15T08:30:00Z",
+  },
 ];
 
 let SESSIONS = [

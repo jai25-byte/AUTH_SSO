@@ -30,244 +30,111 @@ export default function AdminLoginActivity({
   loading,
 }) {
   return (
-    <div className="admin-page-container" style={{ display: "grid", gap: "20px" }}>
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
+    <div className="admin-page-container" style={{ display: "grid", gap: "18px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "14px" }}>
         <div>
-          <h1 style={{ fontSize: "1.45rem", fontWeight: 700, color: "#111827", margin: 0 }}>
-            Login Activity Monitoring
+          <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#ffffff", margin: 0 }}>
+            Login activity
           </h1>
-          <p style={{ margin: "4px 0 0", color: "#6b7280", fontSize: "0.86rem" }}>
-            Real-time feed of successful authentication and failed credential challenge events across all users.
+          <p style={{ margin: "4px 0 0", color: "#a1a1aa", fontSize: "13px" }}>
+            Successful authentication events and failed credential challenge attempts.
           </p>
         </div>
 
-        <button
-          onClick={onRefresh}
-          className="btn btn--ghost"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "8px 14px",
-            height: "38px",
-            fontSize: "0.86rem",
-          }}
-        >
-          <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
-          <span>Refresh Feed</span>
+        <button onClick={onRefresh} className="btn btn--ghost" style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "0 13px", height: "36px", fontSize: "12.5px", cursor: "pointer" }}>
+          <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+          <span>Refresh feed</span>
         </button>
       </div>
 
-      {/* Filter Toolbar */}
-      <div
-        style={{
-          background: "#ffffff",
-          border: "1px solid #e5e7eb",
-          borderRadius: "12px",
-          padding: "16px",
-          display: "flex",
-          gap: "14px",
-          flexWrap: "wrap",
-          alignItems: "center",
-          justifyContent: "space-between",
-          boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)",
-        }}
-      >
-        <div style={{ display: "flex", gap: "12px", flex: 1, minWidth: "280px", flexWrap: "wrap", alignItems: "center" }}>
-          {/* User search */}
-          <div style={{ position: "relative", flex: 1, minWidth: "200px" }}>
-            <Search
-              size={16}
-              color="#9ca3af"
-              style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }}
-            />
+      <div className="card" style={{ borderRadius: "10px", padding: "14px 16px", display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", gap: "10px", flex: 1, minWidth: "260px", flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ position: "relative", flex: 1, minWidth: "190px" }}>
+            <Search size={15} color="#71717a" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }} />
             <input
               type="text"
-              placeholder="Search by username or email..."
+              placeholder="Search username or email..."
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
-              style={{
-                width: "100%",
-                height: "38px",
-                paddingLeft: "36px",
-                paddingRight: "12px",
-                borderRadius: "8px",
-                border: "1px solid #d1d5db",
-                fontSize: "0.88rem",
-                color: "#111827",
-                outline: "none",
-              }}
+              style={{ width: "100%", height: "36px", paddingLeft: "36px", paddingRight: "12px", borderRadius: "8px", border: "1px solid #262626", background: "#000000", fontSize: "13px", color: "#ffffff" }}
             />
           </div>
 
-          {/* Status Filter */}
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <Filter size={15} color="#6b7280" />
+            <Filter size={14} color="#71717a" />
             <select
               value={statusFilter}
               onChange={(e) => onStatusFilterChange(e.target.value)}
-              style={{
-                height: "38px",
-                padding: "0 12px",
-                borderRadius: "8px",
-                border: "1px solid #d1d5db",
-                fontSize: "0.86rem",
-                backgroundColor: "#fff",
-                color: "#374151",
-                cursor: "pointer",
-              }}
+              style={{ height: "36px", padding: "0 10px", borderRadius: "8px", border: "1px solid #262626", fontSize: "12.5px", backgroundColor: "#000000", color: "#e4e4e7", cursor: "pointer" }}
             >
-              <option value="all">All Outcomes</option>
-              <option value="success">Success Only</option>
-              <option value="failed">Failed Only</option>
+              <option value="all">All outcomes</option>
+              <option value="success">Success only</option>
+              <option value="failed">Failed only</option>
             </select>
           </div>
 
-          {/* Date from */}
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <Calendar size={15} color="#6b7280" />
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => onDateFromChange(e.target.value)}
-              title="From date"
-              style={{
-                height: "38px",
-                padding: "0 10px",
-                borderRadius: "8px",
-                border: "1px solid #d1d5db",
-                fontSize: "0.84rem",
-                backgroundColor: "#fff",
-                color: "#374151",
-              }}
-            />
-            <span style={{ color: "#9ca3af", fontSize: "0.8rem" }}>to</span>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => onDateToChange(e.target.value)}
-              title="To date"
-              style={{
-                height: "38px",
-                padding: "0 10px",
-                borderRadius: "8px",
-                border: "1px solid #d1d5db",
-                fontSize: "0.84rem",
-                backgroundColor: "#fff",
-                color: "#374151",
-              }}
-            />
+            <Calendar size={14} color="#71717a" />
+            <input type="date" value={dateFrom} onChange={(e) => onDateFromChange(e.target.value)} style={{ height: "36px", padding: "0 8px", borderRadius: "8px", border: "1px solid #262626", fontSize: "12px", backgroundColor: "#000000", color: "#e4e4e7", colorScheme: "dark" }} />
+            <span style={{ color: "#71717a", fontSize: "12px" }}>to</span>
+            <input type="date" value={dateTo} onChange={(e) => onDateToChange(e.target.value)} style={{ height: "36px", padding: "0 8px", borderRadius: "8px", border: "1px solid #262626", fontSize: "12px", backgroundColor: "#000000", color: "#e4e4e7", colorScheme: "dark" }} />
           </div>
         </div>
 
-        <div style={{ fontSize: "0.82rem", color: "#6b7280" }}>
-          Showing <strong>{activities.length}</strong> of <strong>{total}</strong> log entries
+        <div style={{ fontSize: "12px", color: "#a1a1aa" }}>
+          Showing <strong style={{ color: "#ffffff" }}>{activities.length}</strong> of <strong style={{ color: "#ffffff" }}>{total}</strong> entries
         </div>
       </div>
 
-      {/* Table */}
-      <div
-        style={{
-          background: "#ffffff",
-          border: "1px solid #e5e7eb",
-          borderRadius: "14px",
-          overflow: "hidden",
-          boxShadow: "0 1px 3px rgba(15, 23, 42, 0.05)",
-        }}
-      >
+      <div className="card" style={{ borderRadius: "12px", overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.86rem", textAlign: "left" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", textAlign: "left" }}>
             <thead>
-              <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0", color: "#64748b" }}>
-                <th style={{ padding: "12px 16px", fontWeight: 600 }}>Employee</th>
-                <th style={{ padding: "12px 16px", fontWeight: 600 }}>Status</th>
-                <th style={{ padding: "12px 16px", fontWeight: 600 }}>Device &amp; Browser</th>
-                <th style={{ padding: "12px 16px", fontWeight: 600 }}>Location</th>
-                <th style={{ padding: "12px 16px", fontWeight: 600 }}>IP Address</th>
-                <th style={{ padding: "12px 16px", fontWeight: 600, textAlign: "right" }}>Timestamp</th>
+              <tr style={{ background: "#111111", borderBottom: "1px solid #1f1f1f", color: "#71717a", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                <th style={{ padding: "11px 16px", fontWeight: 600 }}>User</th>
+                <th style={{ padding: "11px 16px", fontWeight: 600 }}>Status</th>
+                <th style={{ padding: "11px 16px", fontWeight: 600 }}>Device &amp; Browser</th>
+                <th style={{ padding: "11px 16px", fontWeight: 600 }}>Location</th>
+                <th style={{ padding: "11px 16px", fontWeight: 600 }}>IP address</th>
+                <th style={{ padding: "11px 16px", fontWeight: 600, textAlign: "right" }}>Timestamp</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan={6} style={{ textAlign: "center", padding: "40px 16px", color: "#9ca3af" }}>
-                    Loading telemetry feed...
-                  </td>
-                </tr>
+                <tr><td colSpan={6} style={{ textAlign: "center", padding: "36px 16px", color: "#71717a" }}>Loading activity...</td></tr>
               ) : activities.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: "center", padding: "48px 16px", color: "#9ca3af" }}>
-                    <Activity size={32} style={{ margin: "0 auto 8px", color: "#cbd5e1" }} />
-                    <p style={{ margin: 0 }}>No login activity matches the active filter.</p>
+                  <td colSpan={6} style={{ textAlign: "center", padding: "44px 16px", color: "#71717a" }}>
+                    <Activity size={30} style={{ margin: "0 auto 8px", color: "#52525b" }} />
+                    <p style={{ margin: 0 }}>No login activity matches the filter.</p>
                   </td>
                 </tr>
               ) : (
                 activities.map((item) => {
                   const isSuccess = (item.status || "").toLowerCase() === "success";
-
                   return (
-                    <tr
-                      key={item.id}
-                      style={{
-                        borderBottom: "1px solid #f1f5f9",
-                        transition: "background 0.1s",
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#fcfdfd")}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                    >
-                      <td style={{ padding: "14px 16px" }}>
-                        <div style={{ fontWeight: 600, color: "#111827" }}>
-                          {item.username}
-                        </div>
-                        <div style={{ fontSize: "0.76rem", color: "#64748b" }}>
-                          {item.email} • UID #{item.uid}
-                        </div>
+                    <tr key={item.id} style={{ borderBottom: "1px solid #141414" }}>
+                      <td style={{ padding: "12px 16px" }}>
+                        <div style={{ fontWeight: 600, color: "#ffffff" }}>{item.username}</div>
+                        <div style={{ fontSize: "11.5px", color: "#71717a" }}>{item.email} · UID #{item.uid}</div>
                       </td>
-
-                      <td style={{ padding: "14px 16px" }}>
-                        <span
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "5px",
-                            padding: "3px 10px",
-                            borderRadius: "9999px",
-                            fontSize: "0.75rem",
-                            fontWeight: 600,
-                            backgroundColor: isSuccess ? "#ecfdf5" : "#fef2f2",
-                            color: isSuccess ? "#15803d" : "#b91c1c",
-                            border: `1px solid ${isSuccess ? "#bbf7d0" : "#fecaca"}`,
-                          }}
-                        >
-                          {isSuccess ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
+                      <td style={{ padding: "12px 16px" }}>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "2px 9px", borderRadius: "6px", fontSize: "11.5px", fontWeight: 600, background: isSuccess ? "rgba(34, 197, 94, 0.14)" : "rgba(239, 68, 68, 0.14)", border: `1px solid ${isSuccess ? "rgba(34, 197, 94, 0.3)" : "rgba(239, 68, 68, 0.35)"}`, color: isSuccess ? "#4ade80" : "#f87171" }}>
+                          {isSuccess ? <CheckCircle2 size={11} /> : <XCircle size={11} />}
                           {item.status}
                         </span>
                       </td>
-
-                      <td style={{ padding: "14px 16px" }}>
-                        <div style={{ color: "#334155", fontWeight: 500 }}>
-                          {item.device_name || "Desktop"}
-                        </div>
-                        <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
-                          {item.browser} • {item.os}
-                        </div>
+                      <td style={{ padding: "12px 16px" }}>
+                        <div style={{ color: "#e4e4e7", fontWeight: 500 }}>{item.device_name || "Desktop"}</div>
+                        <div style={{ fontSize: "11.5px", color: "#71717a" }}>{item.browser} · {item.os}</div>
                       </td>
-
-                      <td style={{ padding: "14px 16px", color: "#475569" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                          <Globe size={13} color="#94a3b8" />
-                          <span>{item.location || "Bengaluru, India"}</span>
-                        </div>
+                      <td style={{ padding: "12px 16px", color: "#d4d4d8" }}>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
+                          <Globe size={12} color="#71717a" /> {item.location || "Local"}
+                        </span>
                       </td>
-
-                      <td style={{ padding: "14px 16px", color: "#64748b", fontFamily: "monospace", fontSize: "0.82rem" }}>
-                        {item.ip_address}
-                      </td>
-
-                      <td style={{ padding: "14px 16px", textAlign: "right", color: "#64748b", fontSize: "0.82rem" }}>
-                        {item.created_at}
-                      </td>
+                      <td style={{ padding: "12px 16px", fontFamily: "monospace", color: "#a1a1aa", fontSize: "12px" }}>{item.ip_address}</td>
+                      <td style={{ padding: "12px 16px", textAlign: "right", color: "#a1a1aa", fontSize: "12px" }}>{item.created_at}</td>
                     </tr>
                   );
                 })
@@ -276,42 +143,16 @@ export default function AdminLoginActivity({
           </table>
         </div>
 
-        {/* Pagination */}
-        <div
-          style={{
-            padding: "12px 18px",
-            borderTop: "1px solid #e5e7eb",
-            background: "#f8fafc",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: "10px",
-          }}
-        >
-          <div style={{ fontSize: "0.82rem", color: "#64748b" }}>
-            Page <strong>{page}</strong> of <strong>{totalPages || 1}</strong>
+        <div style={{ padding: "12px 18px", borderTop: "1px solid #171717", background: "#050505", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontSize: "12px", color: "#a1a1aa" }}>
+            Page <strong style={{ color: "#ffffff" }}>{page}</strong> of <strong style={{ color: "#ffffff" }}>{totalPages || 1}</strong>
           </div>
-
           <div style={{ display: "flex", gap: "6px" }}>
-            <button
-              onClick={() => onPageChange(page - 1)}
-              disabled={page <= 1}
-              className="btn btn--ghost"
-              style={{ height: "32px", padding: "0 10px", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: "4px" }}
-            >
-              <ChevronLeft size={14} />
-              <span>Previous</span>
+            <button onClick={() => onPageChange(page - 1)} disabled={page <= 1} className="btn btn--ghost" style={{ height: "30px", padding: "0 10px", fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "4px", cursor: "pointer" }}>
+              <ChevronLeft size={13} /> Previous
             </button>
-
-            <button
-              onClick={() => onPageChange(page + 1)}
-              disabled={page >= totalPages}
-              className="btn btn--ghost"
-              style={{ height: "32px", padding: "0 10px", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: "4px" }}
-            >
-              <span>Next</span>
-              <ChevronRight size={14} />
+            <button onClick={() => onPageChange(page + 1)} disabled={page >= totalPages} className="btn btn--ghost" style={{ height: "30px", padding: "0 10px", fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "4px", cursor: "pointer" }}>
+              Next <ChevronRight size={13} />
             </button>
           </div>
         </div>

@@ -1,16 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Settings,
-  Shield,
-  Clock,
-  KeyRound,
-  Mail,
-  Save,
-  CheckCircle2,
-  Info,
-  Server,
-  Lock,
-} from "lucide-react";
+import { Clock, KeyRound, Mail, Save, Server } from "lucide-react";
 
 export default function AdminSettings({
   settings = {},
@@ -28,7 +17,8 @@ export default function AdminSettings({
   const [saving, setSaving] = useState(false);
 
   const mailerConfigured = Boolean(settings?.smtp_configured || settings?.otp_configured);
-  const mailProviderLabel = settings?.mail_provider || (settings?.smtp_configured ? "SMTP" : settings?.otp_configured ? "Plunk" : "Unconfigured");
+  const mailProviderLabel =
+    settings?.mail_provider || (settings?.smtp_configured ? "SMTP" : settings?.otp_configured ? "Plunk" : "Unconfigured");
 
   useEffect(() => {
     if (settings && Object.keys(settings).length > 0) {
@@ -38,7 +28,7 @@ export default function AdminSettings({
         session_timeout: settings.session_timeout || prev.session_timeout,
         max_failed_attempts: settings.max_failed_attempts || prev.max_failed_attempts,
         password_min_length: settings.password_min_length || prev.password_min_length,
-        mfa_required: settings.mfa_required || prev.mfa_required,
+        mfa_required: String(settings.mfa_required ?? prev.mfa_required),
         otp_expiry_seconds: settings.otp_expiry_seconds || prev.otp_expiry_seconds,
       }));
     }
@@ -60,79 +50,48 @@ export default function AdminSettings({
   };
 
   return (
-    <div className="admin-page-container" style={{ display: "grid", gap: "24px" }}>
-      {/* Header */}
+    <div className="admin-page-container" style={{ display: "grid", gap: "20px" }}>
       <div>
-        <h1 style={{ fontSize: "1.45rem", fontWeight: 700, color: "#111827", margin: 0 }}>
-          System &amp; Security Configuration
+        <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#ffffff", margin: 0 }}>
+          Admin settings
         </h1>
-        <p style={{ margin: "4px 0 0", color: "#6b7280", fontSize: "0.86rem" }}>
-          Tune platform authentication parameters, session lifespan thresholds, password complexity gates, and cryptographic telemetry.
+        <p style={{ margin: "4px 0 0", color: "#a1a1aa", fontSize: "13px" }}>
+          Organization-wide policies, authentication timeouts, password complexity rules, and mail transport.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} style={{ display: "grid", gap: "20px" }}>
-        {/* Card 1: Application Information (Read-only System Telemetry) */}
-        <div
-          style={{
-            background: "#ffffff",
-            border: "1px solid #e5e7eb",
-            borderRadius: "14px",
-            padding: "24px",
-            boxShadow: "0 1px 3px rgba(15, 23, 42, 0.05)",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
-            <Server size={18} color="#7047eb" />
-            <h2 style={{ fontSize: "1.05rem", fontWeight: 700, margin: 0, color: "#111827" }}>
-              Application &amp; Runtime Overview
-            </h2>
+      <form onSubmit={handleSubmit} style={{ display: "grid", gap: "18px" }}>
+        <div className="card" style={{ borderRadius: "12px", padding: "22px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
+            <Server size={16} color="#F7D794" />
+            <h2 style={{ fontSize: "15px", fontWeight: 600, margin: 0, color: "#ffffff" }}>Workspace overview</h2>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px" }}>
-            <div style={{ padding: "12px", background: "#f8fafc", borderRadius: "8px", border: "1px solid #f1f5f9" }}>
-              <div style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 600 }}>PLATFORM NAME</div>
-              <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "#111827", marginTop: "4px" }}>VaultAuth SSO Enterprise</div>
-            </div>
-
-            <div style={{ padding: "12px", background: "#f8fafc", borderRadius: "8px", border: "1px solid #f1f5f9" }}>
-              <div style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 600 }}>ARCHITECTURE</div>
-              <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "#111827", marginTop: "4px" }}>React 19 + Python Flask</div>
-            </div>
-
-            <div style={{ padding: "12px", background: "#f8fafc", borderRadius: "8px", border: "1px solid #f1f5f9" }}>
-              <div style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 600 }}>PRIMARY DATABASE</div>
-              <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "#111827", marginTop: "4px" }}>PostgreSQL (Prisma Accelerate)</div>
-            </div>
-
-            <div style={{ padding: "12px", background: "#f8fafc", borderRadius: "8px", border: "1px solid #f1f5f9" }}>
-              <div style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 600 }}>CORS PROTECTION</div>
-              <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "#16a34a", marginTop: "4px" }}>Restricted Allowed Origins</div>
-            </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: "12px" }}>
+            {[
+              { label: "ORGANIZATION", val: formData.app_name || "VaultAuth SSO" },
+              { label: "STACK", val: "React 19 + Python Flask" },
+              { label: "ACCESS POLICY", val: "Server-Enforced RBAC" },
+              { label: "ORIGIN SECURITY", val: "Restricted CORS Policy" },
+            ].map((tile) => (
+              <div key={tile.label} style={{ padding: "12px", background: "#000000", borderRadius: "8px", border: "1px solid #1f1f1f" }}>
+                <div style={{ fontSize: "10.5px", color: "#F7D794", fontWeight: 700 }}>{tile.label}</div>
+                <div style={{ fontSize: "13.5px", fontWeight: 600, color: "#ffffff", marginTop: "4px" }}>{tile.val}</div>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Card 2: Session & Authentication Parameters */}
-        <div
-          style={{
-            background: "#ffffff",
-            border: "1px solid #e5e7eb",
-            borderRadius: "14px",
-            padding: "24px",
-            boxShadow: "0 1px 3px rgba(15, 23, 42, 0.05)",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
-            <Clock size={18} color="#0284c7" />
-            <h2 style={{ fontSize: "1.05rem", fontWeight: 700, margin: 0, color: "#111827" }}>
-              Session &amp; Token Lifecycles
-            </h2>
+        <div className="card" style={{ borderRadius: "12px", padding: "22px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
+            <Clock size={16} color="#F7D794" />
+            <h2 style={{ fontSize: "15px", fontWeight: 600, margin: 0, color: "#ffffff" }}>Sessions &amp; token lifecycles</h2>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "18px" }}>
-            <div className="field" style={{ margin: 0 }}>
-              <label style={{ display: "block", fontSize: "0.84rem", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>
-                Session Lifetime (seconds)
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "16px" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "#a1a1aa", marginBottom: "5px" }}>
+                Session timeout (seconds)
               </label>
               <input
                 type="number"
@@ -141,25 +100,14 @@ export default function AdminSettings({
                 onChange={handleChange}
                 min="300"
                 max="86400"
-                style={{
-                  width: "100%",
-                  height: "42px",
-                  borderRadius: "8px",
-                  border: "1.5px solid #d1d5db",
-                  padding: "0 14px",
-                  fontSize: "0.9rem",
-                  color: "#111827",
-                  outline: "none",
-                }}
+                style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid #262626", background: "#000000", padding: "0 12px", fontSize: "13px", color: "#ffffff" }}
               />
-              <span style={{ fontSize: "0.75rem", color: "#64748b", display: "block", marginTop: "4px" }}>
-                Standard: 3600s (1 hour). Maximum: 86400s (24 hours).
-              </span>
+              <span style={{ fontSize: "11.5px", color: "#71717a", display: "block", marginTop: "4px" }}>Default: 3600s (60 minutes).</span>
             </div>
 
-            <div className="field" style={{ margin: 0 }}>
-              <label style={{ display: "block", fontSize: "0.84rem", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>
-                OTP Code Expiry (seconds)
+            <div>
+              <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "#a1a1aa", marginBottom: "5px" }}>
+                OTP expiry (seconds)
               </label>
               <input
                 type="number"
@@ -168,45 +116,23 @@ export default function AdminSettings({
                 onChange={handleChange}
                 min="60"
                 max="900"
-                style={{
-                  width: "100%",
-                  height: "42px",
-                  borderRadius: "8px",
-                  border: "1.5px solid #d1d5db",
-                  padding: "0 14px",
-                  fontSize: "0.9rem",
-                  color: "#111827",
-                  outline: "none",
-                }}
+                style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid #262626", background: "#000000", padding: "0 12px", fontSize: "13px", color: "#ffffff" }}
               />
-              <span style={{ fontSize: "0.75rem", color: "#64748b", display: "block", marginTop: "4px" }}>
-                Single-use one-time password validity window (default 300s).
-              </span>
+              <span style={{ fontSize: "11.5px", color: "#71717a", display: "block", marginTop: "4px" }}>Single-use code validity (default 300s).</span>
             </div>
           </div>
         </div>
 
-        {/* Card 3: Credential & Password Security Policies */}
-        <div
-          style={{
-            background: "#ffffff",
-            border: "1px solid #e5e7eb",
-            borderRadius: "14px",
-            padding: "24px",
-            boxShadow: "0 1px 3px rgba(15, 23, 42, 0.05)",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
-            <KeyRound size={18} color="#ea580c" />
-            <h2 style={{ fontSize: "1.05rem", fontWeight: 700, margin: 0, color: "#111827" }}>
-              Password Policy &amp; Brute-Force Defense
-            </h2>
+        <div className="card" style={{ borderRadius: "12px", padding: "22px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
+            <KeyRound size={16} color="#F7D794" />
+            <h2 style={{ fontSize: "15px", fontWeight: 600, margin: 0, color: "#ffffff" }}>Authentication &amp; password policies</h2>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "18px" }}>
-            <div className="field" style={{ margin: 0 }}>
-              <label style={{ display: "block", fontSize: "0.84rem", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>
-                Minimum Password Length
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "#a1a1aa", marginBottom: "5px" }}>
+                Minimum password length
               </label>
               <input
                 type="number"
@@ -215,25 +141,13 @@ export default function AdminSettings({
                 onChange={handleChange}
                 min="8"
                 max="32"
-                style={{
-                  width: "100%",
-                  height: "42px",
-                  borderRadius: "8px",
-                  border: "1.5px solid #d1d5db",
-                  padding: "0 14px",
-                  fontSize: "0.9rem",
-                  color: "#111827",
-                  outline: "none",
-                }}
+                style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid #262626", background: "#000000", padding: "0 12px", fontSize: "13px", color: "#ffffff" }}
               />
-              <span style={{ fontSize: "0.75rem", color: "#64748b", display: "block", marginTop: "4px" }}>
-                Requires combination of lowercase, uppercase, digits, and special characters.
-              </span>
             </div>
 
-            <div className="field" style={{ margin: 0 }}>
-              <label style={{ display: "block", fontSize: "0.84rem", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>
-                Max Failed Attempts Before Lockout
+            <div>
+              <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "#a1a1aa", marginBottom: "5px" }}>
+                Account lockout threshold
               </label>
               <input
                 type="number"
@@ -242,134 +156,65 @@ export default function AdminSettings({
                 onChange={handleChange}
                 min="3"
                 max="20"
-                style={{
-                  width: "100%",
-                  height: "42px",
-                  borderRadius: "8px",
-                  border: "1.5px solid #d1d5db",
-                  padding: "0 14px",
-                  fontSize: "0.9rem",
-                  color: "#111827",
-                  outline: "none",
-                }}
+                style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid #262626", background: "#000000", padding: "0 12px", fontSize: "13px", color: "#ffffff" }}
               />
-              <span style={{ fontSize: "0.75rem", color: "#64748b", display: "block", marginTop: "4px" }}>
-                Maximum incorrect OTP verification attempts before invalidation.
-              </span>
             </div>
 
-            <div className="field" style={{ margin: 0 }}>
-              <label style={{ display: "block", fontSize: "0.84rem", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>
-                Require Email OTP (2FA) on Password Login
+            <div>
+              <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "#a1a1aa", marginBottom: "5px" }}>
+                MFA / Email OTP requirement
               </label>
               <select
                 name="mfa_required"
                 value={String(formData.mfa_required)}
                 onChange={handleChange}
-                style={{
-                  width: "100%",
-                  height: "42px",
-                  borderRadius: "8px",
-                  border: "1.5px solid #d1d5db",
-                  padding: "0 14px",
-                  fontSize: "0.9rem",
-                  color: "#111827",
-                  backgroundColor: "#ffffff",
-                  outline: "none",
-                }}
+                style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid #262626", padding: "0 12px", fontSize: "13px", color: "#ffffff", background: "#000000" }}
               >
-                <option value="false">Optional (Password signs in directly)</option>
-                <option value="true">Enforced (Require 6-digit Email OTP)</option>
+                <option value="false">Optional (Direct password login)</option>
+                <option value="true">Enforced (Require 6-digit OTP)</option>
               </select>
-              <span style={{ fontSize: "0.75rem", color: "#64748b", display: "block", marginTop: "4px" }}>
-                Enable only when an email delivery provider is connected and verified.
-              </span>
             </div>
           </div>
         </div>
 
-        {/* Card 4: OTP Mailer & External Integration Status */}
-        <div
-          style={{
-            background: "#ffffff",
-            border: "1px solid #e5e7eb",
-            borderRadius: "14px",
-            padding: "24px",
-            boxShadow: "0 1px 3px rgba(15, 23, 42, 0.05)",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
-            <Mail size={18} color="#16a34a" />
-            <h2 style={{ fontSize: "1.05rem", fontWeight: 700, margin: 0, color: "#111827" }}>
-              Transactional Mailer Integration ({mailProviderLabel})
-            </h2>
-          </div>
-
-          <div
-            style={{
-              padding: "16px",
-              background: "#f8fafc",
-              borderRadius: "10px",
-              border: "1px solid #e2e8f0",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: "12px",
-            }}
-          >
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span
-                  style={{
-                    width: "8px",
-                    height: "8px",
-                    borderRadius: "50%",
-                    backgroundColor: mailerConfigured ? "#16a34a" : "#ea580c",
-                  }}
-                />
-                <span style={{ fontWeight: 600, color: "#111827", fontSize: "0.92rem" }}>
-                  OTP &amp; Password Reset Email Service ({mailProviderLabel})
-                </span>
-                <span
-                  style={{
-                    fontSize: "0.72rem",
-                    fontWeight: 700,
-                    padding: "2px 8px",
-                    borderRadius: "4px",
-                    backgroundColor: mailerConfigured ? "#dcfce7" : "#ffedd5",
-                    color: mailerConfigured ? "#15803d" : "#c2410c",
-                  }}
-                >
-                  {mailerConfigured ? "CONNECTED & ACTIVE" : "NOT CONFIGURED IN .ENV"}
-                </span>
+        <div className="card" style={{ borderRadius: "12px", padding: "20px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <Mail size={17} color={mailerConfigured ? "#4ade80" : "#F7D794"} />
+              <div>
+                <div style={{ fontWeight: 600, fontSize: "13.5px", color: "#ffffff" }}>
+                  Transactional Mailer ({mailProviderLabel})
+                </div>
+                <div style={{ fontSize: "12px", color: "#a1a1aa" }}>
+                  Dispatches 6-digit OTP verification and password recovery messages.
+                </div>
               </div>
-              <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: "0.82rem" }}>
-                Delivers 6-digit cryptographic verification codes directly to employee inboxes. Credentials remain secure on the server.
-              </p>
             </div>
+            <span
+              style={{
+                fontSize: "11px",
+                fontWeight: 700,
+                padding: "3px 9px",
+                borderRadius: "6px",
+                background: mailerConfigured ? "rgba(34, 197, 94, 0.14)" : "rgba(247, 215, 148, 0.14)",
+                border: `1px solid ${mailerConfigured ? "rgba(34, 197, 94, 0.3)" : "rgba(247, 215, 148, 0.35)"}`,
+                color: mailerConfigured ? "#4ade80" : "#F7D794",
+              }}
+            >
+              {mailerConfigured ? "CONNECTED" : "UNCONFIGURED"}
+            </span>
           </div>
         </div>
 
-        {/* Submit Button */}
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || loading}
             className="btn"
-            style={{
-              height: "44px",
-              padding: "0 24px",
-              width: "auto",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "8px",
-              background: "linear-gradient(135deg, #7047eb, #4f46e5)",
-              boxShadow: "0 4px 14px rgba(112, 71, 235, 0.35)",
-            }}
+            style={{ height: "38px", padding: "0 18px", display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", cursor: "pointer" }}
           >
-            <Save size={16} />
-            <span>{saving ? "Saving Changes..." : "Apply Security Configuration"}</span>
+            <Save size={14} />
+            <span>{saving ? "Saving..." : "Save settings"}</span>
           </button>
         </div>
       </form>

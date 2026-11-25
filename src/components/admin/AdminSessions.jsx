@@ -7,7 +7,6 @@ import {
   AlertOctagon,
   CheckCircle2,
   XCircle,
-  Clock,
   Laptop,
   Smartphone,
   ChevronLeft,
@@ -35,24 +34,23 @@ export default function AdminSessions({
   const getDeviceIcon = (type) => {
     switch ((type || "").toLowerCase()) {
       case "mobile":
-        return <Smartphone size={16} color="#0284c7" />;
+        return <Smartphone size={15} color="#a1a1aa" />;
       case "laptop":
-        return <Laptop size={16} color="#7047eb" />;
+        return <Laptop size={15} color="#F7D794" />;
       default:
-        return <Monitor size={16} color="#475569" />;
+        return <Monitor size={15} color="#a1a1aa" />;
     }
   };
 
   return (
-    <div className="admin-page-container" style={{ display: "grid", gap: "20px" }}>
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
+    <div className="admin-page-container" style={{ display: "grid", gap: "18px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "14px" }}>
         <div>
-          <h1 style={{ fontSize: "1.45rem", fontWeight: 700, color: "#111827", margin: 0 }}>
-            Active Session Management
+          <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#ffffff", margin: 0 }}>
+            Active sessions
           </h1>
-          <p style={{ margin: "4px 0 0", color: "#6b7280", fontSize: "0.86rem" }}>
-            Real-time inspection of valid token sessions, client device fingerprinting, and immediate cryptographic revocation.
+          <p style={{ margin: "4px 0 0", color: "#a1a1aa", fontSize: "13px" }}>
+            Inspect valid client sessions, device fingerprints, and revoke access tokens immediately.
           </p>
         </div>
 
@@ -62,233 +60,188 @@ export default function AdminSessions({
           style={{
             display: "inline-flex",
             alignItems: "center",
-            gap: "8px",
-            padding: "8px 14px",
-            height: "38px",
-            fontSize: "0.86rem",
+            gap: "6px",
+            padding: "0 13px",
+            height: "36px",
+            fontSize: "12.5px",
+            cursor: "pointer",
           }}
         >
-          <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
-          <span>Refresh Sessions</span>
+          <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+          <span>Refresh sessions</span>
         </button>
       </div>
 
-      {/* Filter & Search Bar */}
+      {/* Filters */}
       <div
+        className="card"
         style={{
-          background: "#ffffff",
-          border: "1px solid #e5e7eb",
-          borderRadius: "12px",
-          padding: "16px",
+          borderRadius: "10px",
+          padding: "14px 16px",
           display: "flex",
-          gap: "14px",
+          gap: "12px",
           flexWrap: "wrap",
           alignItems: "center",
           justifyContent: "space-between",
-          boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)",
         }}
       >
-        <div style={{ display: "flex", gap: "12px", flex: 1, minWidth: "280px", flexWrap: "wrap" }}>
-          {/* Search bar */}
-          <div style={{ position: "relative", flex: 1, minWidth: "220px" }}>
-            <Search
-              size={16}
-              color="#9ca3af"
-              style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }}
-            />
+        <div style={{ display: "flex", gap: "10px", flex: 1, minWidth: "260px", flexWrap: "wrap" }}>
+          <div style={{ position: "relative", flex: 1, minWidth: "200px" }}>
+            <Search size={15} color="#71717a" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }} />
             <input
               type="text"
-              placeholder="Search by user, email, or device name..."
+              placeholder="Search by user, email, or device..."
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
               style={{
                 width: "100%",
-                height: "38px",
+                height: "36px",
                 paddingLeft: "36px",
                 paddingRight: "12px",
                 borderRadius: "8px",
-                border: "1px solid #d1d5db",
-                fontSize: "0.88rem",
-                color: "#111827",
-                outline: "none",
+                border: "1px solid #262626",
+                background: "#000000",
+                fontSize: "13px",
+                color: "#ffffff",
               }}
             />
           </div>
 
-          {/* Status Filter */}
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <Filter size={15} color="#6b7280" />
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <Filter size={14} color="#71717a" />
             <select
               value={statusFilter}
               onChange={(e) => onStatusFilterChange(e.target.value)}
               style={{
-                height: "38px",
-                padding: "0 12px",
+                height: "36px",
+                padding: "0 10px",
                 borderRadius: "8px",
-                border: "1px solid #d1d5db",
-                fontSize: "0.86rem",
-                backgroundColor: "#fff",
-                color: "#374151",
+                border: "1px solid #262626",
+                fontSize: "12.5px",
+                backgroundColor: "#000000",
+                color: "#e4e4e7",
                 cursor: "pointer",
               }}
             >
-              <option value="all">All Session States</option>
-              <option value="active">Active Only</option>
+              <option value="all">All session states</option>
+              <option value="active">Active only</option>
               <option value="revoked">Revoked / Inactive</option>
             </select>
           </div>
         </div>
 
-        <div style={{ fontSize: "0.82rem", color: "#6b7280" }}>
-          Displaying <strong>{sessions.length}</strong> of <strong>{total}</strong> session records
+        <div style={{ fontSize: "12px", color: "#a1a1aa" }}>
+          Showing <strong style={{ color: "#ffffff" }}>{sessions.length}</strong> of{" "}
+          <strong style={{ color: "#ffffff" }}>{total}</strong> sessions
         </div>
       </div>
 
-      {/* Sessions Table */}
-      <div
-        style={{
-          background: "#ffffff",
-          border: "1px solid #e5e7eb",
-          borderRadius: "14px",
-          overflow: "hidden",
-          boxShadow: "0 1px 3px rgba(15, 23, 42, 0.05)",
-        }}
-      >
+      {/* Table */}
+      <div className="card" style={{ borderRadius: "12px", overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.86rem", textAlign: "left" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", textAlign: "left" }}>
             <thead>
-              <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0", color: "#64748b" }}>
-                <th style={{ padding: "12px 16px", fontWeight: 600 }}>Employee</th>
-                <th style={{ padding: "12px 16px", fontWeight: 600 }}>Device &amp; OS</th>
-                <th style={{ padding: "12px 16px", fontWeight: 600 }}>Browser &amp; IP</th>
-                <th style={{ padding: "12px 16px", fontWeight: 600 }}>Session Created</th>
-                <th style={{ padding: "12px 16px", fontWeight: 600 }}>Last Telemetry</th>
-                <th style={{ padding: "12px 16px", fontWeight: 600 }}>State</th>
-                <th style={{ padding: "12px 16px", fontWeight: 600, textAlign: "right" }}>Revocation</th>
+              <tr style={{ background: "#111111", borderBottom: "1px solid #1f1f1f", color: "#71717a", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                <th style={{ padding: "11px 16px", fontWeight: 600 }}>User</th>
+                <th style={{ padding: "11px 16px", fontWeight: 600 }}>Device &amp; OS</th>
+                <th style={{ padding: "11px 16px", fontWeight: 600 }}>Browser &amp; IP</th>
+                <th style={{ padding: "11px 16px", fontWeight: 600 }}>Created</th>
+                <th style={{ padding: "11px 16px", fontWeight: 600 }}>Last active</th>
+                <th style={{ padding: "11px 16px", fontWeight: 600 }}>Status</th>
+                <th style={{ padding: "11px 16px", fontWeight: 600, textAlign: "right" }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: "center", padding: "36px 16px", color: "#9ca3af" }}>
-                    Loading active sessions...
+                  <td colSpan={7} style={{ textAlign: "center", padding: "36px 16px", color: "#71717a" }}>
+                    Loading sessions...
                   </td>
                 </tr>
               ) : sessions.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: "center", padding: "48px 16px", color: "#9ca3af" }}>
-                    <Monitor size={32} style={{ margin: "0 auto 8px", color: "#cbd5e1" }} />
+                  <td colSpan={7} style={{ textAlign: "center", padding: "44px 16px", color: "#71717a" }}>
+                    <Monitor size={30} style={{ margin: "0 auto 8px", color: "#52525b" }} />
                     <p style={{ margin: 0 }}>No sessions found.</p>
                   </td>
                 </tr>
               ) : (
                 sessions.map((sess) => {
                   const isActive = sess.is_active;
-
                   return (
-                    <tr
-                      key={sess.id}
-                      style={{
-                        borderBottom: "1px solid #f1f5f9",
-                        transition: "background 0.1s",
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#fcfdfd")}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                    >
-                      <td style={{ padding: "14px 16px" }}>
-                        <div style={{ fontWeight: 600, color: "#111827" }}>
-                          {sess.username}
-                        </div>
-                        <div style={{ fontSize: "0.76rem", color: "#64748b" }}>
-                          {sess.email} • UID #{sess.uid}
-                        </div>
+                    <tr key={sess.id || sess.session_id} style={{ borderBottom: "1px solid #141414" }}>
+                      <td style={{ padding: "12px 16px" }}>
+                        <div style={{ fontWeight: 600, color: "#ffffff" }}>{sess.username}</div>
+                        <div style={{ fontSize: "11.5px", color: "#71717a" }}>{sess.email} · UID #{sess.uid}</div>
                       </td>
-
-                      <td style={{ padding: "14px 16px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: 500, color: "#334155" }}>
+                      <td style={{ padding: "12px 16px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: 500, color: "#e4e4e7" }}>
                           {getDeviceIcon(sess.device_type)}
-                          <span>{sess.device_name}</span>
+                          <span>{sess.device_name || "Web Client"}</span>
                         </div>
-                        <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginLeft: "24px" }}>
-                          {sess.os}
-                        </div>
+                        <div style={{ fontSize: "11.5px", color: "#71717a", marginLeft: "23px" }}>{sess.os || "—"}</div>
                       </td>
-
-                      <td style={{ padding: "14px 16px" }}>
-                        <div style={{ color: "#334155" }}>{sess.browser}</div>
-                        <div style={{ fontSize: "0.75rem", color: "#64748b", fontFamily: "monospace" }}>
-                          {sess.ip_address}
-                        </div>
+                      <td style={{ padding: "12px 16px" }}>
+                        <div style={{ color: "#d4d4d8" }}>{sess.browser || "Browser"}</div>
+                        <div style={{ fontSize: "11.5px", color: "#71717a", fontFamily: "monospace" }}>{sess.ip_address || "127.0.0.1"}</div>
                       </td>
-
-                      <td style={{ padding: "14px 16px", color: "#64748b", fontSize: "0.8rem" }}>
-                        {sess.created_at}
-                      </td>
-
-                      <td style={{ padding: "14px 16px", color: "#64748b", fontSize: "0.8rem" }}>
-                        {sess.last_activity}
-                      </td>
-
-                      <td style={{ padding: "14px 16px" }}>
+                      <td style={{ padding: "12px 16px", color: "#a1a1aa", fontSize: "12px" }}>{sess.created_at}</td>
+                      <td style={{ padding: "12px 16px", color: "#a1a1aa", fontSize: "12px" }}>{sess.last_activity}</td>
+                      <td style={{ padding: "12px 16px" }}>
                         <span
                           style={{
                             display: "inline-flex",
                             alignItems: "center",
-                            gap: "5px",
-                            padding: "3px 10px",
-                            borderRadius: "9999px",
-                            fontSize: "0.75rem",
+                            gap: "4px",
+                            padding: "2px 9px",
+                            borderRadius: "6px",
+                            fontSize: "11.5px",
                             fontWeight: 600,
-                            backgroundColor: isActive ? "#ecfdf5" : "#f1f5f9",
-                            color: isActive ? "#15803d" : "#64748b",
-                            border: `1px solid ${isActive ? "#bbf7d0" : "#e2e8f0"}`,
+                            background: isActive ? "rgba(34, 197, 94, 0.14)" : "#141414",
+                            border: `1px solid ${isActive ? "rgba(34, 197, 94, 0.3)" : "#262626"}`,
+                            color: isActive ? "#4ade80" : "#a1a1aa",
                           }}
                         >
-                          {isActive ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
+                          {isActive ? <CheckCircle2 size={11} /> : <XCircle size={11} />}
                           {sess.status || (isActive ? "Active" : "Revoked")}
                         </span>
                       </td>
-
-                      <td style={{ padding: "14px 16px", textAlign: "right" }}>
+                      <td style={{ padding: "12px 16px", textAlign: "right" }}>
                         <div style={{ display: "inline-flex", gap: "6px" }}>
                           {isActive && (
                             <button
                               onClick={() => onRevokeSession(sess.session_id)}
-                              title="Revoke This Session"
                               style={{
-                                background: "#fff",
-                                border: "1px solid #fecaca",
+                                background: "#000000",
+                                border: "1px solid rgba(239, 68, 68, 0.45)",
                                 borderRadius: "6px",
                                 padding: "4px 8px",
-                                fontSize: "0.78rem",
+                                fontSize: "12px",
                                 fontWeight: 600,
-                                color: "#dc2626",
+                                color: "#f87171",
                                 cursor: "pointer",
                                 display: "inline-flex",
                                 alignItems: "center",
                                 gap: "4px",
                               }}
                             >
-                              <Trash2 size={13} />
-                              <span>Revoke</span>
+                              <Trash2 size={12} /> Revoke
                             </button>
                           )}
-
                           <button
                             onClick={() => setSelectedUserForRevokeAll({ uid: sess.uid, username: sess.username })}
-                            title="Revoke ALL sessions for this user"
                             style={{
-                              background: "#fff",
-                              border: "1px solid #e2e8f0",
+                              background: "#000000",
+                              border: "1px solid #262626",
                               borderRadius: "6px",
                               padding: "4px 8px",
-                              fontSize: "0.78rem",
+                              fontSize: "12px",
                               fontWeight: 500,
-                              color: "#64748b",
+                              color: "#a1a1aa",
                               cursor: "pointer",
                             }}
                           >
-                            Revoke All for User
+                            Revoke all
                           </button>
                         </div>
                       </td>
@@ -300,100 +253,33 @@ export default function AdminSessions({
           </table>
         </div>
 
-        {/* Pagination */}
-        <div
-          style={{
-            padding: "12px 18px",
-            borderTop: "1px solid #e5e7eb",
-            background: "#f8fafc",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: "10px",
-          }}
-        >
-          <div style={{ fontSize: "0.82rem", color: "#64748b" }}>
-            Page <strong>{page}</strong> of <strong>{totalPages || 1}</strong>
+        <div style={{ padding: "12px 18px", borderTop: "1px solid #171717", background: "#050505", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontSize: "12px", color: "#a1a1aa" }}>
+            Page <strong style={{ color: "#ffffff" }}>{page}</strong> of <strong style={{ color: "#ffffff" }}>{totalPages || 1}</strong>
           </div>
-
           <div style={{ display: "flex", gap: "6px" }}>
-            <button
-              onClick={() => onPageChange(page - 1)}
-              disabled={page <= 1}
-              className="btn btn--ghost"
-              style={{ height: "32px", padding: "0 10px", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: "4px" }}
-            >
-              <ChevronLeft size={14} />
-              <span>Previous</span>
+            <button onClick={() => onPageChange(page - 1)} disabled={page <= 1} className="btn btn--ghost" style={{ height: "30px", padding: "0 10px", fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "4px", cursor: "pointer" }}>
+              <ChevronLeft size={13} /> Previous
             </button>
-
-            <button
-              onClick={() => onPageChange(page + 1)}
-              disabled={page >= totalPages}
-              className="btn btn--ghost"
-              style={{ height: "32px", padding: "0 10px", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: "4px" }}
-            >
-              <span>Next</span>
-              <ChevronRight size={14} />
+            <button onClick={() => onPageChange(page + 1)} disabled={page >= totalPages} className="btn btn--ghost" style={{ height: "30px", padding: "0 10px", fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "4px", cursor: "pointer" }}>
+              Next <ChevronRight size={13} />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Revoke All Dialog */}
       {selectedUserForRevokeAll && (
-        <div
-          className="modal-overlay"
-          style={{
-            position: "fixed",
-            inset: 0,
-            backgroundColor: "rgba(15, 23, 42, 0.6)",
-            backdropFilter: "blur(4px)",
-            display: "grid",
-            placeItems: "center",
-            zIndex: 100,
-            padding: "16px",
-          }}
-          onClick={() => setSelectedUserForRevokeAll(null)}
-        >
-          <div
-            className="card"
-            style={{ width: "100%", maxWidth: "440px", padding: "28px" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ textAlign: "center", marginBottom: "16px" }}>
-              <div
-                style={{
-                  width: "52px",
-                  height: "52px",
-                  borderRadius: "50%",
-                  backgroundColor: "#fee2e2",
-                  color: "#dc2626",
-                  display: "grid",
-                  placeItems: "center",
-                  margin: "0 auto 12px",
-                }}
-              >
-                <AlertOctagon size={26} />
-              </div>
-              <h3 style={{ margin: 0, fontSize: "1.2rem", color: "#111827" }}>
-                Revoke All Active Sessions?
-              </h3>
-              <p style={{ margin: "8px 0 0", fontSize: "0.86rem", color: "#64748b" }}>
-                Are you sure you want to invalidate all active device sessions for <strong>"{selectedUserForRevokeAll.username}"</strong> (UID #{selectedUserForRevokeAll.uid})?
-                The employee will be immediately signed out on all web browsers and devices.
-              </p>
+        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0, 0, 0, 0.78)", display: "grid", placeItems: "center", zIndex: 100, padding: "16px" }} onClick={() => setSelectedUserForRevokeAll(null)}>
+          <div className="card" style={{ width: "100%", maxWidth: "420px", padding: "24px", borderRadius: "12px", border: "1px solid #262626", textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ width: "44px", height: "44px", borderRadius: "50%", background: "rgba(239, 68, 68, 0.16)", color: "#f87171", display: "grid", placeItems: "center", margin: "0 auto 12px" }}>
+              <AlertOctagon size={22} />
             </div>
-
-            <div style={{ display: "flex", gap: "10px", marginTop: "24px" }}>
-              <button
-                className="btn btn--ghost"
-                onClick={() => setSelectedUserForRevokeAll(null)}
-                style={{ flex: 1, height: "40px" }}
-              >
-                Cancel
-              </button>
+            <h3 style={{ margin: "0 0 8px", fontSize: "16px", color: "#ffffff" }}>Revoke all sessions?</h3>
+            <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#a1a1aa", lineHeight: 1.5 }}>
+              Sign out <strong style={{ color: "#ffffff" }}>"{selectedUserForRevokeAll.username}"</strong> (UID #{selectedUserForRevokeAll.uid}) across all active devices?
+            </p>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button className="btn btn--ghost" onClick={() => setSelectedUserForRevokeAll(null)} style={{ flex: 1, height: "38px", cursor: "pointer" }}>Cancel</button>
               <button
                 className="btn"
                 onClick={() => {
@@ -401,14 +287,9 @@ export default function AdminSessions({
                   setSelectedUserForRevokeAll(null);
                   onRevokeAllUserSessions(uid);
                 }}
-                style={{
-                  flex: 1,
-                  height: "40px",
-                  background: "#dc2626",
-                  color: "#fff",
-                }}
+                style={{ flex: 1, height: "38px", background: "#dc2626", borderColor: "#dc2626", color: "#ffffff", cursor: "pointer" }}
               >
-                Revoke All
+                Revoke all
               </button>
             </div>
           </div>

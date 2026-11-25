@@ -114,19 +114,30 @@ const MIME_TYPES = {
 // Start Bun Server
 const server = Bun.serve({
   port: PORT,
+  idleTimeout: 255,
   async fetch(req) {
     const url = new URL(req.url);
 
     // Live reload SSE endpoint
     if (url.pathname === "/__dev_events") {
       let clientController;
+      let keepaliveTimer;
       const stream = new ReadableStream({
         start(controller) {
           clientController = controller;
           subscribers.add(controller);
           controller.enqueue(encoder.encode("data: connected\n\n"));
+          keepaliveTimer = setInterval(() => {
+            try {
+              controller.enqueue(encoder.encode(": keepalive\n\n"));
+            } catch {
+              clearInterval(keepaliveTimer);
+              subscribers.delete(controller);
+            }
+          }, 25000);
         },
         cancel() {
+          clearInterval(keepaliveTimer);
           if (clientController) subscribers.delete(clientController);
         },
       });
