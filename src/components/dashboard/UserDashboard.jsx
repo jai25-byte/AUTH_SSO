@@ -28,6 +28,8 @@ import {
   Settings,
   Eye,
   RefreshCw,
+  Sun,
+  Moon,
 } from "lucide-react";
 import {
   getToken,
@@ -109,6 +111,25 @@ export default function UserDashboard({ onNavigate, onNotify }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("vault_user_theme");
+        if (saved === "light" || saved === "dark") return saved;
+      } catch {}
+    }
+    return "dark";
+  });
+
+  const toggleTheme = () => {
+    setTheme((prev) => {
+      const next = prev === "dark" ? "light" : "dark";
+      try {
+        localStorage.setItem("vault_user_theme", next);
+      } catch {}
+      return next;
+    });
+  };
 
   // User details & telemetry
   const [currentUser, setCurrentUser] = useState(() => {
@@ -364,14 +385,22 @@ export default function UserDashboard({ onNavigate, onNotify }) {
 
   if (authChecking && !currentUser.username) {
     return (
-      <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#f8fafc", color: "#475569" }}>
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "grid",
+          placeItems: "center",
+          background: theme === "dark" ? "#000000" : "#f8fafc",
+          color: theme === "dark" ? "#F7D794" : "#475569",
+        }}
+      >
         <p style={{ fontSize: "0.95rem", fontWeight: 500 }}>Loading your VaultAuth workspace...</p>
       </div>
     );
   }
 
   return (
-    <div className="dashboard-container">
+    <div className="dashboard-container" data-theme={theme}>
       {/* ========================================================
            1. SIDEBAR NAVIGATION
           ======================================================== */}
@@ -379,15 +408,15 @@ export default function UserDashboard({ onNavigate, onNotify }) {
         <div className="sidebar-header">
           <div className="brand-badge-row">
             <div className="sidebar-logo-icon">
-              <svg viewBox="0 0 24 24" fill="none" width="20" height="20" stroke="#fff" strokeWidth="2.2">
-                <path d="M12 2L4 5.5V11.5C4 16.5 7.5 21 12 22C16.5 21 20 16.5 20 11.5V5.5L12 2Z" fill="#7047eb" fillOpacity="0.4" stroke="#fff"/>
-                <circle cx="12" cy="10" r="2.2" fill="#fff"/>
-                <path d="M11 11.5L10 16H14L13 11.5" stroke="#fff" strokeWidth="1.8" fill="#fff"/>
+              <svg viewBox="0 0 24 24" fill="none" width="20" height="20" stroke="currentColor" strokeWidth="2.2">
+                <path d="M12 2L4 5.5V11.5C4 16.5 7.5 21 12 22C16.5 21 20 16.5 20 11.5V5.5L12 2Z" fill="currentColor" fillOpacity="0.18" stroke="currentColor"/>
+                <circle cx="12" cy="10" r="2.2" fill="currentColor"/>
+                <path d="M11 11.5L10 16H14L13 11.5" stroke="currentColor" strokeWidth="1.8" fill="currentColor"/>
               </svg>
             </div>
             {!sidebarCollapsed && (
               <div className="sidebar-brand-text">
-                <span className="brand-title">VaultAuth<span style={{ color: "#7047eb" }}>SSO</span></span>
+                <span className="brand-title">VaultAuth<span className="brand-sso-accent">SSO</span></span>
                 <span className="brand-subtitle">IDENTITY + ACCESS</span>
               </div>
             )}
@@ -510,7 +539,7 @@ export default function UserDashboard({ onNavigate, onNotify }) {
             </button>
 
             <div className="search-bar-wrap">
-              <Search size={16} color="#94a3b8" />
+              <Search size={16} color="var(--ud-muted)" />
               <input
                 type="text"
                 placeholder="Search settings, apps, activity..."
@@ -523,10 +552,16 @@ export default function UserDashboard({ onNavigate, onNotify }) {
           </div>
 
           <div className="topbar-right">
-            <div className="telemetry-badge">
-              <span className="telemetry-dot" />
-              <span>All Systems Normal</span>
-            </div>
+            <button
+              type="button"
+              className="ud-theme-toggle"
+              onClick={toggleTheme}
+              title={theme === "dark" ? "Switch to Light Theme" : "Switch to Dark Theme"}
+              aria-label={theme === "dark" ? "Switch to Light Theme" : "Switch to Dark Theme"}
+            >
+              {theme === "dark" ? <Sun size={15} color="#F7D794" /> : <Moon size={15} color="#475569" />}
+              <span>{theme === "dark" ? "Light" : "Dark"}</span>
+            </button>
 
             <button
               type="button"
@@ -560,7 +595,7 @@ export default function UserDashboard({ onNavigate, onNotify }) {
                   <span className="user-pill-email">{currentUser.email || currentUser.username}</span>
                   <span className="user-pill-role">{currentUser.role || "End user"}</span>
                 </div>
-                <ChevronDown size={14} color="#64748b" />
+                <ChevronDown size={14} color="var(--ud-muted)" />
               </button>
 
               {userDropdownOpen && (
@@ -575,6 +610,10 @@ export default function UserDashboard({ onNavigate, onNotify }) {
                   </button>
                   <button type="button" onClick={() => { setActiveTab("security"); setUserDropdownOpen(false); }}>
                     <ShieldCheck size={14} /> Security Settings
+                  </button>
+                  <button type="button" onClick={() => { toggleTheme(); setUserDropdownOpen(false); }}>
+                    {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+                    {theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
                   </button>
                   {isAdminRole && (
                     <button type="button" onClick={() => onNavigate?.("/admin")}>
@@ -608,7 +647,7 @@ export default function UserDashboard({ onNavigate, onNotify }) {
                 <div className="stat-card" onClick={() => setActiveTab("devices")}>
                   <div className="stat-card-header">
                     <span className="stat-card-label">Active sessions</span>
-                    <div className="stat-icon-wrap" style={{ background: "rgba(112, 71, 235, 0.1)", color: "#7047eb" }}>
+                    <div className="stat-icon-wrap stat-icon-accent">
                       <Laptop size={18} />
                     </div>
                   </div>
@@ -619,18 +658,18 @@ export default function UserDashboard({ onNavigate, onNotify }) {
                 <div className="stat-card" onClick={() => setActiveTab("security")}>
                   <div className="stat-card-header">
                     <span className="stat-card-label">Security score</span>
-                    <div className="stat-icon-wrap" style={{ background: "rgba(16, 185, 129, 0.1)", color: "#10b981" }}>
+                    <div className="stat-icon-wrap stat-icon-ok">
                       <ShieldCheck size={18} />
                     </div>
                   </div>
                   <h3 className="stat-card-value">{overviewStats.securityScore} / 100</h3>
-                  <span className="stat-card-desc" style={{ color: "#10b981" }}>✓ {overviewStats.scoreDesc}</span>
+                  <span className="stat-card-desc" style={{ color: "var(--ud-ok-text)" }}>✓ {overviewStats.scoreDesc}</span>
                 </div>
 
                 <div className="stat-card" onClick={() => setActiveTab("apps")}>
                   <div className="stat-card-header">
                     <span className="stat-card-label">Connected apps</span>
-                    <div className="stat-icon-wrap" style={{ background: "rgba(56, 189, 248, 0.1)", color: "#0284c7" }}>
+                    <div className="stat-icon-wrap stat-icon-accent">
                       <Grid size={18} />
                     </div>
                   </div>
@@ -641,7 +680,7 @@ export default function UserDashboard({ onNavigate, onNotify }) {
                 <div className="stat-card" onClick={() => setActiveTab("activity")}>
                   <div className="stat-card-header">
                     <span className="stat-card-label">Last sign-in</span>
-                    <div className="stat-icon-wrap" style={{ background: "rgba(245, 158, 11, 0.1)", color: "#d97706" }}>
+                    <div className="stat-icon-wrap stat-icon-accent">
                       <Clock size={18} />
                     </div>
                   </div>
@@ -702,21 +741,21 @@ export default function UserDashboard({ onNavigate, onNotify }) {
                     </h4>
                     <div className="checklist-items-stack">
                       <div className="checklist-row">
-                        <CheckCircle2 size={18} color="#10b981" />
+                        <CheckCircle2 size={18} color="var(--ud-ok-text)" />
                         <div>
                           <strong>Password Health</strong>
                           <p>Updated 30 days ago (Strong score)</p>
                         </div>
                       </div>
                       <div className="checklist-row">
-                        <CheckCircle2 size={18} color="#10b981" />
+                        <CheckCircle2 size={18} color="var(--ud-ok-text)" />
                         <div>
                           <strong>Two-Factor Authentication</strong>
                           <p>Email OTP &amp; Biometric Passkey active</p>
                         </div>
                       </div>
                       <div className="checklist-row">
-                        <CheckCircle2 size={18} color="#10b981" />
+                        <CheckCircle2 size={18} color="var(--ud-ok-text)" />
                         <div>
                           <strong>Recovery Email</strong>
                           <p>Verified primary mailbox</p>
@@ -780,7 +819,7 @@ export default function UserDashboard({ onNavigate, onNotify }) {
               {/* Filters & Search */}
               <div className="filter-controls-bar">
                 <div className="search-bar-wrap" style={{ maxWidth: "340px" }}>
-                  <Search size={16} color="#94a3b8" />
+                  <Search size={16} color="var(--ud-muted)" />
                   <input
                     type="text"
                     placeholder="Search connected apps..."
@@ -874,7 +913,7 @@ export default function UserDashboard({ onNavigate, onNotify }) {
               {/* Table Controls */}
               <div className="filter-controls-bar">
                 <div className="search-bar-wrap" style={{ maxWidth: "320px" }}>
-                  <Search size={16} color="#94a3b8" />
+                  <Search size={16} color="var(--ud-muted)" />
                   <input
                     type="text"
                     placeholder="Search by device, IP, or location..."
@@ -916,13 +955,13 @@ export default function UserDashboard({ onNavigate, onNotify }) {
                       <tr key={act.id}>
                         <td>
                           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                            {act.deviceType === "mobile" ? <Smartphone size={16} color="#64748b" /> : <Monitor size={16} color="#64748b" />}
+                            {act.deviceType === "mobile" ? <Smartphone size={16} color="var(--ud-text-2)" /> : <Monitor size={16} color="var(--ud-text-2)" />}
                             <strong>{act.device}</strong>
                           </div>
                         </td>
                         <td>{act.browser} ({act.os})</td>
                         <td>{act.location}</td>
-                        <td style={{ color: "#64748b" }}>{act.time}</td>
+                        <td style={{ color: "var(--ud-text-2)" }}>{act.time}</td>
                         <td style={{ fontFamily: "monospace", fontSize: "0.86rem" }}>{act.ip}</td>
                         <td>
                           <span className={`status-badge status-${act.status.toLowerCase()}`}>
@@ -961,12 +1000,12 @@ export default function UserDashboard({ onNavigate, onNotify }) {
                 {sessions.map((sess) => (
                   <div key={sess.id} className="content-card session-device-card glass-hover">
                     <div className="session-card-top">
-                      <div className="device-avatar-circle" style={{ background: sess.isCurrent ? "rgba(112, 71, 235, 0.15)" : "#f1f5f9" }}>
-                        {sess.deviceType === "mobile" ? <Smartphone size={20} color={sess.isCurrent ? "#7047eb" : "#64748b"} /> : <Laptop size={20} color={sess.isCurrent ? "#7047eb" : "#64748b"} />}
+                      <div className={`device-avatar-circle ${sess.isCurrent ? "current" : ""}`}>
+                        {sess.deviceType === "mobile" ? <Smartphone size={20} /> : <Laptop size={20} />}
                       </div>
                       <div>
                         <h4 style={{ margin: 0, fontSize: "1rem" }}>{sess.device}</h4>
-                        <span style={{ fontSize: "0.82rem", color: "#64748b" }}>{sess.browser} • {sess.os}</span>
+                        <span style={{ fontSize: "0.82rem", color: "var(--ud-text-2)" }}>{sess.browser} • {sess.os}</span>
                       </div>
                       {sess.isCurrent && <span className="status-badge status-success" style={{ marginLeft: "auto" }}>Current Device</span>}
                     </div>
@@ -1094,7 +1133,7 @@ export default function UserDashboard({ onNavigate, onNotify }) {
                   </div>
                   <div>
                     <h3 style={{ margin: "0 0 4px" }}>{currentUser.full_name || currentUser.username}</h3>
-                    <p style={{ margin: "0 0 8px", color: "#64748b" }}>{currentUser.email}</p>
+                    <p style={{ margin: "0 0 8px", color: "var(--ud-text-2)" }}>{currentUser.email}</p>
                     <span className="badge-role-pill">{currentUser.role || "End user"}</span>
                   </div>
                 </div>
@@ -1110,7 +1149,7 @@ export default function UserDashboard({ onNavigate, onNotify }) {
                   </div>
                   <div className="attr-item">
                     <span>Account Status:</span>
-                    <strong style={{ color: "#10b981" }}>Active &amp; Compliant</strong>
+                    <strong style={{ color: "var(--ud-ok-text)" }}>Active &amp; Compliant</strong>
                   </div>
                   <div className="attr-item">
                     <span>Directory Provider:</span>
@@ -1162,7 +1201,7 @@ export default function UserDashboard({ onNavigate, onNotify }) {
         <div className="modal-backdrop">
           <div className="modal-card">
             <h3>Disconnect {disconnectModalApp.name}?</h3>
-            <p style={{ margin: "14px 0 20px", color: "#64748b" }}>
+            <p style={{ margin: "14px 0 20px", color: "var(--ud-text-2)" }}>
               Are you sure you want to revoke {disconnectModalApp.name}'s SSO connection? You will need to re-authenticate next time you access this service.
             </p>
             <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
@@ -1182,7 +1221,7 @@ export default function UserDashboard({ onNavigate, onNotify }) {
         <div className="modal-backdrop">
           <div className="modal-card">
             <h3>Revoke Device Session?</h3>
-            <p style={{ margin: "14px 0 20px", color: "#64748b" }}>
+            <p style={{ margin: "14px 0 20px", color: "var(--ud-text-2)" }}>
               This will immediately terminate the authentication session on <strong>{revokeModalSession.device}</strong> ({revokeModalSession.ip}).
             </p>
             <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
@@ -1202,7 +1241,7 @@ export default function UserDashboard({ onNavigate, onNotify }) {
         <div className="modal-backdrop">
           <div className="modal-card">
             <h3>Sign Out of All Other Devices?</h3>
-            <p style={{ margin: "14px 0 20px", color: "#64748b" }}>
+            <p style={{ margin: "14px 0 20px", color: "var(--ud-text-2)" }}>
               All remote sessions will be terminated immediately. Only this current browser device will remain signed in.
             </p>
             <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>

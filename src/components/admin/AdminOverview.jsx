@@ -82,42 +82,42 @@ export default function AdminOverview({
         stats?.new_users_today > 0
           ? `+${stats.new_users_today} this period`
           : "Directory accounts",
-      subColor: stats?.new_users_today > 0 ? "#4ade80" : "#71717a",
+      subColor: stats?.new_users_today > 0 ? "var(--adm-ok-text)" : "var(--adm-muted)",
       page: "users",
     },
     {
       label: "Active users",
       value: activeUsers,
       subtext: `${activePct}% of all users`,
-      subColor: "#71717a",
+      subColor: "var(--adm-muted)",
       page: "users",
     },
     {
       label: "Total administrators",
       value: totalAdmins,
       subtext: "Elevated IAM access",
-      subColor: "#71717a",
+      subColor: "var(--adm-muted)",
       page: "roles",
     },
     {
       label: "Active sessions",
       value: activeSessionsCount,
       subtext: `Across ${uniqueSessionUsers} users`,
-      subColor: "#71717a",
+      subColor: "var(--adm-muted)",
       page: "sessions",
     },
     {
       label: "Connected applications",
       value: apps.length,
       subtext: `${activeAppsCount} active · ${inactiveAppsCount} inactive`,
-      subColor: "#71717a",
+      subColor: "var(--adm-muted)",
       page: "applications",
     },
     {
       label: "Failed login attempts",
       value: failedLogins,
       subtext: "Last 24 hours",
-      subColor: failedLogins > 0 ? "#F7D794" : "#71717a",
+      subColor: failedLogins > 0 ? "var(--adm-warn-text)" : "var(--adm-muted)",
       page: "activity",
     },
   ];
@@ -147,7 +147,7 @@ export default function AdminOverview({
               fontWeight: 700,
               letterSpacing: "0.08em",
               textTransform: "uppercase",
-              color: "#F7D794",
+              color: "var(--adm-link)",
             }}
           >
             WORKSPACE OVERVIEW
@@ -156,14 +156,14 @@ export default function AdminOverview({
             style={{
               fontSize: "26px",
               fontWeight: 700,
-              color: "#ffffff",
+              color: "var(--adm-text)",
               margin: "2px 0 4px",
               letterSpacing: "-0.025em",
             }}
           >
             Admin dashboard
           </h1>
-          <p style={{ margin: 0, fontSize: "13px", color: "#a1a1aa" }}>
+          <p style={{ margin: 0, fontSize: "13px", color: "var(--adm-text-2)" }}>
             Manage identities. Control access. Keep your organization secure.
           </p>
         </div>
@@ -188,7 +188,7 @@ export default function AdminOverview({
             {loading ? (
               <RefreshCw size={13} style={{ animation: "spin 1s linear infinite" }} />
             ) : (
-              <ChevronDown size={14} color="#a1a1aa" />
+              <ChevronDown size={14} color="var(--adm-text-2)" />
             )}
             <span>Last 24 hours</span>
           </button>
@@ -207,7 +207,7 @@ export default function AdminOverview({
               cursor: "pointer",
             }}
           >
-            <Download size={13} color="#F7D794" />
+            <Download size={13} color="var(--adm-link)" />
             <span>Export report</span>
           </button>
 
@@ -238,34 +238,35 @@ export default function AdminOverview({
             key={card.label}
             onClick={() => onNavigate(card.page)}
             style={{
-              background: "#0a0a0a",
-              border: "1px solid #1f1f1f",
+              background: "var(--adm-surface)",
+              border: "1px solid var(--adm-border)",
+              boxShadow: "var(--adm-shadow-sm)",
               borderRadius: "10px",
               padding: "16px",
               cursor: "pointer",
-              transition: "border-color 0.15s ease, transform 0.15s ease",
+              transition: "border-color 0.15s ease, transform 0.15s ease, background-color 0.2s ease",
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-between",
               gap: "8px",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "#F7D794";
+              e.currentTarget.style.borderColor = "var(--adm-accent)";
               e.currentTarget.style.transform = "translateY(-1px)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "#1f1f1f";
+              e.currentTarget.style.borderColor = "var(--adm-border)";
               e.currentTarget.style.transform = "translateY(0)";
             }}
           >
-            <div style={{ fontSize: "12px", fontWeight: 500, color: "#a1a1aa" }}>
+            <div style={{ fontSize: "12px", fontWeight: 500, color: "var(--adm-text-2)" }}>
               {card.label}
             </div>
             <div
               style={{
                 fontSize: "26px",
                 fontWeight: 700,
-                color: "#ffffff",
+                color: "var(--adm-text)",
                 letterSpacing: "-0.02em",
                 lineHeight: 1.15,
                 fontVariantNumeric: "tabular-nums",
@@ -283,8 +284,8 @@ export default function AdminOverview({
       {/* Organization Security Banner */}
       <div
         style={{
-          background: "#0a0a0a",
-          border: `1px solid ${isHealthy ? "rgba(247, 215, 148, 0.32)" : "rgba(239, 68, 68, 0.45)"}`,
+          background: isHealthy ? "var(--adm-health-bg)" : "var(--adm-danger-bg)",
+          border: `1px solid ${isHealthy ? "var(--adm-health-border)" : "var(--adm-danger-border)"}`,
           borderRadius: "10px",
           padding: "14px 18px",
           display: "flex",
@@ -300,18 +301,18 @@ export default function AdminOverview({
               width: "34px",
               height: "34px",
               borderRadius: "50%",
-              background: isHealthy ? "rgba(247, 215, 148, 0.14)" : "rgba(239, 68, 68, 0.16)",
-              border: `1px solid ${isHealthy ? "rgba(247, 215, 148, 0.35)" : "rgba(239, 68, 68, 0.4)"}`,
+              background: isHealthy ? "var(--adm-ok-bg)" : "var(--adm-danger-bg)",
+              border: `1px solid ${isHealthy ? "var(--adm-ok-border)" : "var(--adm-danger-border)"}`,
               display: "grid",
               placeItems: "center",
               flexShrink: 0,
             }}
           >
-            <ShieldCheck size={18} color={isHealthy ? "#F7D794" : "#f87171"} />
+            <ShieldCheck size={18} color={isHealthy ? "var(--adm-health-score)" : "var(--adm-danger-text)"} />
           </div>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-              <span style={{ fontSize: "14px", fontWeight: 600, color: "#ffffff" }}>
+              <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--adm-text)" }}>
                 {isHealthy ? "Your organization is protected" : "Security alerts detected"}
               </span>
               <span
@@ -322,15 +323,15 @@ export default function AdminOverview({
                   textTransform: "uppercase",
                   padding: "2px 7px",
                   borderRadius: "4px",
-                  background: isHealthy ? "rgba(34, 197, 94, 0.14)" : "rgba(239, 68, 68, 0.16)",
-                  color: isHealthy ? "#4ade80" : "#f87171",
-                  border: `1px solid ${isHealthy ? "rgba(34, 197, 94, 0.3)" : "rgba(239, 68, 68, 0.35)"}`,
+                  background: isHealthy ? "var(--adm-ok-bg)" : "var(--adm-danger-bg)",
+                  color: isHealthy ? "var(--adm-ok-text)" : "var(--adm-danger-text)",
+                  border: `1px solid ${isHealthy ? "var(--adm-ok-border)" : "var(--adm-danger-border)"}`,
                 }}
               >
                 {isHealthy ? "HEALTHY" : "REVIEW"}
               </span>
             </div>
-            <div style={{ fontSize: "12px", color: "#a1a1aa", marginTop: "2px" }}>
+            <div style={{ fontSize: "12px", color: "var(--adm-text-2)", marginTop: "2px" }}>
               {mfaRequired ? "MFA enabled across workspace" : "MFA optional for standard users"} ·{" "}
               {suspiciousCount === 0
                 ? "No critical threats detected"
@@ -341,10 +342,10 @@ export default function AdminOverview({
 
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: "19px", fontWeight: 700, color: isHealthy ? "#F7D794" : "#f87171", lineHeight: 1.1 }}>
+            <div style={{ fontSize: "19px", fontWeight: 700, color: isHealthy ? "var(--adm-health-score)" : "var(--adm-danger-text)", lineHeight: 1.1 }}>
               {securityScore} / 100
             </div>
-            <div style={{ fontSize: "11px", color: "#71717a" }}>Security score</div>
+            <div style={{ fontSize: "11px", color: "var(--adm-muted)" }}>Security score</div>
           </div>
 
           <button
@@ -361,7 +362,7 @@ export default function AdminOverview({
               cursor: "pointer",
             }}
           >
-            <ChevronRight size={13} color="#F7D794" />
+            <ChevronRight size={13} color="var(--adm-link)" />
             <span>View security report</span>
           </button>
         </div>
@@ -370,8 +371,9 @@ export default function AdminOverview({
       {/* Active Sessions Preview Card */}
       <div
         style={{
-          background: "#0a0a0a",
-          border: "1px solid #1f1f1f",
+          background: "var(--adm-surface)",
+          border: "1px solid var(--adm-border)",
+          boxShadow: "var(--adm-shadow-sm)",
           borderRadius: "12px",
           overflow: "hidden",
         }}
@@ -382,20 +384,20 @@ export default function AdminOverview({
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            borderBottom: "1px solid #171717",
+            borderBottom: "1px solid var(--adm-border-soft)",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <h2 style={{ fontSize: "15px", fontWeight: 600, color: "#ffffff", margin: 0 }}>
+            <h2 style={{ fontSize: "15px", fontWeight: 600, color: "var(--adm-text)", margin: 0 }}>
               Active sessions
             </h2>
             <span
               style={{
                 fontSize: "11.5px",
                 fontWeight: 600,
-                background: "rgba(247, 215, 148, 0.14)",
-                color: "#F7D794",
-                border: "1px solid rgba(247, 215, 148, 0.28)",
+                background: "var(--adm-accent-soft)",
+                color: "var(--adm-link)",
+                border: "1px solid var(--adm-accent-border)",
                 padding: "1px 8px",
                 borderRadius: "6px",
               }}
@@ -410,7 +412,7 @@ export default function AdminOverview({
             style={{
               background: "none",
               border: "none",
-              color: "#F7D794",
+              color: "var(--adm-link)",
               fontSize: "12.5px",
               fontWeight: 600,
               cursor: "pointer",
@@ -426,18 +428,19 @@ export default function AdminOverview({
               margin: "12px 20px 4px",
               padding: "9px 14px",
               borderRadius: "8px",
-              background: "rgba(247, 215, 148, 0.08)",
-              borderLeft: "3px solid #F7D794",
+              background: "var(--adm-warn-banner-bg)",
+              border: "1px solid var(--adm-warn-banner-border)",
+              borderLeft: "3px solid var(--adm-warn-border)",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
               gap: "12px",
               fontSize: "12px",
-              color: "#F7D794",
+              color: "var(--adm-warn-banner-text)",
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <AlertTriangle size={14} color="#F7D794" />
+              <AlertTriangle size={14} color="var(--adm-warn-border)" />
               <span>
                 {failedLogins > 0
                   ? `${failedLogins} failed login attempt${failedLogins === 1 ? "" : "s"} in the last 24h require review`
@@ -450,7 +453,7 @@ export default function AdminOverview({
               style={{
                 background: "none",
                 border: "none",
-                color: "#F7D794",
+                color: "var(--adm-warn-banner-text)",
                 fontWeight: 600,
                 fontSize: "12px",
                 cursor: "pointer",
@@ -464,7 +467,16 @@ export default function AdminOverview({
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12.5px", textAlign: "left" }}>
             <thead>
-              <tr style={{ background: "#111111", borderBottom: "1px solid #1f1f1f", color: "#71717a", fontSize: "10.5px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              <tr
+                style={{
+                  background: "var(--adm-table-head-bg)",
+                  borderBottom: "1px solid var(--adm-border)",
+                  color: "var(--adm-muted)",
+                  fontSize: "10.5px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}
+              >
                 <th style={{ padding: "11px 20px", fontWeight: 600 }}>User</th>
                 <th style={{ padding: "11px 16px", fontWeight: 600 }}>Device / Browser</th>
                 <th style={{ padding: "11px 16px", fontWeight: 600 }}>IP / Location</th>
@@ -476,7 +488,7 @@ export default function AdminOverview({
             <tbody>
               {previewSessions.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ padding: "28px 20px", textAlign: "center", color: "#71717a" }}>
+                  <td colSpan={6} style={{ padding: "28px 20px", textAlign: "center", color: "var(--adm-muted)" }}>
                     No sessions recorded yet.
                   </td>
                 </tr>
@@ -487,33 +499,33 @@ export default function AdminOverview({
                   return (
                     <tr
                       key={sess.id || sess.session_id || idx}
-                      style={{ borderBottom: "1px solid #141414" }}
+                      style={{ borderBottom: "1px solid var(--adm-border-soft)" }}
                     >
                       <td style={{ padding: "12px 20px" }}>
-                        <div style={{ fontWeight: 600, color: "#ffffff" }}>
+                        <div style={{ fontWeight: 600, color: "var(--adm-text)" }}>
                           {sess.full_name || sess.username || "User"}
                         </div>
-                        <div style={{ fontSize: "11.5px", color: "#71717a" }}>
+                        <div style={{ fontSize: "11.5px", color: "var(--adm-muted)" }}>
                           {sess.email || `UID #${sess.uid}`}
                         </div>
                       </td>
                       <td style={{ padding: "12px 16px" }}>
-                        <div style={{ color: "#e4e4e7", fontWeight: 500 }}>
+                        <div style={{ color: "var(--adm-body)", fontWeight: 500 }}>
                           {sess.device_name || "Web Client"}
                         </div>
-                        <div style={{ fontSize: "11.5px", color: "#71717a" }}>
+                        <div style={{ fontSize: "11.5px", color: "var(--adm-muted)" }}>
                           {[sess.browser, sess.os].filter(Boolean).join(" · ") || "Browser session"}
                         </div>
                       </td>
                       <td style={{ padding: "12px 16px" }}>
-                        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "12px", color: "#d4d4d8" }}>
+                        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "12px", color: "var(--adm-body)" }}>
                           {sess.ip_address || "127.0.0.1"}
                         </div>
-                        <div style={{ fontSize: "11.5px", color: "#71717a" }}>
+                        <div style={{ fontSize: "11.5px", color: "var(--adm-muted)" }}>
                           {sess.location || "Local / Verified"}
                         </div>
                       </td>
-                      <td style={{ padding: "12px 16px", color: "#a1a1aa" }}>
+                      <td style={{ padding: "12px 16px", color: "var(--adm-text-2)" }}>
                         {sess.last_activity || sess.created_at || "Recent"}
                       </td>
                       <td style={{ padding: "12px 16px" }}>
@@ -524,9 +536,9 @@ export default function AdminOverview({
                             borderRadius: "6px",
                             fontSize: "11px",
                             fontWeight: 600,
-                            background: isActive ? "rgba(34, 197, 94, 0.14)" : "rgba(247, 215, 148, 0.14)",
-                            color: isActive ? "#4ade80" : "#F7D794",
-                            border: `1px solid ${isActive ? "rgba(34, 197, 94, 0.3)" : "rgba(247, 215, 148, 0.3)"}`,
+                            background: isActive ? "var(--adm-ok-bg)" : "var(--adm-warn-bg)",
+                            color: isActive ? "var(--adm-ok-text)" : "var(--adm-warn-text)",
+                            border: `1px solid ${isActive ? "var(--adm-ok-border)" : "var(--adm-accent-border)"}`,
                           }}
                         >
                           {isCurrent ? "Current" : isActive ? "Active" : sess.status || "Revoked"}
@@ -540,7 +552,7 @@ export default function AdminOverview({
                             style={{
                               background: "none",
                               border: "none",
-                              color: "#f87171",
+                              color: "var(--adm-danger-text)",
                               fontWeight: 600,
                               fontSize: "12px",
                               cursor: "pointer",
@@ -549,7 +561,7 @@ export default function AdminOverview({
                             Revoke
                           </button>
                         ) : (
-                          <span style={{ color: "#52525b" }}>—</span>
+                          <span style={{ color: "var(--adm-muted)" }}>—</span>
                         )}
                       </td>
                     </tr>
@@ -563,15 +575,15 @@ export default function AdminOverview({
         <div
           style={{
             padding: "12px 20px",
-            borderTop: "1px solid #171717",
-            background: "#050505",
+            borderTop: "1px solid var(--adm-border-soft)",
+            background: "var(--adm-table-foot-bg)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
             flexWrap: "wrap",
             gap: "10px",
             fontSize: "12px",
-            color: "#a1a1aa",
+            color: "var(--adm-text-2)",
           }}
         >
           <span>
@@ -581,9 +593,9 @@ export default function AdminOverview({
             type="button"
             onClick={() => onNavigate("sessions")}
             style={{
-              background: "#000000",
-              border: "1px solid rgba(239, 68, 68, 0.45)",
-              color: "#f87171",
+              background: "var(--adm-surface)",
+              border: "1px solid var(--adm-danger-border)",
+              color: "var(--adm-danger-text)",
               borderRadius: "7px",
               padding: "6px 12px",
               fontSize: "12px",
@@ -601,8 +613,9 @@ export default function AdminOverview({
         {/* Left: Roles & Permissions */}
         <div
           style={{
-            background: "#0a0a0a",
-            border: "1px solid #1f1f1f",
+            background: "var(--adm-surface)",
+            border: "1px solid var(--adm-border)",
+            boxShadow: "var(--adm-shadow-sm)",
             borderRadius: "12px",
             padding: "18px 20px",
             display: "flex",
@@ -613,7 +626,7 @@ export default function AdminOverview({
         >
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px" }}>
-              <h2 style={{ fontSize: "15px", fontWeight: 600, color: "#ffffff", margin: 0 }}>
+              <h2 style={{ fontSize: "15px", fontWeight: 600, color: "var(--adm-text)", margin: 0 }}>
                 Roles &amp; permissions
               </h2>
               <button
@@ -626,20 +639,20 @@ export default function AdminOverview({
               </button>
             </div>
 
-            <div style={{ fontSize: "12px", color: "#a1a1aa", marginTop: "6px", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+            <div style={{ fontSize: "12px", color: "var(--adm-text-2)", marginTop: "6px", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
               <span>{totalAdmins} administrators · {rolesCount} roles</span>
               <button
                 type="button"
                 onClick={() => onNavigate("users")}
-                style={{ background: "none", border: "none", color: "#F7D794", fontWeight: 600, fontSize: "12px", cursor: "pointer", padding: 0 }}
+                style={{ background: "none", border: "none", color: "var(--adm-link)", fontWeight: 600, fontSize: "12px", cursor: "pointer", padding: 0 }}
               >
                 Manage all users →
               </button>
             </div>
 
-            <div style={{ marginTop: "12px", borderTop: "1px solid #171717" }}>
+            <div style={{ marginTop: "12px", borderTop: "1px solid var(--adm-border-soft)" }}>
               {previewUsers.length === 0 ? (
-                <div style={{ padding: "18px 0", fontSize: "12.5px", color: "#71717a" }}>
+                <div style={{ padding: "18px 0", fontSize: "12.5px", color: "var(--adm-muted)" }}>
                   No users loaded in directory.
                 </div>
               ) : (
@@ -654,14 +667,14 @@ export default function AdminOverview({
                         justifyContent: "space-between",
                         gap: "10px",
                         padding: "11px 0",
-                        borderBottom: "1px solid #141414",
+                        borderBottom: "1px solid var(--adm-border-soft)",
                       }}
                     >
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: "13px", fontWeight: 600, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--adm-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {u.full_name || u.username}
                         </div>
-                        <div style={{ fontSize: "11.5px", color: "#71717a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <div style={{ fontSize: "11.5px", color: "var(--adm-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {u.email}
                         </div>
                       </div>
@@ -675,9 +688,9 @@ export default function AdminOverview({
                             height: "30px",
                             padding: "0 8px",
                             borderRadius: "6px",
-                            border: "1px solid #262626",
-                            background: "#000000",
-                            color: "#e4e4e7",
+                            border: "1px solid var(--adm-border-strong)",
+                            background: "var(--adm-input)",
+                            color: "var(--adm-text)",
                             fontSize: "12px",
                             cursor: "pointer",
                           }}
@@ -692,7 +705,7 @@ export default function AdminOverview({
                           style={{
                             background: "none",
                             border: "none",
-                            color: "#F7D794",
+                            color: "var(--adm-link)",
                             fontWeight: 600,
                             fontSize: "12px",
                             cursor: "pointer",
@@ -710,8 +723,8 @@ export default function AdminOverview({
 
           <div
             style={{
-              background: "#000000",
-              border: "1px solid #1f1f1f",
+              background: "var(--adm-subtle)",
+              border: "1px solid var(--adm-border)",
               borderRadius: "8px",
               padding: "10px 12px",
               display: "flex",
@@ -722,11 +735,11 @@ export default function AdminOverview({
             }}
           >
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12.5px", fontWeight: 600, color: "#4ade80" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12.5px", fontWeight: 600, color: "var(--adm-ok-text)" }}>
                 <Check size={13} />
                 <span>Unauthorized access restricted</span>
               </div>
-              <div style={{ fontSize: "11px", color: "#71717a", marginTop: "1px" }}>
+              <div style={{ fontSize: "11px", color: "var(--adm-muted)", marginTop: "1px" }}>
                 Server-enforced RBAC policy is active
               </div>
             </div>
@@ -744,8 +757,9 @@ export default function AdminOverview({
         {/* Right: Connected Applications */}
         <div
           style={{
-            background: "#0a0a0a",
-            border: "1px solid #1f1f1f",
+            background: "var(--adm-surface)",
+            border: "1px solid var(--adm-border)",
+            boxShadow: "var(--adm-shadow-sm)",
             borderRadius: "12px",
             padding: "18px 20px",
             display: "flex",
@@ -756,7 +770,7 @@ export default function AdminOverview({
         >
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px" }}>
-              <h2 style={{ fontSize: "15px", fontWeight: 600, color: "#ffffff", margin: 0 }}>
+              <h2 style={{ fontSize: "15px", fontWeight: 600, color: "var(--adm-text)", margin: 0 }}>
                 Connected applications
               </h2>
               <button
@@ -769,20 +783,20 @@ export default function AdminOverview({
               </button>
             </div>
 
-            <div style={{ fontSize: "12px", color: "#a1a1aa", marginTop: "6px", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+            <div style={{ fontSize: "12px", color: "var(--adm-text-2)", marginTop: "6px", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
               <span>{apps.length} registered applications</span>
               <button
                 type="button"
                 onClick={() => onNavigate("applications")}
-                style={{ background: "none", border: "none", color: "#F7D794", fontWeight: 600, fontSize: "12px", cursor: "pointer", padding: 0 }}
+                style={{ background: "none", border: "none", color: "var(--adm-link)", fontWeight: 600, fontSize: "12px", cursor: "pointer", padding: 0 }}
               >
                 View all applications →
               </button>
             </div>
 
-            <div style={{ marginTop: "12px", borderTop: "1px solid #171717" }}>
+            <div style={{ marginTop: "12px", borderTop: "1px solid var(--adm-border-soft)" }}>
               {previewApps.length === 0 ? (
-                <div style={{ padding: "22px 0", fontSize: "12.5px", color: "#71717a" }}>
+                <div style={{ padding: "22px 0", fontSize: "12.5px", color: "var(--adm-muted)" }}>
                   No external OAuth/SSO applications registered.
                 </div>
               ) : (
@@ -797,7 +811,7 @@ export default function AdminOverview({
                         justifyContent: "space-between",
                         gap: "10px",
                         padding: "11px 0",
-                        borderBottom: "1px solid #141414",
+                        borderBottom: "1px solid var(--adm-border-soft)",
                       }}
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
@@ -806,9 +820,9 @@ export default function AdminOverview({
                             width: "28px",
                             height: "28px",
                             borderRadius: "7px",
-                            background: "#141414",
-                            border: "1px solid rgba(247, 215, 148, 0.3)",
-                            color: "#F7D794",
+                            background: "var(--adm-accent-soft)",
+                            border: "1px solid var(--adm-accent-border)",
+                            color: "var(--adm-link)",
                             display: "grid",
                             placeItems: "center",
                             fontSize: "12px",
@@ -819,10 +833,10 @@ export default function AdminOverview({
                           {app.logo || (app.name || "A").substring(0, 1).toUpperCase()}
                         </div>
                         <div style={{ minWidth: 0 }}>
-                          <div style={{ fontSize: "13px", fontWeight: 600, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--adm-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             {app.name}
                           </div>
-                          <div style={{ fontSize: "11.5px", color: "#71717a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          <div style={{ fontSize: "11.5px", color: "var(--adm-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             {app.desc || `${(app.permissions || []).length} permissions`}
                           </div>
                         </div>
@@ -840,7 +854,7 @@ export default function AdminOverview({
                             borderRadius: "9999px",
                             border: "none",
                             padding: "2px",
-                            background: isAppActive ? "#F7D794" : "#27272a",
+                            background: isAppActive ? "var(--adm-accent)" : "var(--adm-switch-off)",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: isAppActive ? "flex-end" : "flex-start",
@@ -854,11 +868,11 @@ export default function AdminOverview({
                               width: "14px",
                               height: "14px",
                               borderRadius: "50%",
-                              background: "#000000",
+                              background: isAppActive ? "var(--adm-switch-knob-on)" : "var(--adm-switch-knob-off)",
                             }}
                           />
                         </button>
-                        <span style={{ fontSize: "11.5px", color: isAppActive ? "#4ade80" : "#71717a", minWidth: "44px" }}>
+                        <span style={{ fontSize: "11.5px", color: isAppActive ? "var(--adm-ok-text)" : "var(--adm-muted)", minWidth: "44px" }}>
                           {isAppActive ? "Active" : "Inactive"}
                         </span>
                         <button
@@ -867,7 +881,7 @@ export default function AdminOverview({
                           style={{
                             background: "none",
                             border: "none",
-                            color: "#F7D794",
+                            color: "var(--adm-link)",
                             fontWeight: 600,
                             fontSize: "12px",
                             cursor: "pointer",
@@ -883,7 +897,7 @@ export default function AdminOverview({
             </div>
           </div>
 
-          <div style={{ fontSize: "11.5px", color: "#71717a" }}>
+          <div style={{ fontSize: "11.5px", color: "var(--adm-muted)" }}>
             Manage connected OAuth apps, scopes, and access status.
           </div>
         </div>
@@ -892,8 +906,9 @@ export default function AdminOverview({
       {/* Admin Settings Quick Summary Card */}
       <div
         style={{
-          background: "#0a0a0a",
-          border: "1px solid #1f1f1f",
+          background: "var(--adm-surface)",
+          border: "1px solid var(--adm-border)",
+          boxShadow: "var(--adm-shadow-sm)",
           borderRadius: "12px",
           padding: "20px",
         }}
@@ -909,10 +924,10 @@ export default function AdminOverview({
           }}
         >
           <div>
-            <h2 style={{ fontSize: "15px", fontWeight: 600, color: "#ffffff", margin: 0 }}>
+            <h2 style={{ fontSize: "15px", fontWeight: 600, color: "var(--adm-text)", margin: 0 }}>
               Admin settings
             </h2>
-            <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#a1a1aa" }}>
+            <p style={{ margin: "2px 0 0", fontSize: "12px", color: "var(--adm-text-2)" }}>
               Organization-wide policies and account preferences.
             </p>
           </div>
@@ -930,7 +945,7 @@ export default function AdminOverview({
         <div className="vw-settings-grid">
           {/* Column 1 */}
           <div>
-            <div style={{ fontSize: "10.5px", fontWeight: 700, color: "#F7D794", letterSpacing: "0.06em", marginBottom: "8px" }}>
+            <div style={{ fontSize: "10.5px", fontWeight: 700, color: "var(--adm-link)", letterSpacing: "0.06em", marginBottom: "8px" }}>
               AUTHENTICATION POLICIES
             </div>
             {[
@@ -945,13 +960,13 @@ export default function AdminOverview({
                   display: "flex",
                   justifyContent: "space-between",
                   padding: "9px 0",
-                  borderBottom: "1px solid #171717",
+                  borderBottom: "1px solid var(--adm-border-soft)",
                   fontSize: "12.5px",
                   cursor: "pointer",
                 }}
               >
-                <span style={{ color: "#e4e4e7" }}>{row.label}</span>
-                <span style={{ color: row.accent ? "#F7D794" : "#a1a1aa", fontWeight: row.accent ? 600 : 400 }}>
+                <span style={{ color: "var(--adm-body)" }}>{row.label}</span>
+                <span style={{ color: row.accent ? "var(--adm-link)" : "var(--adm-text-2)", fontWeight: row.accent ? 600 : 400 }}>
                   {row.val} ›
                 </span>
               </div>
@@ -960,7 +975,7 @@ export default function AdminOverview({
 
           {/* Column 2 */}
           <div>
-            <div style={{ fontSize: "10.5px", fontWeight: 700, color: "#F7D794", letterSpacing: "0.06em", marginBottom: "8px" }}>
+            <div style={{ fontSize: "10.5px", fontWeight: 700, color: "var(--adm-link)", letterSpacing: "0.06em", marginBottom: "8px" }}>
               SESSIONS &amp; NOTIFICATIONS
             </div>
             {[
@@ -981,20 +996,20 @@ export default function AdminOverview({
                   display: "flex",
                   justifyContent: "space-between",
                   padding: "9px 0",
-                  borderBottom: "1px solid #171717",
+                  borderBottom: "1px solid var(--adm-border-soft)",
                   fontSize: "12.5px",
                   cursor: "pointer",
                 }}
               >
-                <span style={{ color: "#e4e4e7" }}>{row.label}</span>
-                <span style={{ color: "#a1a1aa" }}>{row.val} ›</span>
+                <span style={{ color: "var(--adm-body)" }}>{row.label}</span>
+                <span style={{ color: "var(--adm-text-2)" }}>{row.val} ›</span>
               </div>
             ))}
           </div>
 
           {/* Column 3 */}
           <div>
-            <div style={{ fontSize: "10.5px", fontWeight: 700, color: "#F7D794", letterSpacing: "0.06em", marginBottom: "8px" }}>
+            <div style={{ fontSize: "10.5px", fontWeight: 700, color: "var(--adm-link)", letterSpacing: "0.06em", marginBottom: "8px" }}>
               ORGANIZATION &amp; ACCOUNT
             </div>
             {[
@@ -1012,13 +1027,13 @@ export default function AdminOverview({
                   display: "flex",
                   justifyContent: "space-between",
                   padding: "9px 0",
-                  borderBottom: "1px solid #171717",
+                  borderBottom: "1px solid var(--adm-border-soft)",
                   fontSize: "12.5px",
                   cursor: "pointer",
                 }}
               >
-                <span style={{ color: "#e4e4e7" }}>{row.label}</span>
-                <span style={{ color: "#a1a1aa" }}>{row.val} ›</span>
+                <span style={{ color: "var(--adm-body)" }}>{row.label}</span>
+                <span style={{ color: "var(--adm-text-2)" }}>{row.val} ›</span>
               </div>
             ))}
           </div>
@@ -1034,7 +1049,7 @@ export default function AdminOverview({
           flexWrap: "wrap",
           gap: "8px",
           fontSize: "11.5px",
-          color: "#71717a",
+          color: "var(--adm-muted)",
           paddingTop: "4px",
         }}
       >

@@ -49,13 +49,13 @@ export default function AdminSidebar({
         position: "sticky",
         top: 0,
         zIndex: 40,
-        backgroundColor: "#000000",
-        color: "#a1a1aa",
+        backgroundColor: "var(--adm-sidebar)",
+        color: "var(--adm-sidebar-text)",
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
-        borderRight: "1px solid #1f1f1f",
-        transition: "width 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+        borderRight: "1px solid var(--adm-sidebar-border)",
+        transition: "width 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease",
         flexShrink: 0,
       }}
     >
@@ -68,7 +68,7 @@ export default function AdminSidebar({
             display: "flex",
             alignItems: "center",
             justifyContent: isCollapsed ? "center" : "space-between",
-            borderBottom: "1px solid #141414",
+            borderBottom: "1px solid var(--adm-sidebar-divider)",
           }}
         >
           <div
@@ -87,13 +87,20 @@ export default function AdminSidebar({
                 width: "32px",
                 height: "32px",
                 borderRadius: "8px",
-                background: "#F7D794",
+                background: "var(--adm-logo-bg)",
                 display: "grid",
                 placeItems: "center",
                 flexShrink: 0,
               }}
             >
-              <span style={{ color: "#000000", fontWeight: 800, fontSize: "15px", letterSpacing: "-0.02em" }}>
+              <span
+                style={{
+                  color: "var(--adm-logo-ink)",
+                  fontWeight: 800,
+                  fontSize: "15px",
+                  letterSpacing: "-0.02em",
+                }}
+              >
                 V
               </span>
             </div>
@@ -107,7 +114,7 @@ export default function AdminSidebar({
                   style={{
                     fontSize: "9px",
                     fontWeight: 600,
-                    color: "#71717a",
+                    color: "var(--adm-sidebar-footer-text)",
                     letterSpacing: "0.08em",
                     textTransform: "uppercase",
                     marginTop: "2px",
@@ -128,7 +135,7 @@ export default function AdminSidebar({
               style={{
                 background: "transparent",
                 border: "none",
-                color: "#71717a",
+                color: "var(--adm-sidebar-footer-text)",
                 cursor: "pointer",
                 padding: "4px",
                 display: "flex",
@@ -149,7 +156,7 @@ export default function AdminSidebar({
               style={{
                 background: "transparent",
                 border: "none",
-                color: "#71717a",
+                color: "var(--adm-sidebar-footer-text)",
                 cursor: "pointer",
                 padding: "4px",
               }}
@@ -166,7 +173,7 @@ export default function AdminSidebar({
               style={{
                 fontSize: "10px",
                 fontWeight: 600,
-                color: "#71717a",
+                color: "var(--adm-sidebar-footer-text)",
                 textTransform: "uppercase",
                 letterSpacing: "0.08em",
                 padding: "4px 10px 10px",
@@ -194,9 +201,11 @@ export default function AdminSidebar({
                       justifyContent: isCollapsed ? "center" : "space-between",
                       padding: isCollapsed ? "9px" : "8px 11px",
                       borderRadius: "8px",
-                      border: isActive ? "1px solid rgba(247, 215, 148, 0.28)" : "1px solid transparent",
-                      background: isActive ? "rgba(247, 215, 148, 0.12)" : "transparent",
-                      color: isActive ? "#F7D794" : "#a1a1aa",
+                      border: isActive
+                        ? "1px solid var(--adm-sidebar-active-border)"
+                        : "1px solid transparent",
+                      background: isActive ? "var(--adm-sidebar-active)" : "transparent",
+                      color: isActive ? "var(--adm-sidebar-active-text)" : "var(--adm-sidebar-text)",
                       fontWeight: isActive ? 600 : 400,
                       fontSize: "13px",
                       cursor: "pointer",
@@ -205,19 +214,23 @@ export default function AdminSidebar({
                     }}
                     onMouseEnter={(e) => {
                       if (!isActive) {
-                        e.currentTarget.style.background = "#111111";
-                        e.currentTarget.style.color = "#ffffff";
+                        e.currentTarget.style.background = "var(--adm-sidebar-hover)";
+                        e.currentTarget.style.color = "var(--adm-sidebar-hover-text)";
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (!isActive) {
                         e.currentTarget.style.background = "transparent";
-                        e.currentTarget.style.color = "#a1a1aa";
+                        e.currentTarget.style.color = "var(--adm-sidebar-text)";
                       }
                     }}
                   >
                     <span style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
-                      <Icon size={16} color={isActive ? "#F7D794" : "currentColor"} style={{ flexShrink: 0 }} />
+                      <Icon
+                        size={16}
+                        color={isActive ? "var(--adm-sidebar-icon-active)" : "currentColor"}
+                        style={{ flexShrink: 0 }}
+                      />
                       {!isCollapsed && (
                         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {item.label}
@@ -230,8 +243,8 @@ export default function AdminSidebar({
                         style={{
                           fontSize: "11px",
                           fontWeight: 600,
-                          color: isActive ? "#000000" : "#F7D794",
-                          background: isActive ? "#F7D794" : "rgba(247, 215, 148, 0.14)",
+                          color: isActive ? "var(--adm-accent-ink)" : "var(--adm-sidebar-badge-text)",
+                          background: isActive ? "var(--adm-accent)" : "var(--adm-sidebar-badge-bg)",
                           padding: "1px 7px",
                           borderRadius: "6px",
                         }}
@@ -251,7 +264,7 @@ export default function AdminSidebar({
       <div
         style={{
           padding: isCollapsed ? "12px 8px" : "12px 12px 14px",
-          borderTop: "1px solid #1f1f1f",
+          borderTop: "1px solid var(--adm-sidebar-border)",
           display: "grid",
           gap: "2px",
         }}
@@ -270,12 +283,12 @@ export default function AdminSidebar({
             borderRadius: "7px",
             border: "none",
             background: "transparent",
-            color: "#a1a1aa",
+            color: "var(--adm-sidebar-text)",
             fontSize: "12.5px",
             cursor: "pointer",
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "#F7D794")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "#a1a1aa")}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--adm-sidebar-hover-text)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--adm-sidebar-text)")}
         >
           <ExternalLink size={15} />
           {!isCollapsed && <span>User dashboard</span>}
@@ -295,12 +308,12 @@ export default function AdminSidebar({
             borderRadius: "7px",
             border: "none",
             background: "transparent",
-            color: "#a1a1aa",
+            color: "var(--adm-sidebar-text)",
             fontSize: "12.5px",
             cursor: "pointer",
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "#F7D794")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "#a1a1aa")}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--adm-sidebar-hover-text)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--adm-sidebar-text)")}
         >
           <CheckCircle2 size={15} />
           {!isCollapsed && <span>Help &amp; documentation</span>}
@@ -320,12 +333,12 @@ export default function AdminSidebar({
             borderRadius: "7px",
             border: "none",
             background: "transparent",
-            color: "#a1a1aa",
+            color: "var(--adm-sidebar-text)",
             fontSize: "12.5px",
             cursor: "pointer",
           }}
           onMouseEnter={(e) => (e.currentTarget.style.color = "#f87171")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "#a1a1aa")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--adm-sidebar-text)")}
         >
           <LogOut size={15} />
           {!isCollapsed && <span>Sign out</span>}
@@ -335,10 +348,10 @@ export default function AdminSidebar({
           <div
             style={{
               fontSize: "10.5px",
-              color: "#52525b",
+              color: "var(--adm-sidebar-footer-text)",
               padding: "8px 11px 0",
               marginTop: "4px",
-              borderTop: "1px solid #141414",
+              borderTop: "1px solid var(--adm-sidebar-divider)",
             }}
           >
             v1.0.0 · Secure workspace

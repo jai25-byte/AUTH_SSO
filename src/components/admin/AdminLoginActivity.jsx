@@ -33,10 +33,10 @@ export default function AdminLoginActivity({
     <div className="admin-page-container" style={{ display: "grid", gap: "18px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "14px" }}>
         <div>
-          <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#ffffff", margin: 0 }}>
+          <h1 style={{ fontSize: "22px", fontWeight: 700, color: "var(--adm-text)", margin: 0 }}>
             Login activity
           </h1>
-          <p style={{ margin: "4px 0 0", color: "#a1a1aa", fontSize: "13px" }}>
+          <p style={{ margin: "4px 0 0", color: "var(--adm-text-2)", fontSize: "13px" }}>
             Successful authentication events and failed credential challenge attempts.
           </p>
         </div>
@@ -50,22 +50,22 @@ export default function AdminLoginActivity({
       <div className="card" style={{ borderRadius: "10px", padding: "14px 16px", display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", gap: "10px", flex: 1, minWidth: "260px", flexWrap: "wrap", alignItems: "center" }}>
           <div style={{ position: "relative", flex: 1, minWidth: "190px" }}>
-            <Search size={15} color="#71717a" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }} />
+            <Search size={15} color="var(--adm-muted)" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }} />
             <input
               type="text"
               placeholder="Search username or email..."
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
-              style={{ width: "100%", height: "36px", paddingLeft: "36px", paddingRight: "12px", borderRadius: "8px", border: "1px solid #262626", background: "#000000", fontSize: "13px", color: "#ffffff" }}
+              style={{ width: "100%", height: "36px", paddingLeft: "36px", paddingRight: "12px", borderRadius: "8px", border: "1px solid var(--adm-border-strong)", background: "var(--adm-input)", fontSize: "13px", color: "var(--adm-text)" }}
             />
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <Filter size={14} color="#71717a" />
+            <Filter size={14} color="var(--adm-muted)" />
             <select
               value={statusFilter}
               onChange={(e) => onStatusFilterChange(e.target.value)}
-              style={{ height: "36px", padding: "0 10px", borderRadius: "8px", border: "1px solid #262626", fontSize: "12.5px", backgroundColor: "#000000", color: "#e4e4e7", cursor: "pointer" }}
+              style={{ height: "36px", padding: "0 10px", borderRadius: "8px", border: "1px solid var(--adm-border-strong)", fontSize: "12.5px", backgroundColor: "var(--adm-input)", color: "var(--adm-text)", cursor: "pointer" }}
             >
               <option value="all">All outcomes</option>
               <option value="success">Success only</option>
@@ -74,15 +74,15 @@ export default function AdminLoginActivity({
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <Calendar size={14} color="#71717a" />
-            <input type="date" value={dateFrom} onChange={(e) => onDateFromChange(e.target.value)} style={{ height: "36px", padding: "0 8px", borderRadius: "8px", border: "1px solid #262626", fontSize: "12px", backgroundColor: "#000000", color: "#e4e4e7", colorScheme: "dark" }} />
-            <span style={{ color: "#71717a", fontSize: "12px" }}>to</span>
-            <input type="date" value={dateTo} onChange={(e) => onDateToChange(e.target.value)} style={{ height: "36px", padding: "0 8px", borderRadius: "8px", border: "1px solid #262626", fontSize: "12px", backgroundColor: "#000000", color: "#e4e4e7", colorScheme: "dark" }} />
+            <Calendar size={14} color="var(--adm-muted)" />
+            <input type="date" value={dateFrom} onChange={(e) => onDateFromChange(e.target.value)} style={{ height: "36px", padding: "0 8px", borderRadius: "8px", border: "1px solid var(--adm-border-strong)", fontSize: "12px", backgroundColor: "var(--adm-input)", color: "var(--adm-text)" }} />
+            <span style={{ color: "var(--adm-muted)", fontSize: "12px" }}>to</span>
+            <input type="date" value={dateTo} onChange={(e) => onDateToChange(e.target.value)} style={{ height: "36px", padding: "0 8px", borderRadius: "8px", border: "1px solid var(--adm-border-strong)", fontSize: "12px", backgroundColor: "var(--adm-input)", color: "var(--adm-text)" }} />
           </div>
         </div>
 
-        <div style={{ fontSize: "12px", color: "#a1a1aa" }}>
-          Showing <strong style={{ color: "#ffffff" }}>{activities.length}</strong> of <strong style={{ color: "#ffffff" }}>{total}</strong> entries
+        <div style={{ fontSize: "12px", color: "var(--adm-text-2)" }}>
+          Showing <strong style={{ color: "var(--adm-text)" }}>{activities.length}</strong> of <strong style={{ color: "var(--adm-text)" }}>{total}</strong> entries
         </div>
       </div>
 
@@ -90,7 +90,7 @@ export default function AdminLoginActivity({
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", textAlign: "left" }}>
             <thead>
-              <tr style={{ background: "#111111", borderBottom: "1px solid #1f1f1f", color: "#71717a", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              <tr style={{ background: "var(--adm-table-head-bg)", borderBottom: "1px solid var(--adm-border)", color: "var(--adm-muted)", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
                 <th style={{ padding: "11px 16px", fontWeight: 600 }}>User</th>
                 <th style={{ padding: "11px 16px", fontWeight: 600 }}>Status</th>
                 <th style={{ padding: "11px 16px", fontWeight: 600 }}>Device &amp; Browser</th>
@@ -101,11 +101,11 @@ export default function AdminLoginActivity({
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={6} style={{ textAlign: "center", padding: "36px 16px", color: "#71717a" }}>Loading activity...</td></tr>
+                <tr><td colSpan={6} style={{ textAlign: "center", padding: "36px 16px", color: "var(--adm-muted)" }}>Loading activity...</td></tr>
               ) : activities.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: "center", padding: "44px 16px", color: "#71717a" }}>
-                    <Activity size={30} style={{ margin: "0 auto 8px", color: "#52525b" }} />
+                  <td colSpan={6} style={{ textAlign: "center", padding: "44px 16px", color: "var(--adm-muted)" }}>
+                    <Activity size={30} style={{ margin: "0 auto 8px", color: "var(--adm-muted)" }} />
                     <p style={{ margin: 0 }}>No login activity matches the filter.</p>
                   </td>
                 </tr>
@@ -113,28 +113,28 @@ export default function AdminLoginActivity({
                 activities.map((item) => {
                   const isSuccess = (item.status || "").toLowerCase() === "success";
                   return (
-                    <tr key={item.id} style={{ borderBottom: "1px solid #141414" }}>
+                    <tr key={item.id} style={{ borderBottom: "1px solid var(--adm-border-soft)" }}>
                       <td style={{ padding: "12px 16px" }}>
-                        <div style={{ fontWeight: 600, color: "#ffffff" }}>{item.username}</div>
-                        <div style={{ fontSize: "11.5px", color: "#71717a" }}>{item.email} · UID #{item.uid}</div>
+                        <div style={{ fontWeight: 600, color: "var(--adm-text)" }}>{item.username}</div>
+                        <div style={{ fontSize: "11.5px", color: "var(--adm-muted)" }}>{item.email} · UID #{item.uid}</div>
                       </td>
                       <td style={{ padding: "12px 16px" }}>
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "2px 9px", borderRadius: "6px", fontSize: "11.5px", fontWeight: 600, background: isSuccess ? "rgba(34, 197, 94, 0.14)" : "rgba(239, 68, 68, 0.14)", border: `1px solid ${isSuccess ? "rgba(34, 197, 94, 0.3)" : "rgba(239, 68, 68, 0.35)"}`, color: isSuccess ? "#4ade80" : "#f87171" }}>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "2px 9px", borderRadius: "6px", fontSize: "11.5px", fontWeight: 600, background: isSuccess ? "var(--adm-ok-bg)" : "var(--adm-danger-bg)", border: `1px solid ${isSuccess ? "var(--adm-ok-border)" : "var(--adm-danger-border)"}`, color: isSuccess ? "var(--adm-ok-text)" : "var(--adm-danger-text)" }}>
                           {isSuccess ? <CheckCircle2 size={11} /> : <XCircle size={11} />}
                           {item.status}
                         </span>
                       </td>
                       <td style={{ padding: "12px 16px" }}>
-                        <div style={{ color: "#e4e4e7", fontWeight: 500 }}>{item.device_name || "Desktop"}</div>
-                        <div style={{ fontSize: "11.5px", color: "#71717a" }}>{item.browser} · {item.os}</div>
+                        <div style={{ color: "var(--adm-body)", fontWeight: 500 }}>{item.device_name || "Desktop"}</div>
+                        <div style={{ fontSize: "11.5px", color: "var(--adm-muted)" }}>{item.browser} · {item.os}</div>
                       </td>
-                      <td style={{ padding: "12px 16px", color: "#d4d4d8" }}>
+                      <td style={{ padding: "12px 16px", color: "var(--adm-body)" }}>
                         <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
-                          <Globe size={12} color="#71717a" /> {item.location || "Local"}
+                          <Globe size={12} color="var(--adm-muted)" /> {item.location || "Local"}
                         </span>
                       </td>
-                      <td style={{ padding: "12px 16px", fontFamily: "monospace", color: "#a1a1aa", fontSize: "12px" }}>{item.ip_address}</td>
-                      <td style={{ padding: "12px 16px", textAlign: "right", color: "#a1a1aa", fontSize: "12px" }}>{item.created_at}</td>
+                      <td style={{ padding: "12px 16px", fontFamily: "monospace", color: "var(--adm-text-2)", fontSize: "12px" }}>{item.ip_address}</td>
+                      <td style={{ padding: "12px 16px", textAlign: "right", color: "var(--adm-text-2)", fontSize: "12px" }}>{item.created_at}</td>
                     </tr>
                   );
                 })
@@ -143,9 +143,9 @@ export default function AdminLoginActivity({
           </table>
         </div>
 
-        <div style={{ padding: "12px 18px", borderTop: "1px solid #171717", background: "#050505", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ fontSize: "12px", color: "#a1a1aa" }}>
-            Page <strong style={{ color: "#ffffff" }}>{page}</strong> of <strong style={{ color: "#ffffff" }}>{totalPages || 1}</strong>
+        <div style={{ padding: "12px 18px", borderTop: "1px solid var(--adm-border-soft)", background: "var(--adm-table-foot-bg)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontSize: "12px", color: "var(--adm-text-2)" }}>
+            Page <strong style={{ color: "var(--adm-text)" }}>{page}</strong> of <strong style={{ color: "var(--adm-text)" }}>{totalPages || 1}</strong>
           </div>
           <div style={{ display: "flex", gap: "6px" }}>
             <button onClick={() => onPageChange(page - 1)} disabled={page <= 1} className="btn btn--ghost" style={{ height: "30px", padding: "0 10px", fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "4px", cursor: "pointer" }}>

@@ -43,6 +43,8 @@ import {
   ExternalLink,
   AlertTriangle,
   Settings,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 const ADMIN_PAGES = new Set([
@@ -71,6 +73,23 @@ export default function AdminDashboard({ onNavigate }) {
   const [activePage, setActivePage] = useHistoryTab(ADMIN_PAGES, "overview");
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [toast, setToast] = useState({ message: "", type: "info" });
+  const [theme, setTheme] = useState(() => {
+    try {
+      const saved = localStorage.getItem("vault_admin_theme");
+      if (saved === "light" || saved === "dark") return saved;
+    } catch {}
+    return "dark";
+  });
+
+  const toggleTheme = () => {
+    setTheme((prev) => {
+      const next = prev === "dark" ? "light" : "dark";
+      try {
+        localStorage.setItem("vault_admin_theme", next);
+      } catch {}
+      return next;
+    });
+  };
 
   // Header Popovers & Search Modal
   const [cmdOpen, setCmdOpen] = useState(false);
@@ -389,6 +408,7 @@ export default function AdminDashboard({ onNavigate }) {
     return (
       <div
         className="admin-app-layout"
+        data-theme={theme}
         style={{ display: "grid", placeItems: "center", padding: "24px 16px" }}
       >
         <div className="card" style={{ width: "100%", maxWidth: "430px", textAlign: "center", padding: "36px 32px", borderRadius: "14px" }}>
@@ -397,19 +417,19 @@ export default function AdminDashboard({ onNavigate }) {
               width: "48px",
               height: "48px",
               borderRadius: "12px",
-              background: "rgba(247, 215, 148, 0.14)",
-              border: "1px solid rgba(247, 215, 148, 0.35)",
+              background: "var(--adm-accent-soft)",
+              border: "1px solid var(--adm-accent-border)",
               display: "grid",
               placeItems: "center",
               margin: "0 auto 16px",
             }}
           >
-            <ShieldAlert size={24} color="#F7D794" />
+            <ShieldAlert size={24} color="var(--adm-accent)" />
           </div>
-          <h2 style={{ fontSize: "20px", fontWeight: 700, margin: "0 0 8px", color: "#ffffff" }}>
+          <h2 style={{ fontSize: "20px", fontWeight: 700, margin: "0 0 8px", color: "var(--adm-text)" }}>
             Admin Session Required
           </h2>
-          <p style={{ color: "#a1a1aa", fontSize: "13.5px", lineHeight: 1.5, margin: "0 0 24px" }}>
+          <p style={{ color: "var(--adm-text-2)", fontSize: "13.5px", lineHeight: 1.5, margin: "0 0 24px" }}>
             Sign in with an administrator account to access the VaultAuth Admin workspace.
           </p>
           <div style={{ display: "grid", gap: "10px" }}>
@@ -437,14 +457,18 @@ export default function AdminDashboard({ onNavigate }) {
 
   if (authStatus === "unauthorized") {
     return (
-      <div className="admin-app-layout" style={{ display: "grid", placeItems: "center", padding: "24px 16px" }}>
+      <div
+        className="admin-app-layout"
+        data-theme={theme}
+        style={{ display: "grid", placeItems: "center", padding: "24px 16px" }}
+      >
         <div className="card" style={{ width: "100%", maxWidth: "440px", textAlign: "center", padding: "36px", borderRadius: "14px" }}>
-          <Shield size={42} color="#f87171" style={{ margin: "0 auto 12px" }} />
-          <h2 style={{ fontSize: "20px", fontWeight: 700, margin: "0 0 8px", color: "#ffffff" }}>
+          <Shield size={42} color="var(--adm-danger-text)" style={{ margin: "0 auto 12px" }} />
+          <h2 style={{ fontSize: "20px", fontWeight: 700, margin: "0 0 8px", color: "var(--adm-text)" }}>
             403 — Access Forbidden
           </h2>
-          <p style={{ color: "#a1a1aa", fontSize: "13.5px", margin: "0 0 24px", lineHeight: 1.5 }}>
-            Your account is assigned the <strong style={{ color: "#ffffff" }}>End User</strong> role. Administrator access is enforced by the backend.
+          <p style={{ color: "var(--adm-text-2)", fontSize: "13.5px", margin: "0 0 24px", lineHeight: 1.5 }}>
+            Your account is assigned the <strong style={{ color: "var(--adm-text)" }}>End User</strong> role. Administrator access is enforced by the backend.
           </p>
           <div style={{ display: "grid", gap: "10px" }}>
             <button
@@ -466,7 +490,7 @@ export default function AdminDashboard({ onNavigate }) {
 
   if (authStatus === "checking") {
     return (
-      <div className="admin-app-layout" style={{ display: "grid", placeItems: "center" }}>
+      <div className="admin-app-layout" data-theme={theme} style={{ display: "grid", placeItems: "center" }}>
         <div style={{ textAlign: "center" }}>
           <div
             className="btn__spinner"
@@ -475,11 +499,11 @@ export default function AdminDashboard({ onNavigate }) {
               width: "28px",
               height: "28px",
               borderWidth: "3px",
-              borderColor: "#1f1f1f",
-              borderTopColor: "#F7D794",
+              borderColor: "var(--adm-border)",
+              borderTopColor: "var(--adm-accent)",
             }}
           />
-          <p style={{ marginTop: "14px", fontSize: "13px", color: "#a1a1aa" }}>
+          <p style={{ marginTop: "14px", fontSize: "13px", color: "var(--adm-text-2)" }}>
             Verifying workspace session &amp; permissions...
           </p>
         </div>
@@ -491,7 +515,7 @@ export default function AdminDashboard({ onNavigate }) {
   const adminRoleTitle = adminUser?.role_title || "Super administrator";
 
   return (
-    <div className="admin-app-layout">
+    <div className="admin-app-layout" data-theme={theme}>
       {/* Left Sidebar */}
       <AdminSidebar
         activePage={activePage}
@@ -511,13 +535,22 @@ export default function AdminDashboard({ onNavigate }) {
       />
 
       {/* Right Workspace Column */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, background: "#000000" }}>
-        {/* Black Top Header Bar */}
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          minWidth: 0,
+          background: "var(--adm-bg)",
+          transition: "background-color 0.2s ease",
+        }}
+      >
+        {/* Top Header Bar */}
         <header
           style={{
             height: "60px",
-            background: "#000000",
-            borderBottom: "1px solid #1f1f1f",
+            background: "var(--adm-topbar)",
+            borderBottom: "1px solid var(--adm-border)",
             padding: "0 24px",
             display: "flex",
             alignItems: "center",
@@ -526,6 +559,7 @@ export default function AdminDashboard({ onNavigate }) {
             top: 0,
             zIndex: 30,
             gap: "12px",
+            transition: "background-color 0.2s ease, border-color 0.2s ease",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, minWidth: 0 }}>
@@ -536,7 +570,7 @@ export default function AdminDashboard({ onNavigate }) {
               style={{
                 background: "transparent",
                 border: "none",
-                color: "#a1a1aa",
+                color: "var(--adm-text-2)",
                 cursor: "pointer",
                 padding: "4px",
                 display: "flex",
@@ -562,23 +596,23 @@ export default function AdminDashboard({ onNavigate }) {
                 height: "36px",
                 padding: "0 12px",
                 borderRadius: "8px",
-                border: "1px solid #262626",
-                background: "#0a0a0a",
-                color: "#a1a1aa",
+                border: "1px solid var(--adm-border-strong)",
+                background: "var(--adm-surface)",
+                color: "var(--adm-text-2)",
                 fontSize: "12.5px",
                 cursor: "pointer",
               }}
             >
               <span style={{ display: "flex", alignItems: "center", gap: "8px", overflow: "hidden", whiteSpace: "nowrap" }}>
-                <Search size={14} color="#71717a" />
+                <Search size={14} color="var(--adm-muted)" />
                 <span>Search users, applications, activity...</span>
               </span>
               <span
                 style={{
                   fontSize: "10.5px",
-                  color: "#F7D794",
-                  background: "#141414",
-                  border: "1px solid #262626",
+                  color: "var(--adm-link)",
+                  background: "var(--adm-badge-neutral-bg)",
+                  border: "1px solid var(--adm-border-strong)",
                   padding: "1px 5px",
                   borderRadius: "4px",
                   fontFamily: "monospace",
@@ -589,7 +623,7 @@ export default function AdminDashboard({ onNavigate }) {
             </button>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "14px", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
             <div
               style={{
                 display: "inline-flex",
@@ -597,9 +631,9 @@ export default function AdminDashboard({ onNavigate }) {
                 gap: "6px",
                 padding: "4px 10px",
                 borderRadius: "9999px",
-                background: "rgba(247, 215, 148, 0.12)",
-                border: "1px solid rgba(247, 215, 148, 0.3)",
-                color: "#F7D794",
+                background: "var(--adm-accent-soft)",
+                border: "1px solid var(--adm-accent-border)",
+                color: "var(--adm-link)",
                 fontSize: "12px",
                 fontWeight: 600,
               }}
@@ -607,6 +641,18 @@ export default function AdminDashboard({ onNavigate }) {
               <ShieldCheck size={13} />
               <span>Admin workspace</span>
             </div>
+
+            {/* Dark / Light Theme Toggle */}
+            <button
+              type="button"
+              className="adm-theme-toggle"
+              onClick={toggleTheme}
+              aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+              <span>{theme === "dark" ? "Light" : "Dark"}</span>
+            </button>
 
             {/* Notification Bell */}
             <div ref={notifRef} style={{ position: "relative" }}>
@@ -619,12 +665,12 @@ export default function AdminDashboard({ onNavigate }) {
                 aria-label="Security notifications"
                 style={{
                   position: "relative",
-                  width: "34px",
-                  height: "34px",
+                  width: "36px",
+                  height: "36px",
                   borderRadius: "8px",
-                  border: "1px solid #262626",
-                  background: "#0a0a0a",
-                  color: "#a1a1aa",
+                  border: "1px solid var(--adm-border-strong)",
+                  background: "var(--adm-surface)",
+                  color: "var(--adm-text-2)",
                   display: "grid",
                   placeItems: "center",
                   cursor: "pointer",
@@ -640,7 +686,7 @@ export default function AdminDashboard({ onNavigate }) {
                       width: "6px",
                       height: "6px",
                       borderRadius: "50%",
-                      background: "#F7D794",
+                      background: "var(--adm-accent)",
                     }}
                   />
                 )}
@@ -653,23 +699,32 @@ export default function AdminDashboard({ onNavigate }) {
                     top: "calc(100% + 8px)",
                     right: 0,
                     width: "300px",
-                    background: "#0a0a0a",
-                    border: "1px solid #262626",
+                    background: "var(--adm-surface)",
+                    border: "1px solid var(--adm-border-strong)",
                     borderRadius: "10px",
-                    boxShadow: "0 14px 32px rgba(0, 0, 0, 0.65)",
+                    boxShadow: "var(--adm-shadow-md)",
                     padding: "10px",
                     zIndex: 60,
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 4px 8px", borderBottom: "1px solid #1f1f1f", fontSize: "12.5px" }}>
-                    <strong style={{ color: "#ffffff" }}>Security alerts</strong>
-                    <span style={{ fontSize: "11px", color: "#F7D794" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: "4px 4px 8px",
+                      borderBottom: "1px solid var(--adm-border)",
+                      fontSize: "12.5px",
+                    }}
+                  >
+                    <strong style={{ color: "var(--adm-text)" }}>Security alerts</strong>
+                    <span style={{ fontSize: "11px", color: "var(--adm-link)" }}>
                       {stats?.failed_logins_24h ?? 0} failed (24h)
                     </span>
                   </div>
                   <div style={{ display: "grid", gap: "6px", padding: "8px 0" }}>
                     {failedAlertItems.length === 0 ? (
-                      <div style={{ fontSize: "12px", color: "#a1a1aa", padding: "8px 4px" }}>
+                      <div style={{ fontSize: "12px", color: "var(--adm-text-2)", padding: "8px 4px" }}>
                         No recent failed login alerts.
                       </div>
                     ) : (
@@ -683,8 +738,8 @@ export default function AdminDashboard({ onNavigate }) {
                           style={{
                             padding: "8px",
                             borderRadius: "7px",
-                            background: "#000000",
-                            border: "1px solid #1f1f1f",
+                            background: "var(--adm-subtle)",
+                            border: "1px solid var(--adm-border)",
                             fontSize: "12px",
                             cursor: "pointer",
                             display: "flex",
@@ -692,12 +747,12 @@ export default function AdminDashboard({ onNavigate }) {
                             alignItems: "flex-start",
                           }}
                         >
-                          <AlertTriangle size={13} color="#F7D794" style={{ marginTop: "2px", flexShrink: 0 }} />
+                          <AlertTriangle size={13} color="var(--adm-accent)" style={{ marginTop: "2px", flexShrink: 0 }} />
                           <div>
-                            <div style={{ fontWeight: 600, color: "#ffffff" }}>
+                            <div style={{ fontWeight: 600, color: "var(--adm-text)" }}>
                               Failed login: {ev.username || "Unknown"}
                             </div>
-                            <div style={{ color: "#a1a1aa", fontSize: "11px" }}>
+                            <div style={{ color: "var(--adm-text-2)", fontSize: "11px" }}>
                               {ev.ip_address || "127.0.0.1"} · {ev.created_at || "Recent"}
                             </div>
                           </div>
@@ -733,9 +788,9 @@ export default function AdminDashboard({ onNavigate }) {
                     width: "32px",
                     height: "32px",
                     borderRadius: "50%",
-                    background: "rgba(247, 215, 148, 0.16)",
-                    border: "1px solid rgba(247, 215, 148, 0.35)",
-                    color: "#F7D794",
+                    background: "var(--adm-avatar-bg)",
+                    border: "1px solid var(--adm-avatar-border)",
+                    color: "var(--adm-avatar-text)",
                     display: "grid",
                     placeItems: "center",
                     fontWeight: 700,
@@ -745,14 +800,14 @@ export default function AdminDashboard({ onNavigate }) {
                   {adminName.substring(0, 2).toUpperCase()}
                 </div>
                 <div style={{ lineHeight: 1.2 }}>
-                  <div style={{ fontSize: "12.5px", fontWeight: 600, color: "#ffffff" }}>
+                  <div style={{ fontSize: "12.5px", fontWeight: 600, color: "var(--adm-text)" }}>
                     {adminName}
                   </div>
-                  <div style={{ fontSize: "11px", color: "#a1a1aa" }}>
+                  <div style={{ fontSize: "11px", color: "var(--adm-text-2)" }}>
                     {adminRoleTitle}
                   </div>
                 </div>
-                <ChevronDown size={13} color="#a1a1aa" />
+                <ChevronDown size={13} color="var(--adm-text-2)" />
               </button>
 
               {profileOpen && (
@@ -762,10 +817,10 @@ export default function AdminDashboard({ onNavigate }) {
                     top: "calc(100% + 8px)",
                     right: 0,
                     width: "210px",
-                    background: "#0a0a0a",
-                    border: "1px solid #262626",
+                    background: "var(--adm-surface)",
+                    border: "1px solid var(--adm-border-strong)",
                     borderRadius: "10px",
-                    boxShadow: "0 14px 32px rgba(0, 0, 0, 0.65)",
+                    boxShadow: "var(--adm-shadow-md)",
                     padding: "6px",
                     zIndex: 60,
                   }}
@@ -785,12 +840,12 @@ export default function AdminDashboard({ onNavigate }) {
                       borderRadius: "6px",
                       border: "none",
                       background: "transparent",
-                      color: "#e4e4e7",
+                      color: "var(--adm-body)",
                       fontSize: "12.5px",
                       cursor: "pointer",
                     }}
                   >
-                    <Settings size={14} color="#F7D794" /> Admin settings
+                    <Settings size={14} color="var(--adm-link)" /> Admin settings
                   </button>
                   <button
                     type="button"
@@ -808,14 +863,41 @@ export default function AdminDashboard({ onNavigate }) {
                       borderRadius: "6px",
                       border: "none",
                       background: "transparent",
-                      color: "#e4e4e7",
+                      color: "var(--adm-body)",
                       fontSize: "12.5px",
                       cursor: "pointer",
                     }}
                   >
-                    <ExternalLink size={14} color="#F7D794" /> User dashboard
+                    <ExternalLink size={14} color="var(--adm-link)" /> User dashboard
                   </button>
-                  <div style={{ height: "1px", background: "#1f1f1f", margin: "4px 0" }} />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      toggleTheme();
+                      setProfileOpen(false);
+                    }}
+                    style={{
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "8px 10px",
+                      borderRadius: "6px",
+                      border: "none",
+                      background: "transparent",
+                      color: "var(--adm-body)",
+                      fontSize: "12.5px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {theme === "dark" ? (
+                      <Sun size={14} color="var(--adm-link)" />
+                    ) : (
+                      <Moon size={14} color="var(--adm-link)" />
+                    )}
+                    Switch to {theme === "dark" ? "light" : "dark"} mode
+                  </button>
+                  <div style={{ height: "1px", background: "var(--adm-border)", margin: "4px 0" }} />
                   <button
                     type="button"
                     onClick={handleLogout}
@@ -828,7 +910,7 @@ export default function AdminDashboard({ onNavigate }) {
                       borderRadius: "6px",
                       border: "none",
                       background: "transparent",
-                      color: "#f87171",
+                      color: "var(--adm-danger-text)",
                       fontSize: "12.5px",
                       cursor: "pointer",
                     }}
@@ -976,7 +1058,7 @@ export default function AdminDashboard({ onNavigate }) {
           style={{
             position: "fixed",
             inset: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.78)",
+            backgroundColor: "var(--adm-backdrop)",
             display: "grid",
             placeItems: "center",
             zIndex: 110,
@@ -986,26 +1068,33 @@ export default function AdminDashboard({ onNavigate }) {
         >
           <div
             className="card"
-            style={{ width: "100%", maxWidth: "500px", borderRadius: "12px", overflow: "hidden", border: "1px solid #262626" }}
+            style={{
+              width: "100%",
+              maxWidth: "500px",
+              borderRadius: "12px",
+              overflow: "hidden",
+              border: "1px solid var(--adm-border-strong)",
+              boxShadow: "var(--adm-shadow-lg)",
+            }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "12px 16px", borderBottom: "1px solid #1f1f1f" }}>
-              <Search size={16} color="#F7D794" />
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "12px 16px", borderBottom: "1px solid var(--adm-border)" }}>
+              <Search size={16} color="var(--adm-link)" />
               <input
                 type="text"
                 autoFocus
                 placeholder="Search users, applications, or pages..."
                 value={cmdQuery}
                 onChange={(e) => setCmdQuery(e.target.value)}
-                style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: "13.5px", color: "#ffffff" }}
+                style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: "13.5px", color: "var(--adm-text)" }}
               />
-              <button type="button" onClick={() => setCmdOpen(false)} style={{ background: "none", border: "none", color: "#a1a1aa", cursor: "pointer" }}>
+              <button type="button" onClick={() => setCmdOpen(false)} style={{ background: "none", border: "none", color: "var(--adm-text-2)", cursor: "pointer" }}>
                 <X size={16} />
               </button>
             </div>
 
             <div style={{ maxHeight: "320px", overflowY: "auto", padding: "10px" }}>
-              <div style={{ fontSize: "10.5px", fontWeight: 700, color: "#71717a", padding: "4px 8px", textTransform: "uppercase" }}>
+              <div style={{ fontSize: "10.5px", fontWeight: 700, color: "var(--adm-muted)", padding: "4px 8px", textTransform: "uppercase" }}>
                 Pages
               </div>
               {filteredCommands.pages.map((p) => (
@@ -1023,7 +1112,7 @@ export default function AdminDashboard({ onNavigate }) {
                     borderRadius: "7px",
                     border: "none",
                     background: "transparent",
-                    color: "#e4e4e7",
+                    color: "var(--adm-body)",
                     fontSize: "13px",
                     cursor: "pointer",
                   }}
@@ -1034,7 +1123,7 @@ export default function AdminDashboard({ onNavigate }) {
 
               {filteredCommands.users.length > 0 && (
                 <>
-                  <div style={{ fontSize: "10.5px", fontWeight: 700, color: "#71717a", padding: "8px 8px 4px", textTransform: "uppercase" }}>
+                  <div style={{ fontSize: "10.5px", fontWeight: 700, color: "var(--adm-muted)", padding: "8px 8px 4px", textTransform: "uppercase" }}>
                     Users
                   </div>
                   {filteredCommands.users.map((u) => (
@@ -1054,15 +1143,15 @@ export default function AdminDashboard({ onNavigate }) {
                         borderRadius: "7px",
                         border: "none",
                         background: "transparent",
-                        color: "#ffffff",
+                        color: "var(--adm-text)",
                         fontSize: "13px",
                         cursor: "pointer",
                       }}
                     >
                       <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
-                        <User size={13} color="#F7D794" /> {u.full_name || u.username}
+                        <User size={13} color="var(--adm-link)" /> {u.full_name || u.username}
                       </span>
-                      <span style={{ color: "#71717a", fontSize: "12px" }}>{u.email}</span>
+                      <span style={{ color: "var(--adm-muted)", fontSize: "12px" }}>{u.email}</span>
                     </button>
                   ))}
                 </>
@@ -1070,7 +1159,7 @@ export default function AdminDashboard({ onNavigate }) {
 
               {filteredCommands.apps.length > 0 && (
                 <>
-                  <div style={{ fontSize: "10.5px", fontWeight: 700, color: "#71717a", padding: "8px 8px 4px", textTransform: "uppercase" }}>
+                  <div style={{ fontSize: "10.5px", fontWeight: 700, color: "var(--adm-muted)", padding: "8px 8px 4px", textTransform: "uppercase" }}>
                     Applications
                   </div>
                   {filteredCommands.apps.map((a) => (
@@ -1088,7 +1177,7 @@ export default function AdminDashboard({ onNavigate }) {
                         borderRadius: "7px",
                         border: "none",
                         background: "transparent",
-                        color: "#ffffff",
+                        color: "var(--adm-text)",
                         fontSize: "13px",
                         cursor: "pointer",
                       }}
@@ -1109,7 +1198,7 @@ export default function AdminDashboard({ onNavigate }) {
           style={{
             position: "fixed",
             inset: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.78)",
+            backgroundColor: "var(--adm-backdrop)",
             display: "grid",
             placeItems: "center",
             zIndex: 110,
@@ -1117,15 +1206,26 @@ export default function AdminDashboard({ onNavigate }) {
           }}
           onClick={() => setHelpOpen(false)}
         >
-          <div className="card" style={{ width: "100%", maxWidth: "460px", padding: "24px", borderRadius: "12px", border: "1px solid #262626" }} onClick={(e) => e.stopPropagation()}>
+          <div
+            className="card"
+            style={{
+              width: "100%",
+              maxWidth: "460px",
+              padding: "24px",
+              borderRadius: "12px",
+              border: "1px solid var(--adm-border-strong)",
+              boxShadow: "var(--adm-shadow-lg)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-              <h3 style={{ margin: 0, fontSize: "16px", color: "#ffffff" }}>VaultAuth Admin Documentation</h3>
-              <button type="button" onClick={() => setHelpOpen(false)} style={{ background: "none", border: "none", color: "#a1a1aa", cursor: "pointer" }}>
+              <h3 style={{ margin: 0, fontSize: "16px", color: "var(--adm-text)" }}>VaultAuth Admin Documentation</h3>
+              <button type="button" onClick={() => setHelpOpen(false)} style={{ background: "none", border: "none", color: "var(--adm-text-2)", cursor: "pointer" }}>
                 <X size={16} />
               </button>
             </div>
-            <p style={{ margin: "0 0 14px", fontSize: "13px", color: "#a1a1aa", lineHeight: 1.55 }}>
-              Press <kbd style={{ color: "#F7D794" }}>⌘K</kbd> or <kbd style={{ color: "#F7D794" }}>Ctrl+K</kbd> anywhere in the console to search directory users, applications, or jump across admin pages.
+            <p style={{ margin: "0 0 14px", fontSize: "13px", color: "var(--adm-text-2)", lineHeight: 1.55 }}>
+              Press <kbd style={{ color: "var(--adm-link)" }}>⌘K</kbd> or <kbd style={{ color: "var(--adm-link)" }}>Ctrl+K</kbd> anywhere in the console to search directory users, applications, or jump across admin pages.
               All administrative actions and role changes are validated server-side.
             </p>
             <button type="button" onClick={() => setHelpOpen(false)} className="btn" style={{ width: "100%", height: "36px", cursor: "pointer" }}>
@@ -1141,7 +1241,7 @@ export default function AdminDashboard({ onNavigate }) {
           style={{
             position: "fixed",
             inset: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.78)",
+            backgroundColor: "var(--adm-backdrop)",
             display: "grid",
             placeItems: "center",
             zIndex: 100,
@@ -1151,19 +1251,26 @@ export default function AdminDashboard({ onNavigate }) {
         >
           <div
             className="card"
-            style={{ width: "100%", maxWidth: "460px", padding: "26px", borderRadius: "12px", border: "1px solid #262626" }}
+            style={{
+              width: "100%",
+              maxWidth: "460px",
+              padding: "26px",
+              borderRadius: "12px",
+              border: "1px solid var(--adm-border-strong)",
+              boxShadow: "var(--adm-shadow-lg)",
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h3 style={{ margin: 0, fontSize: "17px", color: "#ffffff" }}>Add user</h3>
-              <button onClick={() => setIsAddUserOpen(false)} style={{ background: "none", border: "none", fontSize: "16px", cursor: "pointer", color: "#a1a1aa" }}>
+              <h3 style={{ margin: 0, fontSize: "17px", color: "var(--adm-text)" }}>Add user</h3>
+              <button onClick={() => setIsAddUserOpen(false)} style={{ background: "none", border: "none", fontSize: "16px", cursor: "pointer", color: "var(--adm-text-2)" }}>
                 ✕
               </button>
             </div>
 
             <form onSubmit={handleCreateUser} style={{ display: "grid", gap: "13px" }}>
               <div>
-                <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "#a1a1aa", marginBottom: "4px" }}>
+                <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "var(--adm-text-2)", marginBottom: "4px" }}>
                   Username *
                 </label>
                 <input
@@ -1172,11 +1279,11 @@ export default function AdminDashboard({ onNavigate }) {
                   placeholder="e.g. sarah.wilson"
                   value={newUserForm.username}
                   onChange={(e) => setNewUserForm({ ...newUserForm, username: e.target.value })}
-                  style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid #262626", background: "#000000", color: "#ffffff", padding: "0 12px", fontSize: "13px" }}
+                  style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid var(--adm-border-strong)", background: "var(--adm-input)", color: "var(--adm-text)", padding: "0 12px", fontSize: "13px" }}
                 />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "#a1a1aa", marginBottom: "4px" }}>
+                <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "var(--adm-text-2)", marginBottom: "4px" }}>
                   Email address *
                 </label>
                 <input
@@ -1185,11 +1292,11 @@ export default function AdminDashboard({ onNavigate }) {
                   placeholder="e.g. sarah@company.com"
                   value={newUserForm.email}
                   onChange={(e) => setNewUserForm({ ...newUserForm, email: e.target.value })}
-                  style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid #262626", background: "#000000", color: "#ffffff", padding: "0 12px", fontSize: "13px" }}
+                  style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid var(--adm-border-strong)", background: "var(--adm-input)", color: "var(--adm-text)", padding: "0 12px", fontSize: "13px" }}
                 />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "#a1a1aa", marginBottom: "4px" }}>
+                <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "var(--adm-text-2)", marginBottom: "4px" }}>
                   Full name
                 </label>
                 <input
@@ -1197,11 +1304,11 @@ export default function AdminDashboard({ onNavigate }) {
                   placeholder="e.g. Sarah Wilson"
                   value={newUserForm.full_name}
                   onChange={(e) => setNewUserForm({ ...newUserForm, full_name: e.target.value })}
-                  style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid #262626", background: "#000000", color: "#ffffff", padding: "0 12px", fontSize: "13px" }}
+                  style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid var(--adm-border-strong)", background: "var(--adm-input)", color: "var(--adm-text)", padding: "0 12px", fontSize: "13px" }}
                 />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "#a1a1aa", marginBottom: "4px" }}>
+                <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "var(--adm-text-2)", marginBottom: "4px" }}>
                   Initial password *
                 </label>
                 <input
@@ -1210,17 +1317,17 @@ export default function AdminDashboard({ onNavigate }) {
                   placeholder="Min 8 chars with variety"
                   value={newUserForm.password}
                   onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })}
-                  style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid #262626", background: "#000000", color: "#ffffff", padding: "0 12px", fontSize: "13px" }}
+                  style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid var(--adm-border-strong)", background: "var(--adm-input)", color: "var(--adm-text)", padding: "0 12px", fontSize: "13px" }}
                 />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "#a1a1aa", marginBottom: "4px" }}>
+                <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "var(--adm-text-2)", marginBottom: "4px" }}>
                   Role
                 </label>
                 <select
                   value={newUserForm.role}
                   onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value })}
-                  style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid #262626", padding: "0 12px", background: "#000000", color: "#ffffff", fontSize: "13px" }}
+                  style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid var(--adm-border-strong)", padding: "0 12px", background: "var(--adm-input)", color: "var(--adm-text)", fontSize: "13px" }}
                 >
                   <option value="user">Member (End User)</option>
                   <option value="admin">Administrator</option>
@@ -1245,7 +1352,7 @@ export default function AdminDashboard({ onNavigate }) {
           style={{
             position: "fixed",
             inset: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.78)",
+            backgroundColor: "var(--adm-backdrop)",
             display: "grid",
             placeItems: "center",
             zIndex: 100,
@@ -1253,28 +1360,39 @@ export default function AdminDashboard({ onNavigate }) {
           }}
           onClick={() => setEditingUser(null)}
         >
-          <div className="card" style={{ width: "100%", maxWidth: "430px", padding: "26px", borderRadius: "12px", border: "1px solid #262626" }} onClick={(e) => e.stopPropagation()}>
+          <div
+            className="card"
+            style={{
+              width: "100%",
+              maxWidth: "430px",
+              padding: "26px",
+              borderRadius: "12px",
+              border: "1px solid var(--adm-border-strong)",
+              boxShadow: "var(--adm-shadow-lg)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h3 style={{ margin: 0, fontSize: "17px", color: "#ffffff" }}>Edit user details</h3>
-              <button onClick={() => setEditingUser(null)} style={{ background: "none", border: "none", fontSize: "16px", cursor: "pointer", color: "#a1a1aa" }}>
+              <h3 style={{ margin: 0, fontSize: "17px", color: "var(--adm-text)" }}>Edit user details</h3>
+              <button onClick={() => setEditingUser(null)} style={{ background: "none", border: "none", fontSize: "16px", cursor: "pointer", color: "var(--adm-text-2)" }}>
                 ✕
               </button>
             </div>
 
             <form onSubmit={handleUpdateUser} style={{ display: "grid", gap: "13px" }}>
               <div>
-                <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "#a1a1aa", marginBottom: "4px" }}>
+                <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "var(--adm-text-2)", marginBottom: "4px" }}>
                   Full name
                 </label>
                 <input
                   type="text"
                   value={editUserForm.full_name}
                   onChange={(e) => setEditUserForm({ ...editUserForm, full_name: e.target.value })}
-                  style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid #262626", background: "#000000", color: "#ffffff", padding: "0 12px", fontSize: "13px" }}
+                  style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid var(--adm-border-strong)", background: "var(--adm-input)", color: "var(--adm-text)", padding: "0 12px", fontSize: "13px" }}
                 />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "#a1a1aa", marginBottom: "4px" }}>
+                <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "var(--adm-text-2)", marginBottom: "4px" }}>
                   Email address
                 </label>
                 <input
@@ -1282,11 +1400,11 @@ export default function AdminDashboard({ onNavigate }) {
                   required
                   value={editUserForm.email}
                   onChange={(e) => setEditUserForm({ ...editUserForm, email: e.target.value })}
-                  style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid #262626", background: "#000000", color: "#ffffff", padding: "0 12px", fontSize: "13px" }}
+                  style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid var(--adm-border-strong)", background: "var(--adm-input)", color: "var(--adm-text)", padding: "0 12px", fontSize: "13px" }}
                 />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "#a1a1aa", marginBottom: "4px" }}>
+                <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "var(--adm-text-2)", marginBottom: "4px" }}>
                   Phone number
                 </label>
                 <input
@@ -1294,7 +1412,7 @@ export default function AdminDashboard({ onNavigate }) {
                   placeholder="+1 555-0199"
                   value={editUserForm.phone}
                   onChange={(e) => setEditUserForm({ ...editUserForm, phone: e.target.value })}
-                  style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid #262626", background: "#000000", color: "#ffffff", padding: "0 12px", fontSize: "13px" }}
+                  style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid var(--adm-border-strong)", background: "var(--adm-input)", color: "var(--adm-text)", padding: "0 12px", fontSize: "13px" }}
                 />
               </div>
               <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
@@ -1318,15 +1436,21 @@ export default function AdminDashboard({ onNavigate }) {
             top: "18px",
             right: "22px",
             zIndex: 1000,
-            background: "#0a0a0a",
+            background: "var(--adm-surface)",
             padding: "12px 16px",
             borderRadius: "10px",
-            boxShadow: "0 10px 25px rgba(0, 0, 0, 0.7)",
-            border: "1px solid #262626",
-            borderLeft: `4px solid ${toast.type === "success" ? "#4ade80" : toast.type === "error" ? "#f87171" : "#F7D794"}`,
+            boxShadow: "var(--adm-shadow-md)",
+            border: "1px solid var(--adm-border-strong)",
+            borderLeft: `4px solid ${
+              toast.type === "success"
+                ? "var(--adm-ok-text)"
+                : toast.type === "error"
+                ? "var(--adm-danger-text)"
+                : "var(--adm-accent)"
+            }`,
             fontSize: "13px",
             fontWeight: 500,
-            color: "#ffffff",
+            color: "var(--adm-text)",
             display: "flex",
             alignItems: "center",
             gap: "10px",
@@ -1336,7 +1460,7 @@ export default function AdminDashboard({ onNavigate }) {
           <span>{toast.message}</span>
           <button
             onClick={() => setToast({ message: "", type: "info" })}
-            style={{ background: "none", border: "none", color: "#a1a1aa", cursor: "pointer" }}
+            style={{ background: "none", border: "none", color: "var(--adm-text-2)", cursor: "pointer" }}
           >
             ✕
           </button>

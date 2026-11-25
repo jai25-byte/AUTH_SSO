@@ -52,10 +52,10 @@ export default function AdminSettings({
   return (
     <div className="admin-page-container" style={{ display: "grid", gap: "20px" }}>
       <div>
-        <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#ffffff", margin: 0 }}>
+        <h1 style={{ fontSize: "22px", fontWeight: 700, color: "var(--adm-text)", margin: 0 }}>
           Admin settings
         </h1>
-        <p style={{ margin: "4px 0 0", color: "#a1a1aa", fontSize: "13px" }}>
+        <p style={{ margin: "4px 0 0", color: "var(--adm-text-2)", fontSize: "13px" }}>
           Organization-wide policies, authentication timeouts, password complexity rules, and mail transport.
         </p>
       </div>
@@ -63,8 +63,8 @@ export default function AdminSettings({
       <form onSubmit={handleSubmit} style={{ display: "grid", gap: "18px" }}>
         <div className="card" style={{ borderRadius: "12px", padding: "22px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
-            <Server size={16} color="#F7D794" />
-            <h2 style={{ fontSize: "15px", fontWeight: 600, margin: 0, color: "#ffffff" }}>Workspace overview</h2>
+            <Server size={16} color="var(--adm-link)" />
+            <h2 style={{ fontSize: "15px", fontWeight: 600, margin: 0, color: "var(--adm-text)" }}>Workspace overview</h2>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: "12px" }}>
@@ -74,9 +74,9 @@ export default function AdminSettings({
               { label: "ACCESS POLICY", val: "Server-Enforced RBAC" },
               { label: "ORIGIN SECURITY", val: "Restricted CORS Policy" },
             ].map((tile) => (
-              <div key={tile.label} style={{ padding: "12px", background: "#000000", borderRadius: "8px", border: "1px solid #1f1f1f" }}>
-                <div style={{ fontSize: "10.5px", color: "#F7D794", fontWeight: 700 }}>{tile.label}</div>
-                <div style={{ fontSize: "13.5px", fontWeight: 600, color: "#ffffff", marginTop: "4px" }}>{tile.val}</div>
+              <div key={tile.label} style={{ padding: "12px", background: "var(--adm-subtle)", borderRadius: "8px", border: "1px solid var(--adm-border)" }}>
+                <div style={{ fontSize: "10.5px", color: "var(--adm-link)", fontWeight: 700 }}>{tile.label}</div>
+                <div style={{ fontSize: "13.5px", fontWeight: 600, color: "var(--adm-text)", marginTop: "4px" }}>{tile.val}</div>
               </div>
             ))}
           </div>
@@ -84,13 +84,13 @@ export default function AdminSettings({
 
         <div className="card" style={{ borderRadius: "12px", padding: "22px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
-            <Clock size={16} color="#F7D794" />
-            <h2 style={{ fontSize: "15px", fontWeight: 600, margin: 0, color: "#ffffff" }}>Sessions &amp; token lifecycles</h2>
+            <Clock size={16} color="var(--adm-link)" />
+            <h2 style={{ fontSize: "15px", fontWeight: 600, margin: 0, color: "var(--adm-text)" }}>Sessions &amp; token lifecycles</h2>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "16px" }}>
             <div>
-              <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "#a1a1aa", marginBottom: "5px" }}>
+              <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "var(--adm-text-2)", marginBottom: "5px" }}>
                 Session timeout (seconds)
               </label>
               <input
@@ -100,13 +100,13 @@ export default function AdminSettings({
                 onChange={handleChange}
                 min="300"
                 max="86400"
-                style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid #262626", background: "#000000", padding: "0 12px", fontSize: "13px", color: "#ffffff" }}
+                style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid var(--adm-border-strong)", background: "var(--adm-input)", padding: "0 12px", fontSize: "13px", color: "var(--adm-text)" }}
               />
-              <span style={{ fontSize: "11.5px", color: "#71717a", display: "block", marginTop: "4px" }}>Default: 3600s (60 minutes).</span>
+              <span style={{ fontSize: "11.5px", color: "var(--adm-muted)", display: "block", marginTop: "4px" }}>Default: 3600s (60 minutes).</span>
             </div>
 
             <div>
-              <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "#a1a1aa", marginBottom: "5px" }}>
+              <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "var(--adm-text-2)", marginBottom: "5px" }}>
                 OTP expiry (seconds)
               </label>
               <input
@@ -116,22 +116,22 @@ export default function AdminSettings({
                 onChange={handleChange}
                 min="60"
                 max="900"
-                style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid #262626", background: "#000000", padding: "0 12px", fontSize: "13px", color: "#ffffff" }}
+                style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid var(--adm-border-strong)", background: "var(--adm-input)", padding: "0 12px", fontSize: "13px", color: "var(--adm-text)" }}
               />
-              <span style={{ fontSize: "11.5px", color: "#71717a", display: "block", marginTop: "4px" }}>Single-use code validity (default 300s).</span>
+              <span style={{ fontSize: "11.5px", color: "var(--adm-muted)", display: "block", marginTop: "4px" }}>Single-use code validity (default 300s).</span>
             </div>
           </div>
         </div>
 
         <div className="card" style={{ borderRadius: "12px", padding: "22px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
-            <KeyRound size={16} color="#F7D794" />
-            <h2 style={{ fontSize: "15px", fontWeight: 600, margin: 0, color: "#ffffff" }}>Authentication &amp; password policies</h2>
+            <KeyRound size={16} color="var(--adm-link)" />
+            <h2 style={{ fontSize: "15px", fontWeight: 600, margin: 0, color: "var(--adm-text)" }}>Authentication &amp; password policies</h2>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px" }}>
             <div>
-              <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "#a1a1aa", marginBottom: "5px" }}>
+              <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "var(--adm-text-2)", marginBottom: "5px" }}>
                 Minimum password length
               </label>
               <input
@@ -141,12 +141,12 @@ export default function AdminSettings({
                 onChange={handleChange}
                 min="8"
                 max="32"
-                style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid #262626", background: "#000000", padding: "0 12px", fontSize: "13px", color: "#ffffff" }}
+                style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid var(--adm-border-strong)", background: "var(--adm-input)", padding: "0 12px", fontSize: "13px", color: "var(--adm-text)" }}
               />
             </div>
 
             <div>
-              <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "#a1a1aa", marginBottom: "5px" }}>
+              <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "var(--adm-text-2)", marginBottom: "5px" }}>
                 Account lockout threshold
               </label>
               <input
@@ -156,19 +156,19 @@ export default function AdminSettings({
                 onChange={handleChange}
                 min="3"
                 max="20"
-                style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid #262626", background: "#000000", padding: "0 12px", fontSize: "13px", color: "#ffffff" }}
+                style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid var(--adm-border-strong)", background: "var(--adm-input)", padding: "0 12px", fontSize: "13px", color: "var(--adm-text)" }}
               />
             </div>
 
             <div>
-              <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "#a1a1aa", marginBottom: "5px" }}>
+              <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: "var(--adm-text-2)", marginBottom: "5px" }}>
                 MFA / Email OTP requirement
               </label>
               <select
                 name="mfa_required"
                 value={String(formData.mfa_required)}
                 onChange={handleChange}
-                style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid #262626", padding: "0 12px", fontSize: "13px", color: "#ffffff", background: "#000000" }}
+                style={{ width: "100%", height: "38px", borderRadius: "8px", border: "1px solid var(--adm-border-strong)", padding: "0 12px", fontSize: "13px", color: "var(--adm-text)", background: "var(--adm-input)" }}
               >
                 <option value="false">Optional (Direct password login)</option>
                 <option value="true">Enforced (Require 6-digit OTP)</option>
@@ -180,12 +180,12 @@ export default function AdminSettings({
         <div className="card" style={{ borderRadius: "12px", padding: "20px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <Mail size={17} color={mailerConfigured ? "#4ade80" : "#F7D794"} />
+              <Mail size={17} color={mailerConfigured ? "var(--adm-ok-text)" : "var(--adm-warn-text)"} />
               <div>
-                <div style={{ fontWeight: 600, fontSize: "13.5px", color: "#ffffff" }}>
+                <div style={{ fontWeight: 600, fontSize: "13.5px", color: "var(--adm-text)" }}>
                   Transactional Mailer ({mailProviderLabel})
                 </div>
-                <div style={{ fontSize: "12px", color: "#a1a1aa" }}>
+                <div style={{ fontSize: "12px", color: "var(--adm-text-2)" }}>
                   Dispatches 6-digit OTP verification and password recovery messages.
                 </div>
               </div>
@@ -196,9 +196,9 @@ export default function AdminSettings({
                 fontWeight: 700,
                 padding: "3px 9px",
                 borderRadius: "6px",
-                background: mailerConfigured ? "rgba(34, 197, 94, 0.14)" : "rgba(247, 215, 148, 0.14)",
-                border: `1px solid ${mailerConfigured ? "rgba(34, 197, 94, 0.3)" : "rgba(247, 215, 148, 0.35)"}`,
-                color: mailerConfigured ? "#4ade80" : "#F7D794",
+                background: mailerConfigured ? "var(--adm-ok-bg)" : "var(--adm-warn-bg)",
+                border: `1px solid ${mailerConfigured ? "var(--adm-ok-border)" : "var(--adm-accent-border)"}`,
+                color: mailerConfigured ? "var(--adm-ok-text)" : "var(--adm-warn-text)",
               }}
             >
               {mailerConfigured ? "CONNECTED" : "UNCONFIGURED"}

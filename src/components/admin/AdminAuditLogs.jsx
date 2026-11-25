@@ -23,21 +23,33 @@ export default function AdminAuditLogs({
 }) {
   const getEventBadgeStyle = (eventType = "") => {
     const ev = eventType.toUpperCase();
-    if (ev.includes("WEBAUTHN") || ev.includes("PASSKEY")) return { bg: "rgba(34, 197, 94, 0.12)", color: "#4ade80", border: "rgba(34, 197, 94, 0.3)" };
-    if (ev.includes("DELETE") || ev.includes("REVOKE") || ev.includes("BLOCKED")) return { bg: "rgba(239, 68, 68, 0.14)", color: "#f87171", border: "rgba(239, 68, 68, 0.35)" };
-    if (ev.includes("CREATE") || ev.includes("SUCCESS") || ev.includes("ACTIVATE")) return { bg: "rgba(34, 197, 94, 0.12)", color: "#4ade80", border: "rgba(34, 197, 94, 0.3)" };
-    if (ev.includes("ROLE") || ev.includes("PERMISSION")) return { bg: "rgba(247, 215, 148, 0.14)", color: "#F7D794", border: "rgba(247, 215, 148, 0.35)" };
-    return { bg: "#141414", color: "#d4d4d8", border: "#262626" };
+    if (ev.includes("WEBAUTHN") || ev.includes("PASSKEY")) {
+      return { bg: "var(--adm-ok-bg)", color: "var(--adm-ok-text)", border: "var(--adm-ok-border)" };
+    }
+    if (ev.includes("DELETE") || ev.includes("REVOKE") || ev.includes("BLOCKED")) {
+      return { bg: "var(--adm-danger-bg)", color: "var(--adm-danger-text)", border: "var(--adm-danger-border)" };
+    }
+    if (ev.includes("CREATE") || ev.includes("SUCCESS") || ev.includes("ACTIVATE")) {
+      return { bg: "var(--adm-ok-bg)", color: "var(--adm-ok-text)", border: "var(--adm-ok-border)" };
+    }
+    if (ev.includes("ROLE") || ev.includes("PERMISSION")) {
+      return { bg: "var(--adm-accent-soft)", color: "var(--adm-link)", border: "var(--adm-accent-border)" };
+    }
+    return {
+      bg: "var(--adm-badge-neutral-bg)",
+      color: "var(--adm-badge-neutral-text)",
+      border: "var(--adm-badge-neutral-border)",
+    };
   };
 
   return (
     <div className="admin-page-container" style={{ display: "grid", gap: "18px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "14px" }}>
         <div>
-          <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#ffffff", margin: 0 }}>
+          <h1 style={{ fontSize: "22px", fontWeight: 700, color: "var(--adm-text)", margin: 0 }}>
             Security &amp; audit logs
           </h1>
-          <p style={{ margin: "4px 0 0", color: "#a1a1aa", fontSize: "13px" }}>
+          <p style={{ margin: "4px 0 0", color: "var(--adm-text-2)", fontSize: "13px" }}>
             Administrative provenance ledger tracking user lifecycle, role modifications, and security exceptions.
           </p>
         </div>
@@ -51,22 +63,22 @@ export default function AdminAuditLogs({
       <div className="card" style={{ borderRadius: "10px", padding: "14px 16px", display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", gap: "10px", flex: 1, minWidth: "260px", flexWrap: "wrap" }}>
           <div style={{ position: "relative", flex: 1, minWidth: "200px" }}>
-            <Search size={15} color="#71717a" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }} />
+            <Search size={15} color="var(--adm-muted)" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }} />
             <input
               type="text"
               placeholder="Search actor, target user, or event..."
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
-              style={{ width: "100%", height: "36px", paddingLeft: "36px", paddingRight: "12px", borderRadius: "8px", border: "1px solid #262626", background: "#000000", fontSize: "13px", color: "#ffffff" }}
+              style={{ width: "100%", height: "36px", paddingLeft: "36px", paddingRight: "12px", borderRadius: "8px", border: "1px solid var(--adm-border-strong)", background: "var(--adm-input)", fontSize: "13px", color: "var(--adm-text)" }}
             />
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <Filter size={14} color="#71717a" />
+            <Filter size={14} color="var(--adm-muted)" />
             <select
               value={eventFilter}
               onChange={(e) => onEventFilterChange(e.target.value)}
-              style={{ height: "36px", padding: "0 10px", borderRadius: "8px", border: "1px solid #262626", fontSize: "12.5px", backgroundColor: "#000000", color: "#e4e4e7", cursor: "pointer" }}
+              style={{ height: "36px", padding: "0 10px", borderRadius: "8px", border: "1px solid var(--adm-border-strong)", fontSize: "12.5px", backgroundColor: "var(--adm-input)", color: "var(--adm-text)", cursor: "pointer" }}
             >
               <option value="all">All events</option>
               <option value="USER">User lifecycle</option>
@@ -79,8 +91,8 @@ export default function AdminAuditLogs({
           </div>
         </div>
 
-        <div style={{ fontSize: "12px", color: "#a1a1aa" }}>
-          Showing <strong style={{ color: "#ffffff" }}>{logs.length}</strong> of <strong style={{ color: "#ffffff" }}>{total}</strong> records
+        <div style={{ fontSize: "12px", color: "var(--adm-text-2)" }}>
+          Showing <strong style={{ color: "var(--adm-text)" }}>{logs.length}</strong> of <strong style={{ color: "var(--adm-text)" }}>{total}</strong> records
         </div>
       </div>
 
@@ -88,7 +100,7 @@ export default function AdminAuditLogs({
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12.5px", textAlign: "left" }}>
             <thead>
-              <tr style={{ background: "#111111", borderBottom: "1px solid #1f1f1f", color: "#71717a", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              <tr style={{ background: "var(--adm-table-head-bg)", borderBottom: "1px solid var(--adm-border)", color: "var(--adm-muted)", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
                 <th style={{ padding: "11px 14px", fontWeight: 600 }}>ID</th>
                 <th style={{ padding: "11px 14px", fontWeight: 600 }}>Event</th>
                 <th style={{ padding: "11px 14px", fontWeight: 600 }}>Performed by</th>
@@ -101,11 +113,11 @@ export default function AdminAuditLogs({
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "36px 16px", color: "#71717a" }}>Loading audit logs...</td></tr>
+                <tr><td colSpan={8} style={{ textAlign: "center", padding: "36px 16px", color: "var(--adm-muted)" }}>Loading audit logs...</td></tr>
               ) : logs.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: "center", padding: "44px 16px", color: "#71717a" }}>
-                    <FileText size={30} style={{ margin: "0 auto 8px", color: "#52525b" }} />
+                  <td colSpan={8} style={{ textAlign: "center", padding: "44px 16px", color: "var(--adm-muted)" }}>
+                    <FileText size={30} style={{ margin: "0 auto 8px", color: "var(--adm-muted)" }} />
                     <p style={{ margin: 0 }}>No audit logs found.</p>
                   </td>
                 </tr>
@@ -113,23 +125,23 @@ export default function AdminAuditLogs({
                 logs.map((log) => {
                   const badge = getEventBadgeStyle(log.event_type);
                   return (
-                    <tr key={log.id} style={{ borderBottom: "1px solid #141414" }}>
-                      <td style={{ padding: "11px 14px", fontFamily: "monospace", color: "#71717a", fontWeight: 600 }}>#{log.id}</td>
+                    <tr key={log.id} style={{ borderBottom: "1px solid var(--adm-border-soft)" }}>
+                      <td style={{ padding: "11px 14px", fontFamily: "monospace", color: "var(--adm-muted)", fontWeight: 600 }}>#{log.id}</td>
                       <td style={{ padding: "11px 14px" }}>
                         <span style={{ display: "inline-block", padding: "2px 7px", borderRadius: "5px", fontSize: "11px", fontWeight: 700, fontFamily: "monospace", background: badge.bg, color: badge.color, border: `1px solid ${badge.border}` }}>
                           {log.event_type}
                         </span>
                       </td>
-                      <td style={{ padding: "11px 14px", fontWeight: 600, color: "#ffffff" }}>{log.actor_username || "System"}</td>
-                      <td style={{ padding: "11px 14px", color: "#d4d4d8" }}>{log.target_username || (log.target_uid ? `UID #${log.target_uid}` : "—")}</td>
-                      <td style={{ padding: "11px 14px", fontFamily: "monospace", color: "#a1a1aa", fontSize: "12px" }}>{log.ip_address}</td>
+                      <td style={{ padding: "11px 14px", fontWeight: 600, color: "var(--adm-text)" }}>{log.actor_username || "System"}</td>
+                      <td style={{ padding: "11px 14px", color: "var(--adm-body)" }}>{log.target_username || (log.target_uid ? `UID #${log.target_uid}` : "—")}</td>
+                      <td style={{ padding: "11px 14px", fontFamily: "monospace", color: "var(--adm-text-2)", fontSize: "12px" }}>{log.ip_address}</td>
                       <td style={{ padding: "11px 14px" }}>
-                        <span style={{ padding: "2px 7px", borderRadius: "5px", fontSize: "11px", fontWeight: 600, background: log.status === "Success" ? "rgba(34, 197, 94, 0.14)" : "rgba(239, 68, 68, 0.14)", color: log.status === "Success" ? "#4ade80" : "#f87171" }}>
+                        <span style={{ padding: "2px 7px", borderRadius: "5px", fontSize: "11px", fontWeight: 600, background: log.status === "Success" ? "var(--adm-ok-bg)" : "var(--adm-danger-bg)", color: log.status === "Success" ? "var(--adm-ok-text)" : "var(--adm-danger-text)" }}>
                           {log.status}
                         </span>
                       </td>
-                      <td style={{ padding: "11px 14px", color: "#a1a1aa", fontSize: "12px", whiteSpace: "nowrap" }}>{log.created_at}</td>
-                      <td style={{ padding: "11px 14px", color: "#a1a1aa", fontSize: "12px", maxWidth: "240px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={log.details}>
+                      <td style={{ padding: "11px 14px", color: "var(--adm-text-2)", fontSize: "12px", whiteSpace: "nowrap" }}>{log.created_at}</td>
+                      <td style={{ padding: "11px 14px", color: "var(--adm-text-2)", fontSize: "12px", maxWidth: "240px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={log.details}>
                         {log.details || "—"}
                       </td>
                     </tr>
@@ -140,9 +152,9 @@ export default function AdminAuditLogs({
           </table>
         </div>
 
-        <div style={{ padding: "12px 18px", borderTop: "1px solid #171717", background: "#050505", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ fontSize: "12px", color: "#a1a1aa" }}>
-            Page <strong style={{ color: "#ffffff" }}>{page}</strong> of <strong style={{ color: "#ffffff" }}>{totalPages || 1}</strong>
+        <div style={{ padding: "12px 18px", borderTop: "1px solid var(--adm-border-soft)", background: "var(--adm-table-foot-bg)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontSize: "12px", color: "var(--adm-text-2)" }}>
+            Page <strong style={{ color: "var(--adm-text)" }}>{page}</strong> of <strong style={{ color: "var(--adm-text)" }}>{totalPages || 1}</strong>
           </div>
           <div style={{ display: "flex", gap: "6px" }}>
             <button onClick={() => onPageChange(page - 1)} disabled={page <= 1} className="btn btn--ghost" style={{ height: "30px", padding: "0 10px", fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "4px", cursor: "pointer" }}>

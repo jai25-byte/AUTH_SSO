@@ -44,8 +44,8 @@ export default function AdminSecurityActivity({
           gap: "4px",
           padding: "4px",
           borderRadius: "10px",
-          background: "#0a0a0a",
-          border: "1px solid #1f1f1f",
+          background: "var(--adm-surface)",
+          border: "1px solid var(--adm-border)",
           justifySelf: "start",
         }}
       >
@@ -63,8 +63,8 @@ export default function AdminSecurityActivity({
             display: "inline-flex",
             alignItems: "center",
             gap: "6px",
-            background: subTab === "logins" ? "rgba(247, 215, 148, 0.14)" : "transparent",
-            color: subTab === "logins" ? "#F7D794" : "#a1a1aa",
+            background: subTab === "logins" ? "var(--adm-accent-soft)" : "transparent",
+            color: subTab === "logins" ? "var(--adm-link)" : "var(--adm-text-2)",
           }}
         >
           <Activity size={14} />
@@ -85,8 +85,8 @@ export default function AdminSecurityActivity({
             display: "inline-flex",
             alignItems: "center",
             gap: "6px",
-            background: subTab === "audit" ? "rgba(247, 215, 148, 0.14)" : "transparent",
-            color: subTab === "audit" ? "#F7D794" : "#a1a1aa",
+            background: subTab === "audit" ? "var(--adm-accent-soft)" : "transparent",
+            color: subTab === "audit" ? "var(--adm-link)" : "var(--adm-text-2)",
           }}
         >
           <FileText size={14} />
