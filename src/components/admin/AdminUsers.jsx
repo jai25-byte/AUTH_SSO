@@ -197,9 +197,9 @@ export default function AdminUsers({
                               width: "30px",
                               height: "30px",
                               borderRadius: "50%",
-                              background: isAdmin ? "rgba(247, 215, 148, 0.16)" : "#141414",
-                              border: `1px solid ${isAdmin ? "var(--adm-accent-border)" : "var(--adm-border-strong)"}`,
-                              color: isAdmin ? "var(--adm-link)" : "var(--adm-text)",
+                              background: isAdmin ? "var(--adm-accent-soft)" : "var(--adm-badge-neutral-bg)",
+                              border: `1px solid ${isAdmin ? "var(--adm-accent-border)" : "var(--adm-badge-neutral-border)"}`,
+                              color: isAdmin ? "var(--adm-link)" : "var(--adm-badge-neutral-text)",
                               display: "grid",
                               placeItems: "center",
                               fontWeight: 700,
@@ -233,9 +233,9 @@ export default function AdminUsers({
                             borderRadius: "6px",
                             fontSize: "11.5px",
                             fontWeight: 600,
-                            background: isAdmin ? "rgba(247, 215, 148, 0.14)" : "#141414",
-                            border: `1px solid ${isAdmin ? "var(--adm-accent-border)" : "var(--adm-border-strong)"}`,
-                            color: isAdmin ? "var(--adm-link)" : "var(--adm-text)",
+                            background: isAdmin ? "var(--adm-accent-soft)" : "var(--adm-badge-neutral-bg)",
+                            border: `1px solid ${isAdmin ? "var(--adm-accent-border)" : "var(--adm-badge-neutral-border)"}`,
+                            color: isAdmin ? "var(--adm-link)" : "var(--adm-badge-neutral-text)",
                           }}
                         >
                           {isAdmin ? <Shield size={11} /> : <User size={11} />}
@@ -252,8 +252,8 @@ export default function AdminUsers({
                             borderRadius: "6px",
                             fontSize: "11.5px",
                             fontWeight: 600,
-                            background: isActive ? "rgba(34, 197, 94, 0.14)" : "rgba(239, 68, 68, 0.14)",
-                            border: `1px solid ${isActive ? "rgba(34, 197, 94, 0.3)" : "rgba(239, 68, 68, 0.35)"}`,
+                            background: isActive ? "var(--adm-ok-bg)" : "var(--adm-danger-soft)",
+                            border: `1px solid ${isActive ? "var(--adm-ok-border)" : "var(--adm-danger-border)"}`,
                             color: isActive ? "var(--adm-ok-text)" : "var(--adm-danger-text)",
                           }}
                         >
@@ -284,7 +284,7 @@ export default function AdminUsers({
                             title={isActive ? "Deactivate Account" : "Activate Account"}
                             style={{
                               background: "var(--adm-input)",
-                              border: `1px solid ${isActive ? "rgba(247, 215, 148, 0.35)" : "rgba(34, 197, 94, 0.35)"}`,
+                              border: `1px solid ${isActive ? "var(--adm-accent-border)" : "var(--adm-ok-border)"}`,
                               borderRadius: "6px",
                               padding: "5px 7px",
                               cursor: isSelf ? "not-allowed" : "pointer",
@@ -300,7 +300,7 @@ export default function AdminUsers({
                             title={isSelf ? "Cannot delete own account" : "Delete User"}
                             style={{
                               background: "var(--adm-input)",
-                              border: "1px solid rgba(239, 68, 68, 0.4)",
+                              border: "1px solid var(--adm-danger-border)",
                               borderRadius: "6px",
                               padding: "5px 7px",
                               cursor: isSelf ? "not-allowed" : "pointer",

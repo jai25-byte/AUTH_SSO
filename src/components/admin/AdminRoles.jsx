@@ -185,7 +185,7 @@ export default function AdminRoles({
               </select>
             </div>
 
-            <div style={{ padding: "9px 12px", background: "rgba(34, 197, 94, 0.08)", border: "1px solid rgba(34, 197, 94, 0.25)", borderRadius: "8px", fontSize: "12px", color: "var(--adm-ok-text)", display: "flex", gap: "8px", alignItems: "flex-start" }}>
+            <div style={{ padding: "9px 12px", background: "var(--adm-ok-bg)", border: "1px solid var(--adm-ok-border)", borderRadius: "8px", fontSize: "12px", color: "var(--adm-ok-text)", display: "flex", gap: "8px", alignItems: "flex-start" }}>
               <Info size={14} style={{ flexShrink: 0, marginTop: "2px" }} />
               <span>The backend prevents demoting the last remaining administrator account.</span>
             </div>

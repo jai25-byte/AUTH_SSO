@@ -197,9 +197,9 @@ export default function AdminSessions({
                             borderRadius: "6px",
                             fontSize: "11.5px",
                             fontWeight: 600,
-                            background: isActive ? "rgba(34, 197, 94, 0.14)" : "#141414",
-                            border: `1px solid ${isActive ? "var(--adm-ok-border)" : "var(--adm-border-strong)"}`,
-                            color: isActive ? "#4ade80" : "#a1a1aa",
+                            background: isActive ? "var(--adm-ok-bg)" : "var(--adm-badge-neutral-bg)",
+                            border: `1px solid ${isActive ? "var(--adm-ok-border)" : "var(--adm-badge-neutral-border)"}`,
+                            color: isActive ? "var(--adm-ok-text)" : "var(--adm-badge-neutral-text)",
                           }}
                         >
                           {isActive ? <CheckCircle2 size={11} /> : <XCircle size={11} />}
