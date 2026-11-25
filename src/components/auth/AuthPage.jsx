@@ -663,7 +663,7 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
                 </div>
 
                 {/* Account type selector */}
-                <div style={{ marginBottom: "4px" }}>
+                <div style={{ marginBottom: "12px" }}>
                   <label className="login-lbl" style={{ display: "block", marginBottom: "8px" }}>
                     Account type
                   </label>
@@ -671,32 +671,35 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
                     {[
                       { value: "user", label: "Standard User", desc: "Personal access & apps" },
                       { value: "admin", label: "Administrator", desc: "Full system management" },
-                    ].map(({ value, label, desc }) => (
-                      <button
-                        key={value}
-                        type="button"
-                        onClick={() => setRegRole(value)}
-                        style={{
-                          padding: "10px 12px",
-                          borderRadius: "9px",
-                          border: `2px solid ${regRole === value ? "#F7D794" : "rgba(255,255,255,0.08)"}`,
-                          background: regRole === value ? "rgba(247,215,148,0.10)" : "rgba(255,255,255,0.03)",
-                          cursor: "pointer",
-                          textAlign: "left",
-                          transition: "all 0.15s",
-                        }}
-                      >
-                        <div style={{ fontSize: "13px", fontWeight: 600, color: regRole === value ? "#F7D794" : "#e4e4e7", marginBottom: "2px" }}>
-                          {label}
-                        </div>
-                        <div style={{ fontSize: "11px", color: "#71717a" }}>{desc}</div>
-                      </button>
-                    ))}
+                    ].map(({ value, label, desc }) => {
+                      const isSel = regRole === value;
+                      return (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setRegRole(value)}
+                          style={{
+                            padding: "10px 12px",
+                            borderRadius: "9px",
+                            border: `2px solid ${isSel ? "#2563eb" : "#e2e8f0"}`,
+                            background: isSel ? "rgba(37, 99, 235, 0.08)" : "#f8fafc",
+                            cursor: "pointer",
+                            textAlign: "left",
+                            transition: "all 0.15s ease",
+                          }}
+                        >
+                          <div style={{ fontSize: "13px", fontWeight: 600, color: isSel ? "#2563eb" : "#0f172a", marginBottom: "2px" }}>
+                            {label}
+                          </div>
+                          <div style={{ fontSize: "11px", color: isSel ? "#1d4ed8" : "#64748b" }}>{desc}</div>
+                        </button>
+                      );
+                    })}
                   </div>
                   {regRole === "admin" && (
-                    <p style={{ margin: "8px 0 0", fontSize: "11.5px", color: "#a1a1aa", lineHeight: 1.4 }}>
-                      ⚠️ Admin registration requires approval from an existing administrator.
-                    </p>
+                    <div style={{ margin: "8px 0 0", padding: "8px 10px", background: "#fffbeb", border: "1px solid #fef3c7", borderRadius: "6px", fontSize: "11.5px", color: "#92400e", lineHeight: 1.4 }}>
+                      ⚠️ Administrator accounts require validation and privilege approval from an existing admin.
+                    </div>
                   )}
                 </div>
 

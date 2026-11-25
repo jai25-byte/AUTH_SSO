@@ -103,7 +103,7 @@ export default function AdminApplications({
         </div>
       ) : filteredApps.length === 0 ? (
         <div className="card" style={{ padding: "48px 24px", borderRadius: "12px", textAlign: "center", color: "var(--adm-muted)" }}>
-          <AppWindow size={32} color="#52525b" style={{ margin: "0 auto 10px" }} />
+          <AppWindow size={32} color="var(--adm-muted-2)" style={{ margin: "0 auto 10px" }} />
           <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--adm-text)" }}>
             No connected applications found
           </div>
@@ -273,7 +273,7 @@ export default function AdminApplications({
                   setConfirmApp(null);
                   onDisconnectApp(target);
                 }}
-                style={{ flex: 1, height: "36px", background: "#dc2626", borderColor: "#dc2626", color: "var(--adm-text)", cursor: "pointer" }}
+                style={{ flex: 1, height: "36px", background: "#dc2626", borderColor: "#dc2626", color: "#ffffff", cursor: "pointer" }}
               >
                 Disconnect
               </button>

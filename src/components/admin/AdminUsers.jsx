@@ -416,7 +416,7 @@ export default function AdminUsers({
                   setDeleteConfirmUser(null);
                   onDeleteUser(uid);
                 }}
-                style={{ flex: 1, height: "38px", background: "#dc2626", borderColor: "#dc2626", color: "var(--adm-text)", cursor: "pointer" }}
+                style={{ flex: 1, height: "38px", background: "#dc2626", borderColor: "#dc2626", color: "#ffffff", cursor: "pointer" }}
               >
                 Yes, delete
               </button>

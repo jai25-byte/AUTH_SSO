@@ -131,7 +131,7 @@ export default function AdminRoles({
                     gap: "4px",
                   }}
                 >
-                  <Check size={10} color="#4ade80" />
+                  <Check size={10} color="var(--adm-ok-text)" />
                   {perm}
                 </span>
               ))}
@@ -219,7 +219,7 @@ export default function AdminRoles({
                     <td style={{ padding: "8px 10px", fontFamily: "monospace", color: "var(--adm-text)", fontWeight: 600 }}>{p.key}</td>
                     <td style={{ padding: "8px 10px", color: "var(--adm-text-2)" }}>{p.category}</td>
                     <td style={{ padding: "8px 10px", textAlign: "center", color: "var(--adm-ok-text)", fontWeight: 700 }}>✓</td>
-                    <td style={{ padding: "8px 10px", textAlign: "center", color: p.key === "users.view" ? "#4ade80" : "#52525b", fontWeight: 700 }}>
+                    <td style={{ padding: "8px 10px", textAlign: "center", color: p.key === "users.view" ? "var(--adm-ok-text)" : "var(--adm-muted-2)", fontWeight: 700 }}>
                       {p.key === "users.view" ? "✓" : "—"}
                     </td>
                   </tr>
