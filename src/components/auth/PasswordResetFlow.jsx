@@ -118,8 +118,28 @@ export default function PasswordResetFlow({
   // OTP inputs
   const handleOtpChange = (index, val) => {
     const clean = val.replace(/[^0-9]/g, "");
+    if (clean.length > 1) {
+      // Handle replacement when a single box already holds 1 digit vs multi-digit autofill.
+      if (clean.length === 2 && otpValues[index]) {
+        const nextDigit = clean.startsWith(otpValues[index]) ? clean[1] : clean[0];
+        const updated = [...otpValues];
+        updated[index] = nextDigit;
+        setOtpValues(updated);
+        if (fieldError) setFieldError("");
+        if (index < 5) otpInputsRef.current[index + 1]?.focus();
+        return;
+      }
+      const updated = [...otpValues];
+      for (let i = 0; i < clean.length && index + i < 6; i++) {
+        updated[index + i] = clean[i];
+      }
+      setOtpValues(updated);
+      if (fieldError) setFieldError("");
+      otpInputsRef.current[Math.min(index + clean.length, 5)]?.focus();
+      return;
+    }
     const updated = [...otpValues];
-    updated[index] = clean.slice(-1);
+    updated[index] = clean;
     setOtpValues(updated);
     if (fieldError) setFieldError("");
     if (clean && index < 5) {
@@ -191,8 +211,8 @@ export default function PasswordResetFlow({
       const msg = err.message || "Invalid or expired verification code.";
       setFieldError(msg);
       setBanner({ text: msg, type: "error" });
-      setOtpValues(["", "", "", "", "", ""]);
       otpInputsRef.current[0]?.focus();
+      otpInputsRef.current[0]?.select?.();
     } finally {
       setIsLoading(false);
     }
@@ -209,7 +229,9 @@ export default function PasswordResetFlow({
       setResendCooldown(data?.cooldown || 60);
       setOtpValues(["", "", "", "", "", ""]);
       setBanner({
-        text: data?.message || "A new verification code has been sent to your email.",
+        text: data?.message
+          ? `${data.message} Use the newest email (earlier codes are now invalid).`
+          : "A new verification code has been sent. Use the newest email (earlier codes are now invalid).",
         type: "info",
       });
       onNotify?.("New verification code sent.", "info");
@@ -366,11 +388,13 @@ export default function PasswordResetFlow({
                   key={idx}
                   ref={(el) => (otpInputsRef.current[idx] = el)}
                   type="text"
-                  maxLength={1}
+                  maxLength={idx === 0 ? 6 : 1}
                   inputMode="numeric"
+                  autoComplete={idx === 0 ? "one-time-code" : "off"}
                   aria-label={`Verification code digit ${idx + 1}`}
                   className="login-otp-box"
                   value={val}
+                  onFocus={(e) => e.target.select()}
                   onChange={(e) => handleOtpChange(idx, e.target.value)}
                   onKeyDown={(e) => handleOtpKeyDown(idx, e)}
                 />
