@@ -70,13 +70,17 @@ await buildCss();
 // removed; this service is the only authentication authority.
 async function ensureBackend() {
   const healthUrl = `${BACKEND_BASE}/api/health`;
-  try {
-    const res = await fetch(healthUrl);
-    if (res.ok) {
-      console.log(`🛡️  Python backend active at ${BACKEND_BASE}`);
-      return;
-    }
-  } catch {}
+  // Give an already-starting backend a moment before spawning a duplicate.
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    try {
+      const res = await fetch(healthUrl);
+      if (res.ok) {
+        console.log(`🛡️  Python backend active at ${BACKEND_BASE}`);
+        return;
+      }
+    } catch { /* not ready yet */ }
+    await new Promise((r) => setTimeout(r, 250));
+  }
 
   console.log(`🚀 Starting Python backend in ${PYTHON_BACKEND_DIR} ...`);
   let proc;

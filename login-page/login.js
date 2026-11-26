@@ -22,7 +22,7 @@
 
     // Optional: returns { authenticated: true, redirect: "/dashboard" } for a
     // valid session. Set to null if you don't have one.
-    sessionUrl: "/api/session",
+    sessionUrl: null,
 
     // Used only if the server says OTP is still required and gives no URL.
     otpFallbackUrl: "/verify-otp",

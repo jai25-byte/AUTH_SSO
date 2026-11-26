@@ -43,9 +43,8 @@ import {
   getActiveSessions,
   revokeSessionById,
   revokeOtherSessions,
-  getConnectedApps,
-  disconnectConnectedApp,
-  reconnectConnectedApp,
+  getOidcSessions,
+  revokeOidcAppSession,
   changePassword,
   validateResetPasswordPolicy,
 } from "../../services/api.js";
@@ -63,7 +62,7 @@ const USER_DASHBOARD_TABS = new Set([
 
 const USER_TAB_TITLES = {
   overview: "Overview · VaultAuth SSO",
-  apps: "Connected apps · VaultAuth SSO",
+  apps: "SSO sessions · VaultAuth SSO",
   activity: "Login activity · VaultAuth SSO",
   devices: "Devices & sessions · VaultAuth SSO",
   security: "Security settings · VaultAuth SSO",
@@ -194,7 +193,7 @@ export default function UserDashboard({ onNavigate, onNotify }) {
       getDashboardOverview().catch(() => null),
       getLoginActivity(25).catch(() => []),
       getActiveSessions().catch(() => []),
-      getConnectedApps({ includeInactive: true }).catch(() => []),
+      getOidcSessions().catch(() => []),
     ]);
 
     if (profileRes) {
@@ -288,11 +287,11 @@ export default function UserDashboard({ onNavigate, onNotify }) {
     if (!disconnectModalApp) return;
     const targetApp = disconnectModalApp;
     try {
-      await disconnectConnectedApp(targetApp.id);
+      await revokeOidcAppSession(targetApp.id);
       setApps((prev) =>
         prev.map((a) => (a.id === targetApp.id ? { ...a, isActive: false, status: "Disconnected" } : a))
       );
-      onNotify?.(`Disconnected ${targetApp.name} from your account.`, "success");
+      onNotify?.(`Revoked the SSO session for ${targetApp.name}.`, "success");
       getDashboardOverview()
         .then((ov) =>
           setOverviewStats((prev) => ({
@@ -305,16 +304,6 @@ export default function UserDashboard({ onNavigate, onNotify }) {
       onNotify?.(err.message || `Failed to disconnect ${targetApp.name}.`, "error");
     } finally {
       setDisconnectModalApp(null);
-    }
-  };
-
-  const handleReconnectApp = async (targetApp) => {
-    try {
-      await reconnectConnectedApp(targetApp.id);
-      onNotify?.(`Reconnected ${targetApp.name}.`, "success");
-      await loadDashboardData();
-    } catch (err) {
-      onNotify?.(err.message || `Failed to reconnect ${targetApp.name}.`, "error");
     }
   };
 
@@ -491,7 +480,7 @@ export default function UserDashboard({ onNavigate, onNotify }) {
               <Grid size={18} />
               {!sidebarCollapsed && (
                 <div style={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center" }}>
-                  <span>Connected apps</span>
+                  <span>SSO sessions</span>
                   <span className="nav-badge-pill">{apps.filter((a) => a.isActive).length}</span>
                 </div>
               )}
@@ -714,7 +703,7 @@ export default function UserDashboard({ onNavigate, onNotify }) {
 
                 <div className="stat-card" onClick={() => setActiveTab("apps")}>
                   <div className="stat-card-header">
-                    <span className="stat-card-label">Connected apps</span>
+                    <span className="stat-card-label">SSO sessions</span>
                     <div className="stat-icon-wrap stat-icon-accent">
                       <Grid size={18} />
                     </div>
@@ -839,7 +828,7 @@ export default function UserDashboard({ onNavigate, onNotify }) {
                         onClick={() => setActiveTab("apps")}
                       >
                         <Grid size={16} />
-                        <span>Review connected applications</span>
+                        <span>Review SSO sessions</span>
                         <ArrowRight size={14} style={{ marginLeft: "auto" }} />
                       </button>
                     </div>
@@ -856,10 +845,10 @@ export default function UserDashboard({ onNavigate, onNotify }) {
             <div className="page-view-wrapper animate-fade-in">
               <div className="page-title-row">
                 <div>
-                  <h2>Connected Applications</h2>
-                  <p>Manage third-party enterprise services authenticated with your VaultAuthSSO ID.</p>
+                  <h2>SSO Sessions</h2>
+                  <p>Applications currently signed in with your VaultAuthSSO identity.</p>
                 </div>
-                <span className="count-pill">{apps.length} connected</span>
+                <span className="count-pill">{apps.length} sessions</span>
               </div>
 
               {/* Filters & Search */}
@@ -868,7 +857,7 @@ export default function UserDashboard({ onNavigate, onNotify }) {
                   <Search size={16} color="var(--ud-muted)" />
                   <input
                     type="text"
-                    placeholder="Search connected apps..."
+                    placeholder="Search SSO sessions..."
                     value={appsSearch}
                     onChange={(e) => setAppsSearch(e.target.value)}
                     className="topbar-search-input"
@@ -894,8 +883,8 @@ export default function UserDashboard({ onNavigate, onNotify }) {
                 {filteredApps.length === 0 ? (
                   <div className="empty-state-card">
                     <Grid size={40} color="#94a3b8" />
-                    <h4>No applications match your filter</h4>
-                    <p>Try clearing your search query or selecting another category.</p>
+                    <h4>No SSO sessions found</h4>
+                    <p>Sign in to an OIDC application to see its session here.</p>
                   </div>
                 ) : (
                   filteredApps.map((app) => (
@@ -932,21 +921,13 @@ export default function UserDashboard({ onNavigate, onNotify }) {
                           >
                             Manage Access
                           </button>
-                          {app.isActive ? (
+                          {app.isActive && (
                             <button
                               type="button"
                               className="btn-danger-sm"
                               onClick={() => setDisconnectModalApp(app)}
                             >
-                              Disconnect
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              className="btn-outline-sm"
-                              onClick={() => handleReconnectApp(app)}
-                            >
-                              Reconnect
+                              Revoke
                             </button>
                           )}
                         </div>

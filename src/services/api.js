@@ -495,20 +495,35 @@ export async function revokeOtherSessions() {
   return await request("/api/sessions/revoke-others", { method: "POST" });
 }
 
-export async function getConnectedApps({ includeInactive = false } = {}) {
-  const qs = includeInactive ? "?include_inactive=true" : "";
-  return await request(`/api/connected-apps${qs}`, { method: "GET" });
+/**
+ * OIDC application sessions are the SSO equivalent of "connected apps".
+ * GET /api/oidc/sessions -> list of active/revoked client sessions.
+ */
+export async function getOidcSessions() {
+  const rows = await request("/api/oidc/sessions", { method: "GET" });
+  if (!Array.isArray(rows)) return [];
+  return rows.map((s) => ({
+    id: s.client_session_id,
+    client_session_id: s.client_session_id,
+    app_key: s.app_key,
+    app_name: s.app_name || s.app_key || "SSO Application",
+    app_desc: `${s.browser || "Browser"} on ${s.device_name || s.device_type || "device"}`,
+    logo_char: (s.app_name || s.app_key || "S").slice(0, 1).toUpperCase(),
+    logo_bg: "#2563eb",
+    permissions: ["SSO access", "Profile"],
+    connected_date: s.created_at,
+    connectedDate: s.created_at,
+    last_used_at: s.last_used_at || s.created_at,
+    login_count: 1,
+    is_active: s.status === "ACTIVE",
+    status: s.status,
+  }));
 }
 
-export async function disconnectConnectedApp(appId) {
-  return await request(`/api/connected-apps/${encodeURIComponent(appId)}`, {
+/** Revoke one OIDC app session: DELETE /api/oidc/sessions/<id> */
+export async function revokeOidcAppSession(clientSessionId) {
+  return await request(`/api/oidc/sessions/${encodeURIComponent(clientSessionId)}`, {
     method: "DELETE",
-  });
-}
-
-export async function reconnectConnectedApp(appId) {
-  return await request(`/api/connected-apps/${encodeURIComponent(appId)}/reconnect`, {
-    method: "POST",
   });
 }
 

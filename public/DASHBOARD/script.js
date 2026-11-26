@@ -499,17 +499,17 @@
 
   // ===== 8. Connected Apps Controller (Matching Reference 1) =====
   async function loadConnectedApps() {
-    const res = await apiRequest("/api/connected-apps");
+    const res = await apiRequest("/api/oidc/sessions");
     if (res.ok && Array.isArray(res.data) && res.data.length > 0) {
-      connectedApps = res.data.map((app) => ({
-        id: app.id,
-        name: app.app_name,
-        desc: app.app_desc,
-        logo: app.logo_char,
-        bg: app.logo_bg,
-        permissions: Array.isArray(app.permissions) ? app.permissions : ["Read access"],
-        status: app.status || "Active",
-        connectedDate: app.connected_date || "Jan 10, 2025",
+      connectedApps = res.data.map((s) => ({
+        id: s.client_session_id,
+        name: s.app_name || s.app_key || "SSO Application",
+        desc: (s.browser || "Browser") + " · " + (s.device_name || s.device_type || "device"),
+        logo: (s.app_name || s.app_key || "S").slice(0, 1).toUpperCase(),
+        bg: "#2563eb",
+        permissions: ["SSO access", "Profile"],
+        status: s.status === "ACTIVE" ? "Active" : "Revoked",
+        connectedDate: s.created_at || "Recently",
       }));
     }
     renderConnectedApps();
@@ -641,7 +641,7 @@
       this.textContent = "Revoking...";
 
       // Attempt backend DELETE call
-      const res = await apiRequest(`/api/connected-apps/${appToDisconnect.id}`, { method: "DELETE" });
+      const res = await apiRequest(`/api/oidc/sessions/${encodeURIComponent(appToDisconnect.id)}`, { method: "DELETE" });
 
       this.disabled = false;
       this.textContent = "Yes, disconnect";

@@ -248,15 +248,33 @@ export async function updateAdminSettings(settings) {
   });
 }
 
-// 9. Connected Applications (Live Workspace SSO Apps)
+// 9. Connected Applications -> registered OIDC clients + their sessions
 export async function getAdminConnectedApps() {
   try {
-    const res = await adminRequest("/api/admin/connected-apps", { method: "GET" });
-    if (Array.isArray(res)) {
-      return { apps: res, summary: null };
-    }
+    const res = await adminRequest("/api/admin/oidc/clients", { method: "GET" });
+    const clients = Array.isArray(res?.clients) ? res.clients : [];
     return {
-      apps: Array.isArray(res?.apps) ? res.apps : [],
+      apps: clients.map((c) => ({
+        id: c.app_key,
+        app_key: c.app_key,
+        name: c.app_name || c.app_key,
+        app_name: c.app_name || c.app_key,
+        desc: c.app_desc || "Registered OIDC application",
+        app_desc: c.app_desc || "Registered OIDC application",
+        logo: c.logo_char || (c.app_name || "A").slice(0, 1).toUpperCase(),
+        logo_char: c.logo_char || (c.app_name || "A").slice(0, 1).toUpperCase(),
+        logo_bg: c.logo_bg || "#2563eb",
+        permissions: String(c.scopes || "openid profile email").split(/\s+/),
+        is_active: Boolean(c.is_active),
+        status: c.is_active ? "Active" : "Inactive",
+        connected_users: Array.isArray(c.connected_users) ? c.connected_users : [],
+        active_users_count: c.active_sessions_count || 0,
+        inactive_users_count: c.inactive_sessions_count || 0,
+        total_logins: (c.active_sessions_count || 0) + (c.inactive_sessions_count || 0),
+        connectedDate: c.created_at,
+        connected_date: c.created_at,
+        last_used_at: c.connected_users?.[0]?.last_used_at || c.created_at,
+      })),
       summary: res?.summary || null,
     };
   } catch {
@@ -264,18 +282,15 @@ export async function getAdminConnectedApps() {
   }
 }
 
-export async function toggleAdminApp(appKey, isActive, targetUid = null) {
-  const body = {};
-  if (typeof isActive === "boolean") body.is_active = isActive;
-  if (targetUid !== null && targetUid !== undefined) body.uid = targetUid;
-  return await adminRequest(`/api/admin/connected-apps/${encodeURIComponent(appKey)}/toggle`, {
-    method: "POST",
-    body: JSON.stringify(body),
+export async function toggleAdminApp(appKey, isActive) {
+  return await adminRequest(`/api/admin/oidc/clients/${encodeURIComponent(appKey)}`, {
+    method: "PUT",
+    body: JSON.stringify({ is_active: Boolean(isActive) }),
   });
 }
 
-export async function disconnectAdminApp(appId) {
-  return await adminRequest(`/api/admin/connected-apps/${encodeURIComponent(appId)}`, {
+export async function disconnectAdminApp(appKey) {
+  return await adminRequest(`/api/admin/oidc/clients/${encodeURIComponent(appKey)}`, {
     method: "DELETE",
   });
 }
