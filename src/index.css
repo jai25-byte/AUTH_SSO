@@ -378,11 +378,6 @@ label.login-lbl {
   animation: spin 0.7s linear infinite;
 }
 
-.login-btn .spin.spin-dark {
-  border-color: rgba(15, 23, 42, 0.2);
-  border-top-color: var(--brand);
-}
-
 .login-btn.load {
   pointer-events: none;
   opacity: 0.9;

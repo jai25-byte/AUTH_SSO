@@ -552,35 +552,6 @@
           </div>
         </div>
 
-        <!-- WebAuthn / FIDO2 Passkeys Card -->
-        <div class="card" style="grid-column: 1 / -1;" id="card-webauthn-passkeys">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
-            <div>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <h2 style="font-size: 1.05rem; font-weight: 700; margin: 0;">FIDO2 / WebAuthn Passkeys</h2>
-                <span class="badge badge-success">Biometric &amp; Security Key</span>
-              </div>
-              <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 4px 0 0;">
-                Sign in seamlessly using fingerprint, Face ID, Windows Hello, or physical hardware keys (YubiKey). Fast, cryptographic, and immune to phishing attacks.
-              </p>
-            </div>
-            <button class="btn btn-primary btn-sm" id="btn-register-passkey">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
-                <path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/>
-                <path d="m21 2-9.6 9.6"/>
-                <circle cx="7.5" cy="15.5" r="5.5"/>
-              </svg>
-              Register Passkey
-            </button>
-          </div>
-
-          <!-- Passkeys Container -->
-          <div id="passkeys-list-container">
-            <div style="text-align: center; padding: 24px 16px; color: var(--text-muted); font-size: 0.88rem;">
-              Loading registered passkeys…
-            </div>
-          </div>
-        </div>
       </div>
     </main>
 
@@ -802,8 +773,6 @@
   <!-- Toast Notification Stack -->
   <div class="toast-stack" id="toast-stack"></div>
 
-  <!-- WebAuthn Client Library -->
-  <script src="/DASHBOARD/webauthn.js"></script>
   <!-- Dashboard Controller Script -->
   <script src="/DASHBOARD/script.js"></script>
 </body>

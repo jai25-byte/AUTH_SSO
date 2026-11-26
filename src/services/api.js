@@ -355,15 +355,6 @@ export async function logout() {
   }
 }
 
-export {
-  isWebAuthnSupported,
-  isPlatformAuthenticatorAvailable,
-  registerPasskey,
-  loginWithPasskey,
-  getPasskeyCredentials,
-  deletePasskeyCredential,
-} from "./webauthn.js";
-
 /**
  * Evaluate password complexity rules for password reset & registration
  */

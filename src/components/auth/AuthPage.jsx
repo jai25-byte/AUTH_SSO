@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import { login as apiLogin, register as apiRegister, sendOtp, verifyOtp } from "../../services/api.js";
-import { loginWithPasskey } from "../../services/webauthn.js";
 import PasswordResetFlow from "./PasswordResetFlow.jsx";
 
 export default function AuthPage({ initialTab = "login", onNavigate, onNotify }) {
@@ -8,7 +7,6 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
   // 'credentials' | 'otp' | 'forgot'
   const [authStep, setAuthStep] = useState("credentials");
   const [isLoading, setIsLoading] = useState(false);
-  const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
   const [banner, setBanner] = useState({ text: "", type: "" });
 
   // Form states - Login
@@ -144,7 +142,7 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
   // Handle Login Submit
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    if (isLoading || isPasskeyLoading) return;
+    if (isLoading) return;
     clearBanner();
 
     const ident = loginEmail.trim();
@@ -185,30 +183,6 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
       setBanner({ text: err.message || "Invalid email or password.", type: "error" });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  // Handle Passkey Sign-In (Image 2 secondary button)
-  const handlePasskeySignIn = async () => {
-    if (isLoading || isPasskeyLoading) return;
-    clearBanner();
-    setIsPasskeyLoading(true);
-    try {
-      const data = await loginWithPasskey(loginEmail.trim() || undefined);
-      if (data?.token) {
-        localStorage.setItem("vault_auth_token", data.token);
-        if (data.user) {
-          localStorage.setItem("vault_auth_user", JSON.stringify(data.user));
-        }
-        onNotify?.("Passkey verified! Successfully signed in.", "success");
-        redirectAuthenticated(data.user);
-      }
-    } catch (err) {
-      const msg = err.message || "Passkey authentication canceled or failed.";
-      setBanner({ text: msg, type: "error" });
-      onNotify?.(msg, "error");
-    } finally {
-      setIsPasskeyLoading(false);
     }
   };
 
@@ -533,38 +507,10 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
                 <button
                   className={`login-btn ${isLoading ? "load" : ""}`}
                   type="submit"
-                  disabled={isLoading || isPasskeyLoading}
+                  disabled={isLoading}
                 >
                   <span className="spin" aria-hidden="true" />
                   <span>{isLoading ? "Signing in..." : "Sign in"}</span>
-                </button>
-
-                <button
-                  type="button"
-                  className={`login-btn login-btn-secondary ${isPasskeyLoading ? "load" : ""}`}
-                  onClick={handlePasskeySignIn}
-                  disabled={isLoading || isPasskeyLoading}
-                >
-                  {isPasskeyLoading ? (
-                    <span className="spin spin-dark" aria-hidden="true" />
-                  ) : (
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="17"
-                      height="17"
-                      fill="none"
-                      stroke="#2563eb"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
-                      <circle cx="7.5" cy="15.5" r="4.5" />
-                      <path d="m21 2-9.6 9.6" />
-                      <path d="m15.5 7.5 3 3L22 7l-3-3" />
-                    </svg>
-                  )}
-                  <span>{isPasskeyLoading ? "Verifying passkey..." : "Sign in with Passkey"}</span>
                 </button>
               </form>
 

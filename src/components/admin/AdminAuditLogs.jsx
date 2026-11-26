@@ -28,9 +28,6 @@ export default function AdminAuditLogs({
 
   const getEventBadgeStyle = (eventType = "") => {
     const ev = eventType.toUpperCase();
-    if (ev.includes("WEBAUTHN") || ev.includes("PASSKEY")) {
-      return { bg: "var(--adm-ok-bg)", color: "var(--adm-ok-text)", border: "var(--adm-ok-border)" };
-    }
     if (ev.includes("DELETE") || ev.includes("REVOKE") || ev.includes("BLOCKED") || ev.includes("FAILED") || ev.includes("DISABLED")) {
       return { bg: "var(--adm-danger-bg)", color: "var(--adm-danger-text)", border: "var(--adm-danger-border)" };
     }
@@ -140,7 +137,6 @@ export default function AdminAuditLogs({
               <option value="ROLE">Role &amp; permissions</option>
               <option value="SESSION">Session revocation</option>
               <option value="LOGIN">Authentication</option>
-              <option value="WEBAUTHN">Passkey / WebAuthn</option>
               <option value="SETTINGS">System settings</option>
             </select>
           </div>

@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { getCurrentUserRole } from "../services/adminApi.js";
-import { registerPasskey, isWebAuthnSupported } from "../services/webauthn.js";
 
 export default function AuthenticatedCard({ user, onSignOut, onNotify }) {
   const token = user?.token || localStorage.getItem("vault_auth_token") || "";
   const sessionToken = token ? (token.length > 28 ? token.slice(0, 24) + "…" : token) : "SSO-SEC-" + Math.random().toString(36).substring(2, 8).toUpperCase();
   const [loginTime] = useState(() => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
   const [userRole, setUserRole] = useState(null);
-  const [isRegisteringPasskey, setIsRegisteringPasskey] = useState(false);
-  const [passkeyRegistered, setPasskeyRegistered] = useState(false);
 
   const username = user?.username || user?.identifier || "Authenticated User";
   const email = user?.email;
@@ -44,30 +41,6 @@ export default function AuthenticatedCard({ user, onSignOut, onNotify }) {
     setTimeout(() => {
       window.location.href = `/ADMIN/index.html${tokenParam}`;
     }, 400);
-  };
-
-  const handleRegisterPasskey = async () => {
-    if (isRegisteringPasskey) return;
-    if (!isWebAuthnSupported()) {
-      onNotify?.("WebAuthn is not supported in this browser.", "error");
-      return;
-    }
-
-    setIsRegisteringPasskey(true);
-    try {
-      const defaultDevice = navigator.userAgent.includes("Mac")
-        ? "MacBook Passkey"
-        : navigator.userAgent.includes("Windows")
-        ? "Windows Hello"
-        : "Passkey Authenticator";
-      const res = await registerPasskey(defaultDevice);
-      setPasskeyRegistered(true);
-      onNotify?.(res.message || "Passkey registered successfully!", "success");
-    } catch (err) {
-      onNotify?.(err.message || "Failed to register passkey.", "error");
-    } finally {
-      setIsRegisteringPasskey(false);
-    }
   };
 
   useEffect(() => {
@@ -169,24 +142,6 @@ export default function AuthenticatedCard({ user, onSignOut, onNotify }) {
           <svg viewBox="0 0 24 24" style={{ width: 18, height: 18, fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" }}>
             <path d="M5 12h14M12 5l7 7-7 7"/>
           </svg>
-        </button>
-
-        <button
-          type="button"
-          className="btn btn--ghost"
-          onClick={handleRegisterPasskey}
-          disabled={isRegisteringPasskey || passkeyRegistered}
-          style={{
-            borderColor: passkeyRegistered ? "var(--success)" : "var(--ink-200)",
-            color: passkeyRegistered ? "var(--success)" : "var(--ink-900)",
-          }}
-        >
-          <svg viewBox="0 0 24 24" style={{ width: 18, height: 18, fill: "none", stroke: passkeyRegistered ? "#16a34a" : "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" }}>
-            <path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/>
-            <path d="m21 2-9.6 9.6"/>
-            <circle cx="7.5" cy="15.5" r="5.5"/>
-          </svg>
-          <span>{passkeyRegistered ? "Passkey Registered on Device ✓" : isRegisteringPasskey ? "Registering Passkey…" : "Register Passkey on this Device"}</span>
         </button>
 
         <button
