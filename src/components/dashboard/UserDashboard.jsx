@@ -398,7 +398,11 @@ export default function UserDashboard({ onNavigate, onNotify }) {
   };
 
   const isAdminRole = String(currentUser.role || "").toLowerCase().includes("admin");
-  const lastSignIn = activities[0];
+  // The activity feed includes failed attempts; "Last sign-in" must show the
+  // most recent SUCCESSFUL authentication, not simply the newest event.
+  const lastSignIn = activities.find(
+    (a) => String(a.status || "").toLowerCase() === "success"
+  ) || null;
 
   // Filtered Apps
   const filteredApps = apps.filter((app) => {
@@ -708,8 +712,8 @@ export default function UserDashboard({ onNavigate, onNotify }) {
                       <Grid size={18} />
                     </div>
                   </div>
-                  <h3 className="stat-card-value">{apps.filter((a) => a.isActive).length} apps</h3>
-                  <span className="stat-card-desc">Approved enterprise services</span>
+                  <h3 className="stat-card-value">{apps.filter((a) => a.isActive).length} sessions</h3>
+                  <span className="stat-card-desc">Active OIDC application sessions</span>
                 </div>
 
                 <div className="stat-card" onClick={() => setActiveTab("activity")}>
@@ -719,8 +723,10 @@ export default function UserDashboard({ onNavigate, onNotify }) {
                       <Clock size={18} />
                     </div>
                   </div>
-                  <h3 className="stat-card-value">{lastSignIn?.time || "Active now"}</h3>
-                  <span className="stat-card-desc">From {lastSignIn?.location || "Workspace"}</span>
+                  <h3 className="stat-card-value">{lastSignIn?.time || "No sign-ins yet"}</h3>
+                  <span className="stat-card-desc">
+                    {lastSignIn ? `From ${lastSignIn.location || "Workspace"}` : "No successful sign-ins recorded"}
+                  </span>
                 </div>
               </div>
 
