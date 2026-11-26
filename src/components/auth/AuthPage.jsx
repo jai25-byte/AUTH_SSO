@@ -166,7 +166,6 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
         email: ident,
         password: loginPassword,
         remember: rememberMe,
-        requireOtp: true,
       });
 
       if (data?.otp_required || data?.requires_otp) {
@@ -251,7 +250,6 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
         email: cleanEmail,
         password: regPassword,
         role: regRole,
-        requireOtp: true,
       });
 
       setLoginEmail(cleanEmail);

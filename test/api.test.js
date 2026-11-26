@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { getApiBaseUrl, TOKEN_KEY, USER_KEY, validateResetPasswordPolicy, changePassword } from "../src/services/api.js";
+import { getApiBaseUrl, TOKEN_KEY, USER_KEY, validateResetPasswordPolicy, changePassword, login } from "../src/services/api.js";
 import { groupByUidAndTime, tallyField, toggleKeyInSet } from "../src/components/admin/activityGroupUtils.js";
 
 describe("Frontend API Service Unit Tests", () => {
@@ -12,6 +12,30 @@ describe("Frontend API Service Unit Tests", () => {
   it("returns a valid default API base URL", () => {
     const baseUrl = getApiBaseUrl();
     expect(typeof baseUrl).toBe("string");
+  });
+
+  it("never replays a POST when a response was received but cannot be parsed", async () => {
+    const originalFetch = globalThis.fetch;
+    let calls = 0;
+    globalThis.fetch = async () => {
+      calls += 1;
+      return new Response("{not-json", {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    };
+    try {
+      let threw = false;
+      try {
+        await login({ login: "alice", password: "secret" });
+      } catch {
+        threw = true;
+      }
+      expect(threw).toBe(true);
+      expect(calls).toBe(1);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 
   it("validates strict password reset complexity policy", () => {

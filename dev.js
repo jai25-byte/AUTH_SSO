@@ -1,7 +1,11 @@
-import { watch } from "fs";
+import { watch, existsSync } from "fs";
 import { join } from "path";
 
 const PORT = process.env.PORT || 3000;
+const BACKEND_BASE = process.env.BACKEND_URL || "http://127.0.0.1:5000";
+const PYTHON_BACKEND_DIR = process.env.PYTHON_BACKEND_DIR || "../vault-auth-backend";
+const VENV_PYTHON = join(PYTHON_BACKEND_DIR, ".venv", "bin", "python");
+const PYTHON_BACKEND_PYTHON = process.env.PYTHON_BACKEND_PYTHON || (existsSync(VENV_PYTHON) ? VENV_PYTHON : "python3");
 const subscribers = new Set();
 
 // Function to rebuild JS
@@ -62,22 +66,47 @@ console.log("🛠️  Running initial build...");
 await buildJs();
 await buildCss();
 
-// Ensure backend server is running on port 5000
+// Ensure the Python/Flask backend is reachable. The Node backend has been
+// removed; this service is the only authentication authority.
 async function ensureBackend() {
+  const healthUrl = `${BACKEND_BASE}/api/health`;
   try {
-    const res = await fetch("http://127.0.0.1:5000/api/users", { method: "GET" });
-    if (res.status) {
-      console.log("🛡️  Backend server active on port 5000");
+    const res = await fetch(healthUrl);
+    if (res.ok) {
+      console.log(`🛡️  Python backend active at ${BACKEND_BASE}`);
       return;
     }
   } catch {}
 
-  console.log("🚀 Spawning VaultAuth backend server on port 5000...");
-  const proc = Bun.spawn(["bun", "backend/server.js"], {
-    stdout: "inherit",
-    stderr: "inherit",
-  });
-  process.on("exit", () => proc.kill());
+  console.log(`🚀 Starting Python backend in ${PYTHON_BACKEND_DIR} ...`);
+  let proc;
+  try {
+    proc = Bun.spawn([PYTHON_BACKEND_PYTHON, "main.py"], {
+      cwd: PYTHON_BACKEND_DIR,
+      stdout: "inherit",
+      stderr: "inherit",
+    });
+  } catch (err) {
+    console.error("❌ Could not start the Python backend:", err.message);
+    console.error(`   Start it manually: cd ${PYTHON_BACKEND_DIR} && ${PYTHON_BACKEND_PYTHON} main.py`);
+    return;
+  }
+  const stop = () => { try { proc.kill(); } catch { /* already stopped */ } };
+  process.on("exit", stop);
+  process.on("SIGINT", () => { stop(); process.exit(0); });
+  process.on("SIGTERM", () => { stop(); process.exit(0); });
+
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    await new Promise((r) => setTimeout(r, 250));
+    try {
+      const res = await fetch(healthUrl);
+      if (res.ok) {
+        console.log("🛡️  Python backend ready");
+        return;
+      }
+    } catch { /* not ready yet */ }
+  }
+  console.warn(`⚠️  Python backend did not become ready at ${BACKEND_BASE}. Check its logs.`);
 }
 await ensureBackend();
 
@@ -153,12 +182,12 @@ const server = Bun.serve({
 
     // Proxy API requests to backend server (Vault Auth API at http://127.0.0.1:5000)
     if (url.pathname.startsWith("/api/")) {
-      const backendBase = process.env.BACKEND_URL || "http://127.0.0.1:5000";
+      const backendBase = BACKEND_BASE;
       const reqOrigin = req.headers.get("origin");
 
       if (req.method === "OPTIONS") {
         const optHeaders = {
-          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type, Authorization, Cookie",
         };
         if (reqOrigin) {
@@ -175,10 +204,12 @@ const server = Bun.serve({
       }
 
       // Try primary target, then fallback between 127.0.0.1 and localhost
-      const hostCandidates = [
-        backendBase,
-        backendBase.includes("127.0.0.1") ? "http://localhost:5000" : "http://127.0.0.1:5000",
-      ];
+      const altBase = backendBase.includes("127.0.0.1")
+        ? backendBase.replace("127.0.0.1", "localhost")
+        : backendBase.includes("localhost")
+          ? backendBase.replace("localhost", "127.0.0.1")
+          : null;
+      const hostCandidates = altBase ? [backendBase, altBase] : [backendBase];
 
       const requestBody =
         req.method !== "GET" && req.method !== "HEAD" ? await req.arrayBuffer() : undefined;

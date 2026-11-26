@@ -25,9 +25,20 @@ export const getApiBaseUrl = () => {
 export const TOKEN_KEY = "vault_auth_token";
 export const USER_KEY = "vault_auth_user";
 
+// Flask issues <id>.<expiry>.<hmac>. Tokens from the removed Node backend
+// must be discarded so users are cleanly redirected to sign in again.
+const FLASK_SESSION_TOKEN = /^[a-f0-9]{32}\.\d{9,11}\.[a-f0-9]{64}$/i;
+
 export const getToken = () => {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (!token) return null;
+  if (!FLASK_SESSION_TOKEN.test(token)) {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    return null;
+  }
+  return token;
 };
 
 export const setToken = (token) => {
@@ -67,7 +78,7 @@ export const setStoredUser = (user) => {
 /**
  * Universal fetch wrapper for Vault Auth API endpoints with automatic fallback
  */
-async function request(endpoint, options = {}) {
+export async function request(endpoint, options = {}) {
   const primary = getApiBaseUrl();
   const candidates = [
     primary,
@@ -76,6 +87,9 @@ async function request(endpoint, options = {}) {
     "http://localhost:5000",
   ];
   const uniqueCandidates = [...new Set(candidates)];
+  const method = (options.method || "GET").toUpperCase();
+  // Only idempotent requests may be replayed against a fallback base URL.
+  const canRetry = ["GET", "HEAD", "OPTIONS"].includes(method);
 
   let lastError = null;
 
@@ -92,15 +106,19 @@ async function request(endpoint, options = {}) {
       headers.set("Authorization", `Bearer ${token}`);
     }
 
+    let receivedResponse = false;
     try {
       const response = await fetch(url, {
         ...options,
         headers,
         credentials: "include",
       });
+      receivedResponse = true;
 
-      // If status 502, the dev proxy could not reach the backend on this route; try direct
-      if (response.status === 502 && uniqueCandidates.length > 1) {
+      // 502 means the dev proxy could not reach the backend. Only retry this
+      // for safe methods; the server may already have processed a write.
+      if (response.status === 502 && canRetry && uniqueCandidates.length > 1) {
+        try { await response.body?.cancel(); } catch { /* already consumed */ }
         lastError = new Error("Proxy received 502 Bad Gateway");
         continue;
       }
@@ -136,11 +154,12 @@ async function request(endpoint, options = {}) {
       return responseData;
     } catch (error) {
       lastError = error;
-      if (error.status && error.status !== 502) {
-        // Legitimate HTTP response error from backend (e.g. 400, 404, 500)
+      // Never replay writes, and never retry once a response has arrived:
+      // a malformed body or HTTP error means the server may have acted already.
+      if (!canRetry || receivedResponse || error.status) {
         throw error;
       }
-      // If network/CORS error, try next candidate
+      // Network/CORS failure before any response: try the next candidate.
     }
   }
 
@@ -181,7 +200,7 @@ export async function register({ username, password, email, fullName, name, uid,
  * Authenticate user and receive session token
  * POST /api/login
  */
-export async function login({ login: loginIdentifier, username, email, password, requireOtp }) {
+export async function login({ login: loginIdentifier, username, email, password, remember, requireOtp }) {
   const identifier = (loginIdentifier || username || email || "").trim();
   const payload = {
     login: identifier,
@@ -189,6 +208,10 @@ export async function login({ login: loginIdentifier, username, email, password,
     email: identifier,
     password,
   };
+
+  if (remember !== undefined) {
+    payload.remember = remember;
+  }
 
   if (typeof requireOtp === "boolean") {
     payload.require_otp = requireOtp;

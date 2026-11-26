@@ -50,6 +50,14 @@ import {
   validateResetPasswordPolicy,
 } from "../../services/api.js";
 import { useHistoryTab } from "../../services/navigation.js";
+import {
+  isWebAuthnSupported,
+  isPlatformAuthenticatorAvailable,
+  registerPasskey,
+  getPasskeyCredentials,
+  deletePasskeyCredential,
+  renamePasskeyCredential,
+} from "../../services/webauthn.js";
 
 const USER_DASHBOARD_TABS = new Set([
   "overview",
@@ -188,6 +196,73 @@ export default function UserDashboard({ onNavigate, onNotify }) {
   const [revokeModalSession, setRevokeModalSession] = useState(null);
   const [revokeAllModal, setRevokeAllModal] = useState(false);
 
+  // Passkey / WebAuthn state
+  const [passkeys, setPasskeys] = useState([]);
+  const [passkeysLoading, setPasskeysLoading] = useState(false);
+  const [passkeySupported, setPasskeySupported] = useState(null); // null = checking
+  const [passkeyRegLoading, setPasskeyRegLoading] = useState(false);
+  const [passkeyRegName, setPasskeyRegName] = useState("");
+  const [passkeyRenameId, setPasskeyRenameId] = useState(null);
+  const [passkeyRenameName, setPasskeyRenameName] = useState("");
+  const [passkeyDeleteId, setPasskeyDeleteId] = useState(null);
+
+  // Load passkeys from backend
+  const loadPasskeys = async () => {
+    setPasskeysLoading(true);
+    try {
+      const creds = await getPasskeyCredentials();
+      setPasskeys(creds);
+    } catch {
+      setPasskeys([]);
+    } finally {
+      setPasskeysLoading(false);
+    }
+  };
+
+  // Register new passkey
+  const handleRegisterPasskey = async () => {
+    if (passkeyRegLoading) return;
+    setPasskeyRegLoading(true);
+    try {
+      const name = passkeyRegName.trim() || "My Passkey";
+      await registerPasskey(name);
+      onNotify?.(`Passkey "${name}" registered successfully!`, "success");
+      setPasskeyRegName("");
+      await loadPasskeys();
+    } catch (err) {
+      onNotify?.(err.message || "Passkey registration failed.", "error");
+    } finally {
+      setPasskeyRegLoading(false);
+    }
+  };
+
+  // Rename passkey
+  const handleRenamePasskey = async (id) => {
+    const name = passkeyRenameName.trim();
+    if (!name) return;
+    try {
+      await renamePasskeyCredential(id, name);
+      onNotify?.("Passkey renamed.", "success");
+      setPasskeyRenameId(null);
+      setPasskeyRenameName("");
+      await loadPasskeys();
+    } catch (err) {
+      onNotify?.(err.message || "Rename failed.", "error");
+    }
+  };
+
+  // Delete passkey
+  const handleDeletePasskey = async (id) => {
+    try {
+      await deletePasskeyCredential(id);
+      onNotify?.("Passkey removed.", "success");
+      setPasskeyDeleteId(null);
+      await loadPasskeys();
+    } catch (err) {
+      onNotify?.(err.message || "Delete failed.", "error");
+    }
+  };
+
   const loadDashboardData = async () => {
     const [profileRes, overviewRes, activityRes, sessionsRes, appsRes] = await Promise.all([
       getUserProfile(),
@@ -272,6 +347,15 @@ export default function UserDashboard({ onNavigate, onNotify }) {
       document.removeEventListener("visibilitychange", syncSilently);
     };
   }, []);
+
+  // Check passkey support and load credentials when security tab is opened
+  useEffect(() => {
+    if (activeTab !== "security") return;
+    isPlatformAuthenticatorAvailable()
+      .then((ok) => setPasskeySupported(ok))
+      .catch(() => setPasskeySupported(false));
+    loadPasskeys();
+  }, [activeTab]);
 
   const handleSignOut = async () => {
     await apiLogout();
@@ -1115,6 +1199,131 @@ export default function UserDashboard({ onNavigate, onNotify }) {
                 </div>
               </div>
 
+              {/* ── Passkey / WebAuthn Management ── */}
+              <div className="content-card" style={{ maxWidth: "680px", marginBottom: "24px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px" }}>
+                  <h4 className="card-header-title" style={{ margin: 0 }}>
+                    <Key size={18} style={{ marginRight: 8, verticalAlign: "middle" }} />
+                    Passkeys &amp; Hardware Keys
+                  </h4>
+                  <span style={{ fontSize: "0.78rem", color: "var(--ud-muted)" }}>
+                    {passkeySupported === null ? "Checking…" : passkeySupported ? "✓ Supported on this device" : "Not available on this device"}
+                  </span>
+                </div>
+
+                {passkeysLoading ? (
+                  <p style={{ color: "var(--ud-muted)", fontSize: "0.9rem" }}>Loading passkeys…</p>
+                ) : passkeys.length === 0 ? (
+                  <p style={{ color: "var(--ud-muted)", fontSize: "0.9rem", marginBottom: "16px" }}>
+                    No passkeys registered. Add one below to enable passwordless sign-in.
+                  </p>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "20px" }}>
+                    {passkeys.map((pk) => (
+                      <div
+                        key={pk.id}
+                        style={{
+                          display: "flex", alignItems: "center", justifyContent: "space-between",
+                          padding: "12px 16px", borderRadius: "10px",
+                          background: "var(--ud-bg-card, rgba(255,255,255,0.04))",
+                          border: "1px solid var(--ud-border, rgba(255,255,255,0.08))",
+                        }}
+                      >
+                        {passkeyRenameId === pk.id ? (
+                          <div style={{ display: "flex", gap: "8px", flex: 1, alignItems: "center" }}>
+                            <input
+                              className="modal-input"
+                              style={{ flex: 1, padding: "6px 10px", fontSize: "0.88rem" }}
+                              value={passkeyRenameName}
+                              onChange={(e) => setPasskeyRenameName(e.target.value)}
+                              placeholder="New passkey name"
+                              maxLength={100}
+                              autoFocus
+                            />
+                            <button
+                              type="button" className="btn-brand-primary"
+                              style={{ padding: "6px 12px", fontSize: "0.82rem" }}
+                              onClick={() => handleRenamePasskey(pk.id)}
+                            >Save</button>
+                            <button
+                              type="button" className="btn-modal-cancel"
+                              style={{ padding: "6px 12px", fontSize: "0.82rem" }}
+                              onClick={() => { setPasskeyRenameId(null); setPasskeyRenameName(""); }}
+                            >Cancel</button>
+                          </div>
+                        ) : (
+                          <>
+                            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                              <div style={{
+                                width: 36, height: 36, borderRadius: "50%",
+                                background: "linear-gradient(135deg,#2563eb,#7c3aed)",
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                color: "#fff", fontSize: "1rem",
+                              }}>🔑</div>
+                              <div>
+                                <div style={{ fontWeight: 600, fontSize: "0.9rem" }}>{pk.device_name}</div>
+                                <div style={{ fontSize: "0.78rem", color: "var(--ud-muted)" }}>
+                                  Added {pk.created_at} · Last used {pk.last_used_at}
+                                </div>
+                              </div>
+                            </div>
+                            <div style={{ display: "flex", gap: "8px" }}>
+                              <button
+                                type="button"
+                                title="Rename passkey"
+                                onClick={() => { setPasskeyRenameId(pk.id); setPasskeyRenameName(pk.device_name); }}
+                                style={{
+                                  background: "transparent", border: "1px solid var(--ud-border,rgba(255,255,255,0.12))",
+                                  borderRadius: "6px", padding: "5px 10px", cursor: "pointer",
+                                  color: "var(--ud-text-2)", fontSize: "0.8rem",
+                                }}
+                              >Rename</button>
+                              <button
+                                type="button"
+                                title="Remove passkey"
+                                onClick={() => setPasskeyDeleteId(pk.id)}
+                                style={{
+                                  background: "transparent", border: "1px solid #dc2626",
+                                  borderRadius: "6px", padding: "5px 10px", cursor: "pointer",
+                                  color: "#dc2626", fontSize: "0.8rem",
+                                }}
+                              ><Trash2 size={13} style={{ verticalAlign: "middle" }} /></button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {isWebAuthnSupported() ? (
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+                    <input
+                      className="modal-input"
+                      style={{ flex: 1, minWidth: "160px", padding: "8px 12px", fontSize: "0.88rem" }}
+                      placeholder='Passkey name e.g. "MacBook Touch ID"'
+                      value={passkeyRegName}
+                      maxLength={100}
+                      onChange={(e) => setPasskeyRegName(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="btn-brand-primary"
+                      style={{ whiteSpace: "nowrap" }}
+                      onClick={handleRegisterPasskey}
+                      disabled={passkeyRegLoading}
+                    >
+                      {passkeyRegLoading ? "Registering…" : "+ Add Passkey"}
+                    </button>
+                  </div>
+                ) : (
+                  <p style={{ color: "#f59e0b", fontSize: "0.85rem", margin: 0 }}>
+                    ⚠ Your browser does not support WebAuthn. Try Chrome, Safari 16+, or Firefox 119+.
+                  </p>
+                )}
+              </div>
+
+              {/* ── Change Password ── */}
               <div className="content-card" style={{ maxWidth: "680px", marginBottom: "24px" }}>
                 <h4 className="card-header-title" style={{ marginBottom: "18px" }}>
                   Change Account Password
@@ -1255,6 +1464,26 @@ export default function UserDashboard({ onNavigate, onNotify }) {
           )}
         </main>
       </div>
+
+      {/* Delete Passkey Confirmation Modal */}
+      {passkeyDeleteId && (
+        <div className="modal-backdrop">
+          <div className="modal-card">
+            <h3>Remove Passkey?</h3>
+            <p style={{ margin: "14px 0 20px", color: "var(--ud-text-2)" }}>
+              This will permanently delete the passkey from your account. You won't be able to sign in with it anymore.
+            </p>
+            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+              <button type="button" className="btn-modal-cancel" onClick={() => setPasskeyDeleteId(null)}>
+                Cancel
+              </button>
+              <button type="button" className="btn-modal-danger" onClick={() => handleDeletePasskey(passkeyDeleteId)}>
+                Remove Passkey
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Disconnect App Confirmation Modal */}
       {disconnectModalApp && (

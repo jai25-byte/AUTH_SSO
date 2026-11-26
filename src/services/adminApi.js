@@ -6,16 +6,24 @@
 const DEFAULT_SERVER = "http://127.0.0.1:5000";
 let workingBase = null;
 
+const FLASK_SESSION_TOKEN = /^[a-f0-9]{32}\.\d{9,11}\.[a-f0-9]{64}$/i;
+
 export const getToken = () => {
   if (typeof window === "undefined") return null;
   // Check URL token parameter first
   const urlParams = new URLSearchParams(window.location.search);
   const qToken = urlParams.get("token");
+  const token = qToken || localStorage.getItem("vault_auth_token");
+  if (!token) return null;
+  if (!FLASK_SESSION_TOKEN.test(token)) {
+    localStorage.removeItem("vault_auth_token");
+    localStorage.removeItem("vault_auth_user");
+    return null;
+  }
   if (qToken) {
     localStorage.setItem("vault_auth_token", qToken);
-    return qToken;
   }
-  return localStorage.getItem("vault_auth_token");
+  return token;
 };
 
 export const setToken = (token) => {
@@ -42,6 +50,8 @@ async function adminRequest(endpoint, options = {}) {
   ].filter((c) => c !== null && c !== undefined);
 
   const uniqueCandidates = [...new Set(candidates)];
+  const method = (options.method || "GET").toUpperCase();
+  const canRetry = ["GET", "HEAD", "OPTIONS"].includes(method);
   let lastError = null;
 
   for (const base of uniqueCandidates) {
@@ -57,14 +67,17 @@ async function adminRequest(endpoint, options = {}) {
       headers.set("Authorization", `Bearer ${token}`);
     }
 
+    let receivedResponse = false;
     try {
       const response = await fetch(url, {
         ...options,
         headers,
         credentials: "include",
       });
+      receivedResponse = true;
 
-      if (response.status === 502 && uniqueCandidates.length > 1) {
+      if (response.status === 502 && canRetry && uniqueCandidates.length > 1) {
+        try { await response.body?.cancel(); } catch { /* already consumed */ }
         lastError = new Error("Dev proxy 502 Bad Gateway");
         continue;
       }
@@ -99,7 +112,9 @@ async function adminRequest(endpoint, options = {}) {
       return data;
     } catch (err) {
       lastError = err;
-      if (err.status && err.status !== 502) {
+      // Writes must never be replayed; nor may a request that already got a
+      // response (parse error / HTTP error), since the server may have acted.
+      if (!canRetry || receivedResponse || err.status) {
         throw err;
       }
     }

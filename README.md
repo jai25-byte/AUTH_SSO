@@ -49,14 +49,39 @@ Optimized assets will be generated in the `dist/` directory.
 
 ---
 
-## 🔗 Backend API Integration (Vault Auth)
+## 🔗 Backend API Integration (Python / Flask)
 
-The frontend is integrated with the Vault Auth Backend as specified in [openapi.json](./openapi.json) / [openapi.yaml](./openapi.yaml):
+The Node backend has been removed. The React frontend now talks **only** to the Python/Flask
+backend in `../vault-auth-backend`.
 
-- **Backend URL**: `http://127.0.0.1:5000`
-- **Proxy**: In dev mode (`bun dev.js`), requests to `/api/*` are automatically forwarded to `http://127.0.0.1:5000` to avoid CORS issues.
+- **Backend URL**: `http://127.0.0.1:5000` (override with `BACKEND_URL`)
+- `bun run dev` proxies `/api/*` to the Flask backend. If it is not already running, the dev
+  server starts it automatically. Override with `PYTHON_BACKEND_DIR` and
+  `PYTHON_BACKEND_PYTHON` (e.g. `../vault-auth-backend/.venv/bin/python`) if needed.
+- The Flask backend's `CORS_ORIGINS` must include the frontend origin (by default
+  `http://localhost:3000`).
 - **Endpoints Used**:
   - `POST /api/register` &ndash; Account creation with `username`, `email`, and `password`.
   - `POST /api/login` &ndash; Credential authentication returning session token.
   - `GET /api/users/{id}` &ndash; User profile lookup by username or email.
 - **Two-Factor Authentication**: OTP verification runs as a demo multi-factor verification step immediately following backend password verification.
+
+---
+
+## 🔐 WebAuthn / FIDO2 Passkeys
+
+Passkey registration and sign-in use real cryptographic verification (`@simplewebauthn/server`):
+challenge, origin, RP ID, authenticator flags, signature and signature counter are all verified
+before a credential is stored or a session token is issued. The previous challenge/ID-only mock
+(and its unauthenticated account-takeover path) has been removed.
+
+Configure the Relying Party before deploying (defaults target local development):
+
+| Variable | Meaning | Example |
+|---|---|---|
+| `WEBAUTHN_RP_ID` | Registrable domain only, no scheme or port | `vaultauth.example.com` |
+| `WEBAUTHN_RP_NAME` | Display name shown by authenticators | `VaultAuth SSO` |
+| `WEBAUTHN_ORIGINS` | Comma-separated allowed origins (scheme + port) | `https://vaultauth.example.com,https://www.vaultauth.example.com` |
+
+Passkeys require a secure context: use `localhost` during development and **HTTPS** in production.
+Changing the RP ID after credentials are registered makes existing passkeys unusable.

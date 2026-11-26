@@ -3,7 +3,7 @@
  * Provides base64url converters, credential serializers, and high-level registration & login helpers.
  */
 
-import { getApiBaseUrl, getToken, setToken, setStoredUser } from "./api.js";
+import { request, getToken, setToken, setStoredUser } from "./api.js";
 
 // ─── Base64URL Encoders & Decoders ──────────────────────────────────────────
 
@@ -38,6 +38,7 @@ export function base64urlToBuffer(base64url) {
 export function isWebAuthnSupported() {
   return (
     typeof window !== "undefined" &&
+    window.isSecureContext !== false &&
     window.PublicKeyCredential !== undefined &&
     typeof window.navigator?.credentials?.create === "function" &&
     typeof window.navigator?.credentials?.get === "function"
@@ -53,7 +54,8 @@ export async function isPlatformAuthenticatorAvailable() {
   } catch {
     return false;
   }
-  return true;
+  // Unknown availability must not be reported as supported.
+  return false;
 }
 
 // ─── Options Preprocessing ──────────────────────────────────────────────────
@@ -65,12 +67,15 @@ export function prepareRegistrationOptions(options) {
     prepared.challenge = base64urlToBuffer(prepared.challenge);
   }
 
-  if (prepared.user && typeof prepared.user.id === "string") {
-    // If user.id is base64url or string
-    try {
-      prepared.user.id = base64urlToBuffer(prepared.user.id);
-    } catch {
-      prepared.user.id = new TextEncoder().encode(prepared.user.id);
+  if (prepared.user) {
+    // Copy the nested object; never mutate the server response.
+    prepared.user = { ...prepared.user };
+    if (typeof prepared.user.id === "string") {
+      try {
+        prepared.user.id = base64urlToBuffer(prepared.user.id);
+      } catch {
+        prepared.user.id = new TextEncoder().encode(prepared.user.id);
+      }
     }
   }
 
@@ -183,22 +188,13 @@ export async function registerPasskey(deviceName) {
     throw new Error("WebAuthn is not supported on this browser or operating system.");
   }
 
-  const base = getApiBaseUrl();
   const headers = await getAuthHeaders();
 
-  // 1. Fetch registration challenge options
-  const optRes = await fetch(`${base}/api/webauthn/register/options`, {
+  // 1. Fetch registration challenge options through the shared API client
+  const serverOptions = await request("/api/webauthn/register/options", {
     method: "POST",
     headers,
-    credentials: "include",
   });
-
-  if (!optRes.ok) {
-    const errData = await optRes.json().catch(() => ({}));
-    throw new Error(errData.message || "Failed to retrieve passkey registration options.");
-  }
-
-  const serverOptions = await optRes.json();
   const publicKeyOptions = prepareRegistrationOptions(serverOptions);
 
   // 2. Prompt user authenticator via browser native API
@@ -217,18 +213,16 @@ export async function registerPasskey(deviceName) {
 
   // 3. Serialize and send to backend for cryptographic verification
   const serialized = serializeRegistrationCredential(credential);
-  const verifyRes = await fetch(`${base}/api/webauthn/register/verify`, {
+  const verifyData = await request("/api/webauthn/register/verify", {
     method: "POST",
     headers,
-    credentials: "include",
     body: JSON.stringify({
       credential: serialized,
       deviceName: deviceName || "Passkey Authenticator",
     }),
   });
 
-  const verifyData = await verifyRes.json().catch(() => ({}));
-  if (!verifyRes.ok || !verifyData.success) {
+  if (!verifyData.success) {
     throw new Error(verifyData.message || "Server verification of passkey failed.");
   }
 
@@ -243,22 +237,11 @@ export async function loginWithPasskey(identifier) {
     throw new Error("WebAuthn is not supported on this browser or device.");
   }
 
-  const base = getApiBaseUrl();
-
-  // 1. Fetch authentication options
-  const optRes = await fetch(`${base}/api/webauthn/login/options`, {
+  // 1. Fetch authentication options through the shared API client
+  const serverOptions = await request("/api/webauthn/login/options", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
     body: JSON.stringify({ identifier: identifier ? identifier.trim() : undefined }),
   });
-
-  if (!optRes.ok) {
-    const errData = await optRes.json().catch(() => ({}));
-    throw new Error(errData.message || "Failed to initiate passkey sign-in.");
-  }
-
-  const serverOptions = await optRes.json();
   const publicKeyOptions = prepareAuthenticationOptions(serverOptions);
 
   // 2. Prompt user authenticator via browser native API
@@ -277,15 +260,12 @@ export async function loginWithPasskey(identifier) {
 
   // 3. Serialize assertion and verify on backend
   const serialized = serializeAuthenticationCredential(assertion);
-  const verifyRes = await fetch(`${base}/api/webauthn/login/verify`, {
+  const verifyData = await request("/api/webauthn/login/verify", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
     body: JSON.stringify({ credential: serialized }),
   });
 
-  const verifyData = await verifyRes.json().catch(() => ({}));
-  if (!verifyRes.ok || !verifyData.success) {
+  if (!verifyData.success) {
     throw new Error(verifyData.message || "Passkey authentication verification failed.");
   }
 
@@ -304,18 +284,8 @@ export async function loginWithPasskey(identifier) {
  * Retrieve registered passkeys for the current user
  */
 export async function getPasskeyCredentials() {
-  const base = getApiBaseUrl();
   const headers = await getAuthHeaders();
-  const res = await fetch(`${base}/api/webauthn/credentials`, {
-    method: "GET",
-    headers,
-    credentials: "include",
-  });
-  if (!res.ok) {
-    const errData = await res.json().catch(() => ({}));
-    throw new Error(errData.message || "Failed to load registered passkeys.");
-  }
-  const data = await res.json();
+  const data = await request("/api/webauthn/credentials", { method: "GET", headers });
   return data.credentials || [];
 }
 
@@ -323,16 +293,29 @@ export async function getPasskeyCredentials() {
  * Remove a registered passkey by ID
  */
 export async function deletePasskeyCredential(id) {
-  const base = getApiBaseUrl();
   const headers = await getAuthHeaders();
-  const res = await fetch(`${base}/api/webauthn/credentials/${id}`, {
+  const data = await request(`/api/webauthn/credentials/${encodeURIComponent(id)}`, {
     method: "DELETE",
     headers,
-    credentials: "include",
   });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok || !data.success) {
+  if (!data.success) {
     throw new Error(data.message || "Failed to remove passkey.");
+  }
+  return data;
+}
+
+/**
+ * Rename a registered passkey by ID
+ */
+export async function renamePasskeyCredential(id, newName) {
+  const headers = await getAuthHeaders();
+  const data = await request(`/api/webauthn/credentials/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers,
+    body: JSON.stringify({ deviceName: newName }),
+  });
+  if (!data.success) {
+    throw new Error(data.message || "Failed to rename passkey.");
   }
   return data;
 }
