@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { verifyOtp, sendOtp } from "../services/api.js";
+import { distributeOtpInput } from "../services/otp.js";
 
 export default function OtpVerificationCard({ user, onVerifySuccess, onBackToLogin, onNotify }) {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
@@ -23,15 +24,13 @@ export default function OtpVerificationCard({ user, onVerifySuccess, onBackToLog
   const displayEmail = user?.email_masked || user?.email || user?.username || "your registered email";
 
   const handleChange = (index, value) => {
-    const cleanValue = value.replace(/\D/g, "");
+    const cleanValue = String(value ?? "").replace(/\D/g, "");
     if (!cleanValue && value !== "") return;
-    const char = cleanValue.slice(-1);
-    const newOtp = [...otp];
-    newOtp[index] = char;
-    setOtp(newOtp);
+    const { values, nextFocus } = distributeOtpInput(otp, index, cleanValue);
+    setOtp(values);
     setIsError(false);
     setErrorMessage("");
-    if (char && index < 5) inputRefs.current[index + 1]?.focus();
+    if (cleanValue) inputRefs.current[nextFocus]?.focus();
   };
 
   const handleKeyDown = (index, e) => {

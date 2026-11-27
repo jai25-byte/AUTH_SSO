@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { login as apiLogin, register as apiRegister, sendOtp, verifyOtp } from "../../services/api.js";
+import { distributeOtpInput } from "../../services/otp.js";
 import PasswordResetFlow from "./PasswordResetFlow.jsx";
 
 export default function AuthPage({ initialTab = "login", onNavigate, onNotify }) {
@@ -262,14 +263,12 @@ export default function AuthPage({ initialTab = "login", onNavigate, onNotify })
 
   // OTP Input Handlers
   const handleOtpChange = (index, val) => {
-    const clean = val.replace(/[^0-9]/g, "");
-    const updated = [...otpValues];
-    updated[index] = clean.slice(-1);
-    setOtpValues(updated);
+    const { values, nextFocus } = distributeOtpInput(otpValues, index, val);
+    setOtpValues(values);
     if (otpError) setOtpError("");
 
-    if (clean && index < 5) {
-      otpInputsRef.current[index + 1]?.focus();
+    if (String(val ?? "").replace(/\D/g, "")) {
+      otpInputsRef.current[nextFocus]?.focus();
     }
   };
 

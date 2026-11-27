@@ -44,6 +44,8 @@ console.log(`✅ [Tailwind] CSS compiled & minified in ${Math.round(performance.
 await cp("public/index.html", "dist/index.html");
 await cp("dist/bundle.js", "public/bundle.js");
 await cp("dist/styles.css", "public/styles.css");
-await cp("public/wallpaper.png", "dist/wallpaper.png");
+if (existsSync("public/wallpaper.png")) {
+  await cp("public/wallpaper.png", "dist/wallpaper.png");
+}
 
 console.log("\n🎉 Production build complete! Distributable files are ready in ./dist/");
